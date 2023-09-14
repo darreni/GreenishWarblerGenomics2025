@@ -406,7 +406,7 @@ end
 #### Calculate allele freqs and sample sizes (use column Fst_group)
 
 ```{julia}
-freqs, sampleSizes, freqsRowNames = getFreqsAndSampleSizes(genosOnly, ind_with_metadata_indFiltered.Fst_group, groups)
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly, ind_with_metadata_indFiltered.Fst_group, groups)
 println("Calculated population allele frequencies and sample sizes")
 ```
 

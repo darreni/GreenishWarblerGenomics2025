@@ -24,6 +24,19 @@ using CairoMakie
 # indGroup is a vector of group names indicating the group each individual belongs to.
 # groupsToCalc is a vector of group names for which freqs and sample sizes will be calculated.
 # (homozygote alt coded as 2; heterozygote as 1, ref homozygote as 0, missing as -1 or missing)
+"""
+    getFreqsAndSampleSizes(genoData, indGroup, groupsToCalc)
+
+Calculate allele frequencies and sample sizes for each group and SNP.
+
+​# Arguments
+* `genoData`: The genotype matrix, where rows are individuals and columns are loci, with genotype codes 0,1,2 meaning homozygous reference, heterozygote, homozygous alternate, and missing genotypes can be either -1 or `missing`.
+* `indGroup`: A vector providing the group name each individual belongs to.
+* `groupsToCalc`: A list of group names to include in calculations.
+
+# Notes
+* Returns a tuple containing 1) a matrix of frequencies, and 2) a matrix of samples sizes (in both, rows are groups and columns are loci). 
+"""
 function getFreqsAndSampleSizes(genoData, indGroup, groupsToCalc)
     genoData[ismissing.(genoData)] .= -1 # if "missing" datatype is use, convert to -1
     groupCount = length(groupsToCalc)
@@ -38,7 +51,7 @@ function getFreqsAndSampleSizes(genoData, indGroup, groupsToCalc)
         sampleSizes[i, :] = sumGenoCounts
         freqs[i, :] = ((2 .* geno2counts) .+ geno1counts) ./ (2 * sumGenoCounts)
     end
-    return freqs, sampleSizes, groupsToCalc
+    return freqs, sampleSizes
 end
 
 # function copied from IrwinLabGenomicsAnalysisScriptV2.jl :

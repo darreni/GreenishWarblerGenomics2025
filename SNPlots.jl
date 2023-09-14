@@ -1,0 +1,328 @@
+#= 
+SNPlots.jl
+This file started by Darren Irwin on 24 June 2023
+as a set of functions for processing and displaying SNP data.  
+=#
+
+module SNPlots
+
+# make functions available in calling namespace through "using SNPlots" command, without needing to prefix module name: 
+export getFreqsAndSampleSizes, 
+    getPairwiseNames,
+    getFst,
+    limitIndsToPlot,
+    plotPCA,
+    chooseChrRegion,
+    plotGenotypeByIndividual
+
+using MultivariateStats
+using CairoMakie
+
+# function copied from IrwinLabGenomicsAnalysisScriptV2.jl :
+# calculate sample size (of individuals) and frequency of alternate allele. 
+# genoData is Matrix where rows are individuals and columns are loci.
+# indGroup is a vector of group names indicating the group each individual belongs to.
+# groupsToCalc is a vector of group names for which freqs and sample sizes will be calculated.
+# (homozygote alt coded as 2; heterozygote as 1, ref homozygote as 0, missing as -1 or missing)
+function getFreqsAndSampleSizes(genoData, indGroup, groupsToCalc)
+    genoData[ismissing.(genoData)] .= -1 # if "missing" datatype is use, convert to -1
+    groupCount = length(groupsToCalc)
+    freqs = Array{Float32,2}(undef, groupCount, size(genoData, 2))
+    sampleSizes = Array{Int16,2}(undef, groupCount, size(genoData, 2))
+    for i in 1:groupCount
+        selection = (indGroup .== groupsToCalc[i]) # gets the correct rows for individuals in the group 
+        geno0counts = sum(genoData[selection, :] .== 0, dims=1) # count by column the number of 0 genotypes (homozygous ref)
+        geno1counts = sum(genoData[selection, :] .== 1, dims=1) # same for 1 genotypes (heterozygous)
+        geno2counts = sum(genoData[selection, :] .== 2, dims=1) # same for 2 genotypes (homozygous alternate) 
+        sumGenoCounts = geno0counts .+ geno1counts .+ geno2counts
+        sampleSizes[i, :] = sumGenoCounts
+        freqs[i, :] = ((2 .* geno2counts) .+ geno1counts) ./ (2 * sumGenoCounts)
+    end
+    return freqs, sampleSizes, groupsToCalc
+end
+
+# function copied from IrwinLabGenomicsAnalysisScriptV2.jl :
+# get row names for use in Dxy and Fst matrices, 
+# or any others that compare populations pairwise.
+# groupsToCalc is a vector of names for the groups.
+function getPairwiseNames(groupsToCalc)::Vector{String}
+    groupCount = length(groupsToCalc)
+    pairwiseNames = []
+    for i in 1:(groupCount-1)
+        for j in (i+1):groupCount
+            push!(pairwiseNames, string(groupsToCalc[i], "_", groupsToCalc[j]))
+        end
+    end
+    return pairwiseNames
+end
+
+# function copied from IrwinLabGenomicsAnalysisScriptV2.jl :
+# calculate Fst (and numerator and denominator) for each site (bp), 
+# between pairs of groups (so pops (r) is 2), 
+# using the Weir&Cockerham 1984 approach to correct for sample size and number of pops.
+# Set "among=true" if wanting it to include a line for Fst among all groups.
+function getFst(freqs, sampleSizes, groupsToCalc; among=false)
+    pairwiseNames = getPairwiseNames(groupsToCalc)
+    groupCount = length(groupsToCalc)
+    Fst = Array{Float32,2}(undef, length(pairwiseNames), size(freqs, 2))
+    FstNum = Array{Float32,2}(undef, length(pairwiseNames), size(freqs, 2))
+    FstDen = Array{Float32,2}(undef, length(pairwiseNames), size(freqs, 2))
+    rowCount = 1
+    for i in 1:(groupCount-1)
+        for j in (i+1):groupCount
+            r = 2 # number of populations in comparison (from Weir & Cockerham 1984 p. 1363)
+            # the "@." macro adds the dot operator (broadcasting) to all function calls to the right
+            n_bar = @. (sampleSizes[i, :] + sampleSizes[j, :]) / 2 # mean sample size 
+            p_bar = @. (sampleSizes[i, :] * freqs[i, :] + sampleSizes[j, :] * freqs[j, :]) / (2 * n_bar) # mean frequency
+            C = @. sqrt(((sampleSizes[i, :] - n_bar)^2 + (sampleSizes[j, :] - n_bar)^2) / (r - 1)) / n_bar  # The CV of sample sizes, based on the equation for sample SD--Mike & I solved the n_c equation in Weir&Cockerham1984 and confirmed this. (see the division by 1 in the numerator, prior to square root) 
+            s2 = @. (sampleSizes[i, :] * ((freqs[i, :] - p_bar)^2) + sampleSizes[j, :] * ((freqs[j, :] - p_bar)^2)) / ((r - 1) * n_bar)   # allele frequency variance, using sample variance, as per W&C84
+            FstNum[rowCount, :] = @. s2 - ((p_bar * (1 - p_bar) - ((r - 1) / r) * s2) / (2 * n_bar - 1))
+            FstDenTerm1 = @. (1 - ((2 * n_bar * C^2) / ((2 * n_bar - 1) * r))) * p_bar * (1 - p_bar)
+            FstDenTerm2 = @. (1 + ((2 * n_bar * (r - 1) * C^2) / ((2 * n_bar - 1) * r))) * s2 / r
+            FstDen[rowCount, :] = FstDenTerm1 .+ FstDenTerm2
+            Fst[rowCount, :] = FstNum[rowCount, :] ./ FstDen[rowCount, :]
+            rowCount += 1 # adds one to rowCount
+        end
+    end
+    if among == true
+        # Add a line for the "Fst_among" for each site, 
+        # among all the groups listed in "groups" variable above (so r can be greater than 2), 
+        # using the Weir&Cockerham 1984 approach to correct for sample size.
+        Fst_among = Array{Float32,2}(undef, 1, size(freqs, 2))
+        FstNum_among = Array{Float32,2}(undef, 1, size(freqs, 2))
+        FstDen_among = Array{Float32,2}(undef, 1, size(freqs, 2))
+        for i in axes(freqs, 2)  # axes(A, dim) function gets the indices of A along dimension dim (recommended over 1:size(freqs,2))
+          popFreqs = freqs[:,i]
+          popFreqs_NaN_removed = popFreqs[.!isnan.(popFreqs)] # finds only the real (non-NaN) values
+          r = length(popFreqs_NaN_removed)    # "r" in Weir&Cockerham; the number of pops with non-NaN allele freqs
+          popSampleSizes = sampleSizes[:,i]
+          popSampleSizesPositive = popSampleSizes[.!isnan.(popFreqs)]
+          n_bar = sum(popSampleSizesPositive) / length(popSampleSizesPositive) # mean sample size
+          p_bar = sum(popFreqs_NaN_removed) / length(popFreqs_NaN_removed) # mean frequency
+          CV_sample_size = sqrt(sum((popSampleSizesPositive .- n_bar).^2) / (r - 1)) / n_bar     # Note that used the equation for sample SD here--Mike Whitlock & I solved the n_c equation in Weir&Cockerham1984 and confirmed this.
+          allele_freq_variance = sum(popSampleSizesPositive .* ((popFreqs_NaN_removed .- p_bar).^2)) / ((r - 1)*n_bar)    # using sample variance, as per W&C84
+          FstNum_among[1,i] = allele_freq_variance - ((p_bar*(1-p_bar) - ((r-1)/r)*allele_freq_variance)/(2*n_bar - 1))
+          FstDen_among_term1 = (1 - (2*n_bar*((CV_sample_size)^2)/((2*n_bar - 1)*r))) * p_bar*(1-p_bar) 
+          FstDen_among_term2 = (1 + ((2*n_bar*(r-1)*(CV_sample_size^2))/((2*n_bar-1)*r))) * allele_freq_variance / r
+          FstDen_among[1,i] = FstDen_among_term1 + FstDen_among_term2
+          Fst_among[1,i] = FstNum_among[1,i] / FstDen_among[1,i]		
+        end
+        Fst = vcat(Fst, Fst_among)
+        FstNum = vcat(FstNum, FstNum_among)
+        FstDen = vcat(FstDen, FstDen_among)
+        push!(pairwiseNames, "Fst_among")
+    end
+    return Fst, FstNum, FstDen, pairwiseNames
+end
+
+# Select individuals to plot (the maximum number per group given by numIndsToPlot).
+# Returns the reduced genotype matrix and metadata
+function limitIndsToPlot(plotGroups, numIndsToPlot, genoData, indMetadata)
+    cumulativeRowSelection = []
+    for i in eachindex(plotGroups)
+        rowSelection = findall(indMetadata.Fst_group .== plotGroups[i])
+        if length(rowSelection) > numIndsToPlot[i]
+            rowSelection = rowSelection[1:numIndsToPlot[i]]
+        end
+        cumulativeRowSelection = vcat(cumulativeRowSelection, rowSelection)
+    end
+    genoData_included = genoData[cumulativeRowSelection, :]
+    indMetadata_included = indMetadata[cumulativeRowSelection, :]
+    return genoData_included, indMetadata_included
+end
+
+# do PCA and graph, based on saved imputed genotypes:
+plotPCA = function(genotypes, ind_with_metadata, groups_to_plot_PCA, group_colors_PCA; regionText="")
+    matrixForPCA = Matrix{Float32}(transpose(genotypes))
+
+    # this now works well--appears to NOT be scaling the variables to variance 1, which is good
+    PCA_indGenos = fit(PCA, matrixForPCA; method = :svd, maxoutdim=3); # good to suppress output of this--otherwise many lines
+    PCA_values = predict(PCA_indGenos, matrixForPCA)
+
+    eigvecs(PCA_indGenos)
+    loadings(PCA_indGenos)
+    eigvals(PCA_indGenos)
+    projection(PCA_indGenos)
+    tvar(PCA_indGenos)
+
+    # flip axes:
+    PC1 = -PCA_values[1,:]
+    PC2 = -PCA_values[2,:]
+
+    f = CairoMakie.Figure()
+    ax = Axis(f[1, 1],
+        title = string("PCA of greenish warblers: ",regionText),
+        xlabel = "PC1",
+        ylabel = "PC2"
+    )
+    for i in eachindex(groups_to_plot_PCA) 
+        selection = ind_with_metadata.Fst_group .== groups_to_plot_PCA[i]
+        CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
+    end
+    display(f)
+end
+
+# Option to focus on a region of chromosome.
+# If not specified, this will set appropriate positionMin and positionMax for a chromosome
+# and will make a regionText string.
+# This will NOT actually filter SNPs to this range
+# (that is done within the plotGenotypeByIndividual function below).
+function chooseChrRegion(pos, chr; positionMin=1, positionMax=NaN)
+    if positionMin == 1 && isnan(positionMax) # then include whole chromosome
+        positionMax = last(pos.position[pos.chrom .== chr]) # get highest position value on chromosome
+        regionText = string(chr,"_whole")
+    elseif positionMin > 1 && isnan(positionMax)
+        positionMax = last(pos.position[pos.chrom .== chr]) # get highest position value on chromosome
+        regionText = string(chr,"_from",positionMin,"to",positionMax)
+    else
+        regionText = string("chr ", chr, " ",positionMin," to ",positionMax)
+    end
+    return chr, positionMin, positionMax, regionText
+end
+
+
+# Genotype by individual plot
+# Graph genotypes of high-Fst loci along a chromosome
+# choose only loci that are variable in the dataset (SNPs), and above an Fst threshhold
+# regionInfo is a tuple produced by chooseChrRegion.
+# Makes the plot, and returns a matrix of plotted genotypes, and a vector of locations. 
+function plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+                            regionInfo, pos, Fst, pairwiseNamesFst,
+                            genoData, indMetadata, freqs, plotGroups, plotGroupColors;
+                            colorAllelesByGroup=true, group1=plotGroups[1])   
+    chr, positionMin, positionMax, regionText = regionInfo
+    # if the genoData has missing values, then convert to -1:
+    genoData[ismissing.(genoData)] .= -1
+    # Filter SNPs according to Fst of the groupsToCompare
+    rowChoice = findfirst(pairwiseNamesFst .== groupsToCompare)
+    # write ≥ using \ge tab, and ≤ using \le tab.
+    # note the operator ".&" (bitwise &) is much more efficient than ".&&"
+    selection = (pos.chrom .== chr) .&
+                (Fst[rowChoice, :] .≥ Fst_cutoff) .&
+                (.!isnan.(Fst[rowChoice, :])) .&
+                (pos.position .≥ positionMin) .&
+                (pos.position .≤ positionMax)
+    SNP_genotypes = genoData[:, selection]
+    SNP_freqs = freqs[:, selection]
+    SNP_positions = pos.position[selection]
+    SNP_genotypes_subset = SNP_genotypes[indMetadata.Fst_group .∈ Ref(plotGroups), :]
+    indMetadata_subset = indMetadata[indMetadata.Fst_group .∈ Ref(plotGroups), :]
+    # The section below does the default of coloring the allele most common in group1 as the dark purple.
+    # Otherwise, set colorAllelesByGroup=false to have the alleles colored according to ref vs. alternate 
+    if colorAllelesByGroup
+        altAlleleHiInGroup1 = SNP_freqs[findfirst(indMetadata.Fst_group .== group1), :] .> 0.5
+        SNP_genotypes_subset[:, altAlleleHiInGroup1] = 2 .- SNP_genotypes_subset[:, altAlleleHiInGroup1]
+        SNP_genotypes_subset[SNP_genotypes_subset.==3] .= -1
+    end
+    # Choose sorting order (by group defined above, or by plot_order column in input metadata file)
+    #sorted.SNP.genotypes.subset = SNP.genotypes.subset[order(SNP.genotypes.subset$group, SNP.genotypes.subset$ID),]
+    sorted_SNP_genotypes_subset = SNP_genotypes_subset[sortperm(indMetadata.plot_order, rev=false), :]
+    numInds = size(sorted_SNP_genotypes_subset, 1) # fast way to get number of rows
+    sorted_indMetadata_subset = indMetadata_subset[sortperm(indMetadata.plot_order, rev=false), :]
+
+    # filter out the SNPs that have too much missing data:
+    numberMissing = sum(sorted_SNP_genotypes_subset .== -1 .| ismissing.(sorted_SNP_genotypes_subset), dims=1)
+    fractionMissing = numberMissing / numInds
+    selection = vec(fractionMissing .≤ missingFractionAllowed)
+    sorted_SNP_genotypes_subset2 = sorted_SNP_genotypes_subset[:, selection]
+    SNP_positions_subset2 = SNP_positions[selection]
+    num_SNPs_to_plot = length(SNP_positions_subset2)
+
+    # Set up the plot window:
+    f = CairoMakie.Figure(resolution=(1200, 1200))
+    ax = Axis(f[1, 1],
+        title=string(regionText, ": genotypes Fst>", Fst_cutoff, " loci between ", groupsToCompare),
+        # xlabel = "location",
+        # ylabel = "individual",
+        titlesize=30,
+        limits=(0.5 - 0.09 * (num_SNPs_to_plot + 0.5), 1.09 * (num_SNPs_to_plot + 0.5),
+            0.5 - 0.3 * numInds, numInds + 1)
+    )
+    hidedecorations!(ax) # hide background lattice and axis labels
+    hidespines!(ax) # hide box around plot
+
+    genotypeColors = ["#3f007d", "#807dba", "#dadaeb", "grey50"]  # purple shades from colorbrewer
+
+    # plot evenly spaced by SNP order along chromosome:
+    # make top part of fig (genotypes for individuals)
+    labelCushion = num_SNPs_to_plot / 100
+    label_x_left = 0.5 - labelCushion
+    label_x_right = 0.5 + num_SNPs_to_plot + labelCushion
+    colorBoxCushion = 0.07 * num_SNPs_to_plot
+    groupColorBox_x_left = 0.5 - colorBoxCushion
+    groupColorBox_x_right = 0.5 + num_SNPs_to_plot + colorBoxCushion
+    boxWidth = 0.005 * num_SNPs_to_plot * 2
+    groupColorBox_x_left = [-boxWidth, -boxWidth, boxWidth, boxWidth, -boxWidth] .+ groupColorBox_x_left
+    groupColorBox_x_right = [-boxWidth, -boxWidth, boxWidth, boxWidth, -boxWidth] .+ groupColorBox_x_right
+    groupColorBox_y = [0.4, -0.4, -0.4, 0.4, 0.4]
+
+    for i in 1:numInds
+        y = numInds + 1 - i  # y is location for plotting; this reverses order of plot top-bottom
+        labelText = last(split(indMetadata.ID[i], "_"))  # this gets the last part of the sample ID (usually the main ID part)
+        # put sample label on left side:
+        CairoMakie.text!(label_x_left, y; text=labelText, align=(:right, :center), fontsize=10)
+        # put sample label on left side:
+        CairoMakie.text!(label_x_right, y; text=labelText, align=(:left, :center), fontsize=10)
+        boxColor = plotGroupColors[findfirst(plotGroups .== sorted_indMetadata_subset.Fst_group[i])]
+        CairoMakie.poly!(Point2f.(groupColorBox_x_left, (y .+ groupColorBox_y)), color=boxColor)
+        CairoMakie.poly!(Point2f.(groupColorBox_x_right, (y .+ groupColorBox_y)), color=boxColor)
+    end
+
+    # generate my own plotting symbol (a rectangle)
+    box_x = [-0.5, -0.5, 0.5, 0.5, -0.5]
+    box_y = [0.4, -0.4, -0.4, 0.4, 0.4]
+    # generate triangles for plotting heterozygotes
+    triangle1_x = [-0.5, -0.5, 0.5, -0.5]
+    triangle1_y = [0.4, -0.4, 0.4, 0.4]
+    triangle2_x = [-0.5, 0.5, 0.5, -0.5]
+    triangle2_y = [-0.4, -0.4, 0.4, -0.4]
+    # cycle through individuals, graphing each type of genotype:
+    for i in 1:numInds
+        y = numInds + 1 - i  # y is location for plotting; this reverses order of plot top-bottom
+        CairoMakie.lines!([0.5, num_SNPs_to_plot + 0.5], [y, y], color="grey40")
+        genotypes = sorted_SNP_genotypes_subset2[i, :]
+        hom_ref_locs = findall(genotypes .== 0)
+        if length(hom_ref_locs) > 0
+            for j in eachindex(hom_ref_locs)
+                CairoMakie.poly!(Point2f.((hom_ref_locs[j] .+ box_x), (y .+ box_y)), color=genotypeColors[1])
+                #polygon(hom.ref.locs[j]+symbol.x, y+symbol.y, border=NA, col=genotype.colors[1])
+            end
+        end
+        het_locs = findall(genotypes .== 1)
+        if length(het_locs) > 0
+            for j in eachindex(het_locs)
+                CairoMakie.poly!(Point2f.((het_locs[j] .+ triangle1_x), (y .+ triangle1_y)), color=genotypeColors[1])
+                CairoMakie.poly!(Point2f.((het_locs[j] .+ triangle2_x), (y .+ triangle2_y)), color=genotypeColors[3])
+            end
+        end
+        hom_alt_locs = findall(genotypes .== 2)
+        if length(hom_alt_locs) > 0
+            for j in eachindex(hom_alt_locs)
+                CairoMakie.poly!(Point2f.((hom_alt_locs[j] .+ box_x), (y .+ box_y)), color=genotypeColors[3])
+            end
+        end
+    end
+
+    # make lower part of figure (indicating position along chromosome) #NOTE THAT CHROMOSOME LENGTH NOT QUITE THE TRUE LENGTH
+    chrLine_y = 0.5 - 0.2numInds
+    topHatchLine_y1 = 0.6
+    topHatchLine_y2 = 0.5 - 0.02numInds
+    lowHatchLine_y1 = 0.5 - 0.18numInds
+    lowHatchLine_y2 = 0.5 - 0.2numInds
+    # draw chromosome line and text labels
+    CairoMakie.lines!([0.5, num_SNPs_to_plot + 0.5], [chrLine_y, chrLine_y], color="black", linewidth=5)
+    CairoMakie.text!(0.5 + (num_SNPs_to_plot / 2), chrLine_y - 0.05numInds; text=string("Location along chromosome ", chr), align=(:center, :center), fontsize=30)
+    CairoMakie.text!(0.5, chrLine_y - 0.025numInds; text=string(positionMin), align=(:center, :center), fontsize=20)
+    CairoMakie.text!(0.5 + num_SNPs_to_plot, chrLine_y - 0.025numInds; text=string(positionMax), align=(:center, :center), fontsize=20)
+    # draw lines from SNPs to chromosome line
+    chrPlotRatio = num_SNPs_to_plot / (positionMax - positionMin)
+    for i in eachindex(SNP_positions_subset2)
+        CairoMakie.lines!([i, i], [topHatchLine_y1, topHatchLine_y2], color="grey20", linewidth=1)
+        CairoMakie.lines!([i, 0.5 + chrPlotRatio * (SNP_positions_subset2[i] - positionMin)], [topHatchLine_y2, lowHatchLine_y1], color="grey20", linewidth=1)
+        CairoMakie.lines!([0.5 + chrPlotRatio * (SNP_positions_subset2[i] - positionMin), 0.5 + chrPlotRatio * (SNP_positions_subset2[i] - positionMin)], [lowHatchLine_y1, lowHatchLine_y2], color="grey20", linewidth=1)
+    end
+    display(f)
+    return f, sorted_SNP_genotypes_subset2, SNP_positions_subset2, sorted_indMetadata_subset
+end
+
+end # of module SNPlots

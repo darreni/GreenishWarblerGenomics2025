@@ -1,0 +1,1355 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Darren Irwin">
+<meta name="dcterms.date" content="2023-09-10">
+
+<title>Greenish Warbler Genomic Analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="GreenishWarblerGenomics2023_files/libs/clipboard/clipboard.min.js"></script>
+<script src="GreenishWarblerGenomics2023_files/libs/quarto-html/quarto.js"></script>
+<script src="GreenishWarblerGenomics2023_files/libs/quarto-html/popper.min.js"></script>
+<script src="GreenishWarblerGenomics2023_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="GreenishWarblerGenomics2023_files/libs/quarto-html/anchor.min.js"></script>
+<link href="GreenishWarblerGenomics2023_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="GreenishWarblerGenomics2023_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="GreenishWarblerGenomics2023_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="GreenishWarblerGenomics2023_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="GreenishWarblerGenomics2023_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="GreenishWarblerGenomics2023.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Greenish Warbler Genomic Analysis</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Darren Irwin </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">September 10, 2023</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+</header>
+
+<p>This page contains notes and code describing the data analysis for a manuscript on Greenish Warbler genomics. I’ve been working with the data for several years, and the R and then Julia code has been in development for a while. This is a Quarto notebook, which can run and display the results of Julia (or other) code blocks, along with text narration, and output in html, pdf, Word, etc.</p>
+<p>The Julia code here is loosely based on R code written for Greenish Warbler analysis (Irwin et al.&nbsp;2016), and then the North American warbler analyses (Irwin et al.&nbsp;2019), and then my (unpublished) 2019 Greenish Warbler analysis. Most recently, this was adapted from the scripts called GW2022_R_analysis_script.R and IrwinLabGenomicsAnalysisScript.jl but has had a lot of opimizations since then. The SNP data here are a result of GBS reads mapped to our new 2022 Biozeron genome assembly for a greenish warbler from southern China.</p>
+<section id="load-packages" class="level2">
+<h2 class="anchored" data-anchor-id="load-packages">Load packages</h2>
+<p>If running this for the first time, you will need to load packages used in the script, so run what is in this section below. It will take some time to install and precompile the packages:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> <span class="bu">Pkg; Pkg</span>.<span class="fu">add</span>(<span class="st">"CSV"</span>) <span class="co"># took less than a minute</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">Pkg</span>.<span class="fu">add</span>(<span class="st">"DataFrames"</span>) <span class="co"># took about a minute</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="bu">Pkg</span>.<span class="fu">add</span>(<span class="st">"Plots"</span>) <span class="co"># seems to install and working more simply than Makie (but less powerful)</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="bu">Pkg</span>.<span class="fu">add</span>(<span class="st">"Haversine"</span>) <span class="co"># for great circle (Haversine) distances</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="bu">Pkg</span>.<span class="fu">add</span>(<span class="st">"Distributions"</span>) <span class="co"># this seemed to fix a problem installing GLMakie</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="bu">Pkg</span>.<span class="fu">add</span>(<span class="st">"MultivariateStats"</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="bu">Pkg</span>.<span class="fu">add</span>(<span class="st">"StatsBase"</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="bu">Pkg</span>.<span class="fu">add</span>(<span class="st">"Impute"</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="bu">Pkg</span>.<span class="fu">add</span>(<span class="st">"JLD2"</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="bu">Pkg</span>.<span class="fu">add</span>(<span class="st">"CairoMakie"</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="bu">Pkg</span>.<span class="fu">add</span>(<span class="st">"PrettyTables"</span>) <span class="co"># for printing nice tables to REPL</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now actually load those packages into the Julia session:</p>
+<div class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CSV </span><span class="co"># for reading in delimited files</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">DataFrames </span><span class="co"># for storing data as type DataFrame</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Haversine </span><span class="co"># for calculating Great Circle (haversine) distances between sites</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">MultivariateStats </span><span class="co"># for Principal Coordinates Analysis (multidimensional scaling)</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">DelimitedFiles </span><span class="co"># for reading delimited files (the genotypic data)</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Impute </span><span class="co"># for imputing missing genotypes</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">JLD2 </span><span class="co"># for saving data</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CairoMakie </span><span class="co"># for plots</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">activate!</span>()  <span class="co"># this makes CairoMakie the main package for figures (in case another already loaded)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Load my custom package <code>SNPlots</code>:</p>
+<div class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">include</span>(<span class="st">"SNPlots.jl"</span>) <span class="co"># load file containing custom-built functions</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">.SNPlots </span><span class="co"># actually make SNPlots module available with SNPlots.functionName(),</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># or if functions are exported from SNPlots then they are available.</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Test Julia:</p>
+<div class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>x <span class="op">=</span> <span class="fl">1</span>; y <span class="op">=</span> <span class="fl">2</span>; z <span class="op">=</span> x<span class="op">+</span>y</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"z = "</span>, z)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>z = 3</code></pre>
+</div>
+</div>
+<p>(If Quarto is calling Julia properly, you will see <code>z = 3</code> as the output of the code block above.)</p>
+<p>Choose working directory:</p>
+<div class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(<span class="st">"/Users/darrenirwin/Dropbox/Darren's current work/"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="ok-lets-load-the-genomic-data" class="level2">
+<h2 class="anchored" data-anchor-id="ok-lets-load-the-genomic-data"><em>OK, let’s load the genomic data!</em></h2>
+<div class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># choose path and filename for the 012NA files</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>baseName <span class="op">=</span> <span class="st">"GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>filenameTextMiddle <span class="op">=</span> <span class="st">".max2allele_noindel.vcf.maxmiss"</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># indicate percent threshold for missing genotypes for each SNP--</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># this was set by earlier filtering, and is just a record-keeper for the filenames:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>missingGenotypeThreshold <span class="op">=</span> <span class="fl">60</span> </span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>filenameTextEnd <span class="op">=</span> <span class="st">".MQ20.lowHet.tab"</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>tagName <span class="op">=</span> <span class="st">".Aug2023."</span>   <span class="co"># choose a tag name for this analysis</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co"># indicate name of metadata file, a text file with these column headings:</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co"># ID    location    group   Fst_group   plot_order</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>metadataFile <span class="op">=</span> <span class="st">"GW_genomics_2022_with_new_genome/GW_all4plates.Fst_groups.txt"</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co"># load metadata</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>metadata <span class="op">=</span> <span class="fu">DataFrame</span>(CSV.<span class="fu">File</span>(metadataFile)) <span class="co"># the CSV.File function interprets the correct delimiter</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>num_metadata_cols <span class="op">=</span> <span class="fu">ncol</span>(metadata)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>num_individuals <span class="op">=</span> <span class="fu">nrow</span>(metadata) </span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co"># read in individual names for this dataset</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>individuals_file_name <span class="op">=</span> <span class="fu">string</span>(baseName, filenameTextMiddle, missingGenotypeThreshold, filenameTextEnd, <span class="st">".012.indv"</span>)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>ind <span class="op">=</span> <span class="fu">DataFrame</span>(CSV.<span class="fu">File</span>(individuals_file_name; header<span class="op">=</span>[<span class="st">"ind"</span>], types<span class="op">=</span>[<span class="dt">String</span>])) </span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>indNum <span class="op">=</span> <span class="fu">size</span>(ind, <span class="fl">1</span>) <span class="co"># number of individuals</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> num_individuals <span class="op">!=</span> indNum</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"WARNING: number of rows in metadata file different than number of individuals in .indv file"</span>)</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="co"># read in position data for this dataset</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>position_file_name <span class="op">=</span> <span class="fu">string</span>(baseName, filenameTextMiddle, missingGenotypeThreshold, filenameTextEnd, <span class="st">".012.pos"</span>)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>pos_whole_genome <span class="op">=</span> <span class="fu">DataFrame</span>(CSV.<span class="fu">File</span>(position_file_name; header<span class="op">=</span>[<span class="st">"chrom"</span>, <span class="st">"position"</span>], types<span class="op">=</span>[<span class="dt">String</span>, <span class="dt">Int</span>]))</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a><span class="co"># read in genotype data</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>column_names <span class="op">=</span> [<span class="st">"null"</span>; <span class="fu">string</span>.(<span class="st">"c."</span>, pos_whole_genome.chrom, <span class="st">"."</span>, pos_whole_genome.position)]    </span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>genotype_file_name <span class="op">=</span> <span class="fu">string</span>(baseName, filenameTextMiddle, missingGenotypeThreshold, filenameTextEnd, <span class="st">".012minus1"</span>) </span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> <span class="cf">if</span> <span class="fl">1</span> <span class="op">&lt;=</span> indNum <span class="op">&lt;=</span> <span class="fl">127</span>   </span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    geno <span class="op">=</span> <span class="fu">readdlm</span>(genotype_file_name, <span class="ch">'\t'</span>, <span class="dt">Int8</span>, <span class="ch">'\n'</span>); <span class="co"># this has been sped up dramatically, by first coverting "NA" to -1</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a><span class="cf">elseif</span> <span class="fl">128</span> <span class="op">&lt;=</span> indNum <span class="op">&lt;=</span> <span class="fl">32767</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>    geno <span class="op">=</span> <span class="fu">readdlm</span>(genotype_file_name, <span class="ch">'\t'</span>, <span class="dt">Int16</span>, <span class="ch">'\n'</span>); <span class="co"># this needed for first column, which is number of individual; Int16 not much slower on import than Int8</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">"Error: Number of individuals in .indv appears outside of range from 1 to 32767"</span>)</span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>loci_count <span class="op">=</span> <span class="fu">size</span>(geno, <span class="fl">2</span>) <span class="op">-</span> <span class="fl">1</span>   <span class="co"># because the first column is not a SNP (just a count from zero)</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">string</span>(<span class="st">"Read in genotypic data at "</span>, loci_count,<span class="st">" loci for "</span>, indNum, <span class="st">" individuals. </span><span class="sc">\n</span><span class="st">"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code> 52.515527 seconds (3.61 M allocations: 9.585 GiB, 0.20% gc time, 0.67% compilation time)
+Read in genotypic data at 2431709 loci for 310 individuals. </code></pre>
+</div>
+</div>
+<section id="check-that-individuals-are-same-in-genotype-data-and-metadata" class="level3">
+<h3 class="anchored" data-anchor-id="check-that-individuals-are-same-in-genotype-data-and-metadata">Check that individuals are same in genotype data and metadata</h3>
+<div class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>ind_with_metadata <span class="op">=</span> <span class="fu">hcat</span>(ind, metadata)</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(ind_with_metadata)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)  <span class="co"># prints a line break </span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="fu">isequal</span>(ind_with_metadata.ind, ind_with_metadata.ID)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"GOOD NEWS: names of individuals in metadata file and genotype ind file match perfectly."</span>)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"WARNING: names of individuals in metadata file and genotype ind file do not completely match."</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>310×6 DataFrame
+ Row │ ind                             ID                              location  group           Fst_group       plot_order 
+     │ String                          String31                        String7   String15        String15        Float64    
+─────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   1 │ GW_Armando_plate1_AB1           GW_Armando_plate1_AB1           AB_rep    vir_rep         vir_rep             20.01
+   2 │ GW_Armando_plate1_JF07G02       GW_Armando_plate1_JF07G02       ST        plumb           plumb               87.001
+   3 │ GW_Armando_plate1_JF07G03       GW_Armando_plate1_JF07G03       ST        plumb           plumb               87.002
+   4 │ GW_Armando_plate1_JF07G04       GW_Armando_plate1_JF07G04       ST        plumb           plumb               87.003
+   5 │ GW_Armando_plate1_JF08G02       GW_Armando_plate1_JF08G02       ST        plumb           plumb               87.004
+   6 │ GW_Armando_plate1_JF09G01       GW_Armando_plate1_JF09G01       ST        plumb           plumb               87.005
+   7 │ GW_Armando_plate1_JF09G02       GW_Armando_plate1_JF09G02       ST        plumb           plumb               87.006
+   8 │ GW_Armando_plate1_JF10G03       GW_Armando_plate1_JF10G03       ST        plumb_vir       plumb_vir           77.91
+   9 │ GW_Armando_plate1_JF11G01       GW_Armando_plate1_JF11G01       ST        plumb           plumb               87.008
+  10 │ GW_Armando_plate1_JF12G01       GW_Armando_plate1_JF12G01       ST        plumb           plumb               87.009
+  11 │ GW_Armando_plate1_JF12G02       GW_Armando_plate1_JF12G02       ST        plumb           plumb               87.01
+  12 │ GW_Armando_plate1_JF12G04       GW_Armando_plate1_JF12G04       ST_vi     vir             vir                 24.001
+  13 │ GW_Armando_plate1_JF13G01       GW_Armando_plate1_JF13G01       ST        plumb           plumb               87.011
+  14 │ GW_Armando_plate1_JF15G03       GW_Armando_plate1_JF15G03       KK        plumb           plumb               87.012
+  15 │ GW_Armando_plate1_JF16G01       GW_Armando_plate1_JF16G01       KK_vi     plumb_vir       vir                 24.041
+  16 │ GW_Armando_plate1_JF20G01       GW_Armando_plate1_JF20G01       KK        plumb           plumb               87.014
+  17 │ GW_Armando_plate1_JF22G01       GW_Armando_plate1_JF22G01       KK        plumb           plumb               87.015
+  18 │ GW_Armando_plate1_JF23G01       GW_Armando_plate1_JF23G01       KK        plumb           plumb               87.016
+  19 │ GW_Armando_plate1_JF23G02       GW_Armando_plate1_JF23G02       KK        plumb           plumb               87.017
+  20 │ GW_Armando_plate1_JF24G02       GW_Armando_plate1_JF24G02       KK        plumb           plumb               87.018
+  21 │ GW_Armando_plate1_JF26G01       GW_Armando_plate1_JF26G01       ST        plumb           plumb               87.019
+  22 │ GW_Armando_plate1_JF27G01       GW_Armando_plate1_JF27G01       ST        plumb           plumb               87.02
+  23 │ GW_Armando_plate1_JF29G01       GW_Armando_plate1_JF29G01       ST        plumb           plumb               87.021
+  24 │ GW_Armando_plate1_JF29G02       GW_Armando_plate1_JF29G02       ST        plumb           plumb               87.022
+  25 │ GW_Armando_plate1_JF29G03       GW_Armando_plate1_JF29G03       ST        plumb           plumb               87.023
+  26 │ GW_Armando_plate1_JG02G02       GW_Armando_plate1_JG02G02       KK        plumb           plumb               87.024
+  27 │ GW_Armando_plate1_JG02G04       GW_Armando_plate1_JG02G04       KK        plumb           plumb               87.025
+  28 │ GW_Armando_plate1_JG08G01       GW_Armando_plate1_JG08G01       ST        plumb           plumb               87.026
+  29 │ GW_Armando_plate1_JG08G02       GW_Armando_plate1_JG08G02       ST        plumb           plumb               87.027
+  30 │ GW_Armando_plate1_JG10G01       GW_Armando_plate1_JG10G01       ST        plumb           plumb               87.028
+  31 │ GW_Armando_plate1_JG12G01       GW_Armando_plate1_JG12G01       ST        plumb           plumb               87.029
+  32 │ GW_Armando_plate1_JG17G01       GW_Armando_plate1_JG17G01       ST        plumb_vir       plumb               77.92
+  33 │ GW_Armando_plate1_NO_BC_TTGW05  GW_Armando_plate1_NO_BC_TTGW05  blank     blank           blank              -99.0
+  34 │ GW_Armando_plate1_NO_DNA        GW_Armando_plate1_NO_DNA        blank     blank           blank              -99.0
+  35 │ GW_Armando_plate1_RF20G01       GW_Armando_plate1_RF20G01       BJ        obs_plumb       plumb_BJ            77.501
+  36 │ GW_Armando_plate1_RF29G02       GW_Armando_plate1_RF29G02       BJ        obs_plumb       plumb_BJ            77.502
+  37 │ GW_Armando_plate1_TL3           GW_Armando_plate1_TL3           TL_rep    vir_rep         vir_rep             11.01
+  38 │ GW_Armando_plate1_TTGW01        GW_Armando_plate1_TTGW01        MN        troch_MN        troch_west          53.0
+  39 │ GW_Armando_plate1_TTGW05_rep1   GW_Armando_plate1_TTGW05_rep1   MN_rep    troch_MN_rep    troch_west_rep      53.0
+  40 │ GW_Armando_plate1_TTGW05_rep2   GW_Armando_plate1_TTGW05_rep2   MN_rep    troch_MN_rep    troch_west_rep      53.0
+  41 │ GW_Armando_plate1_TTGW06        GW_Armando_plate1_TTGW06        SU        lud_Sukhto      lud_central         47.0
+  42 │ GW_Armando_plate1_TTGW07        GW_Armando_plate1_TTGW07        SU        lud_Sukhto      lud_central         47.0
+  43 │ GW_Armando_plate1_TTGW10        GW_Armando_plate1_TTGW10        SU        lud_Sukhto      lud_central         47.0
+  44 │ GW_Armando_plate1_TTGW11        GW_Armando_plate1_TTGW11        SU        lud_Sukhto      lud_central         47.0
+  45 │ GW_Armando_plate1_TTGW13        GW_Armando_plate1_TTGW13        TH        lud_Thallighar  lud_central         43.0
+  46 │ GW_Armando_plate1_TTGW17        GW_Armando_plate1_TTGW17        TH        lud_Thallighar  lud_central         43.0
+  47 │ GW_Armando_plate1_TTGW19        GW_Armando_plate1_TTGW19        TH        lud_Thallighar  lud_central         43.0
+  48 │ GW_Armando_plate1_TTGW21        GW_Armando_plate1_TTGW21        SR        lud_Sural       lud_central         45.0
+  49 │ GW_Armando_plate1_TTGW22        GW_Armando_plate1_TTGW22        SR        lud_Sural       lud_central         45.0
+  50 │ GW_Armando_plate1_TTGW23        GW_Armando_plate1_TTGW23        SR        lud_Sural       lud_central         45.0
+  51 │ GW_Armando_plate1_TTGW29        GW_Armando_plate1_TTGW29        SR        lud_Sural       lud_central         45.0
+  52 │ GW_Armando_plate1_TTGW52        GW_Armando_plate1_TTGW52        NG        lud_Nainaghar   lud_central         49.0
+  53 │ GW_Armando_plate1_TTGW53        GW_Armando_plate1_TTGW53        NG        lud_Nainaghar   lud_central         49.0
+  54 │ GW_Armando_plate1_TTGW55        GW_Armando_plate1_TTGW55        NG        lud_Nainaghar   lud_central         49.0
+  55 │ GW_Armando_plate1_TTGW57        GW_Armando_plate1_TTGW57        NG        lud_Nainaghar   lud_central         49.0
+  56 │ GW_Armando_plate1_TTGW58        GW_Armando_plate1_TTGW58        NG        lud_Nainaghar   lud_central         49.0
+  57 │ GW_Armando_plate1_TTGW59        GW_Armando_plate1_TTGW59        NG        lud_Nainaghar   lud_central         49.0
+  58 │ GW_Armando_plate1_TTGW63        GW_Armando_plate1_TTGW63        SP        lud_Spiti       troch_west          55.0
+  59 │ GW_Armando_plate1_TTGW64        GW_Armando_plate1_TTGW64        SP        lud_Spiti       troch_west          55.0
+  60 │ GW_Armando_plate1_TTGW65        GW_Armando_plate1_TTGW65        SP        lud_Spiti       troch_west          55.0
+  61 │ GW_Armando_plate1_TTGW66        GW_Armando_plate1_TTGW66        SP        lud_Spiti       troch_west          55.0
+  62 │ GW_Armando_plate1_TTGW68        GW_Armando_plate1_TTGW68        SP        lud_Spiti       troch_west          55.0
+  63 │ GW_Armando_plate1_TTGW70        GW_Armando_plate1_TTGW70        SA        lud_Sathrundi   lud_Sath            41.0
+  64 │ GW_Armando_plate1_TTGW71        GW_Armando_plate1_TTGW71        SA        lud_Sathrundi   lud_Sath            41.0
+  65 │ GW_Armando_plate1_TTGW72        GW_Armando_plate1_TTGW72        SA        lud_Sathrundi   lud_Sath            41.0
+  66 │ GW_Armando_plate1_TTGW74        GW_Armando_plate1_TTGW74        SA        lud_Sathrundi   lud_Sath            41.0
+  67 │ GW_Armando_plate1_TTGW78        GW_Armando_plate1_TTGW78        SA        lud_Sathrundi   lud_Sath            41.0
+  68 │ GW_Armando_plate1_TTGW_15_05    GW_Armando_plate1_TTGW_15_05    SR        lud_Sural       lud_central         45.0
+  69 │ GW_Armando_plate1_TTGW_15_07    GW_Armando_plate1_TTGW_15_07    SR        lud_Sural       lud_central         45.0
+  70 │ GW_Armando_plate1_TTGW_15_08    GW_Armando_plate1_TTGW_15_08    SR        lud_Sural       lud_central         45.0
+  71 │ GW_Armando_plate1_TTGW_15_09    GW_Armando_plate1_TTGW_15_09    SR        lud_Sural       lud_central         45.0
+  72 │ GW_Armando_plate1_UY1           GW_Armando_plate1_UY1           UY_rep    plumb_rep       plumb_rep           88.01
+  73 │ GW_Armando_plate2_IL2           GW_Armando_plate2_IL2           IL_rep    plumb_rep       plumb_rep           83.01
+  74 │ GW_Armando_plate2_JE31G01       GW_Armando_plate2_JE31G01       KK_vi     vir_misID       vir                 24.002
+  75 │ GW_Armando_plate2_JF03G01       GW_Armando_plate2_JF03G01       ST_vi     vir_misID       vir                 24.003
+  76 │ GW_Armando_plate2_JF03G02       GW_Armando_plate2_JF03G02       KK_vi     vir_misID       vir                 24.004
+  77 │ GW_Armando_plate2_JF07G01       GW_Armando_plate2_JF07G01       ST        plumb           plumb               87.031
+  78 │ GW_Armando_plate2_JF08G04       GW_Armando_plate2_JF08G04       ST        plumb           plumb               87.032
+  79 │ GW_Armando_plate2_JF10G02       GW_Armando_plate2_JF10G02       ST        plumb           plumb               87.033
+  80 │ GW_Armando_plate2_JF11G02       GW_Armando_plate2_JF11G02       ST        plumb           plumb               87.034
+  81 │ GW_Armando_plate2_JF12G03       GW_Armando_plate2_JF12G03       ST        plumb           plumb               87.035
+  82 │ GW_Armando_plate2_JF12G05       GW_Armando_plate2_JF12G05       ST        plumb           plumb               87.036
+  83 │ GW_Armando_plate2_JF13G02       GW_Armando_plate2_JF13G02       ST        plumb           plumb               87.037
+  84 │ GW_Armando_plate2_JF14G01       GW_Armando_plate2_JF14G01       KK        plumb           plumb               87.038
+  85 │ GW_Armando_plate2_JF14G02       GW_Armando_plate2_JF14G02       KK        plumb           plumb               87.039
+  86 │ GW_Armando_plate2_JF15G01       GW_Armando_plate2_JF15G01       KK        plumb           plumb               87.04
+  87 │ GW_Armando_plate2_JF15G02       GW_Armando_plate2_JF15G02       KK        plumb           plumb               87.041
+  88 │ GW_Armando_plate2_JF16G02       GW_Armando_plate2_JF16G02       KK_vi     plumb_vir       vir                 24.042
+  89 │ GW_Armando_plate2_JF19G01       GW_Armando_plate2_JF19G01       KK        plumb           plumb               87.043
+  90 │ GW_Armando_plate2_JF20G02       GW_Armando_plate2_JF20G02       KK        plumb           plumb               87.044
+  91 │ GW_Armando_plate2_JF24G01       GW_Armando_plate2_JF24G01       KK        plumb           plumb               87.045
+  92 │ GW_Armando_plate2_JF24G03       GW_Armando_plate2_JF24G03       ST        plumb           plumb               87.046
+  93 │ GW_Armando_plate2_JF25G01       GW_Armando_plate2_JF25G01       KK        plumb           plumb               87.047
+  94 │ GW_Armando_plate2_JF26G02       GW_Armando_plate2_JF26G02       KK        plumb           plumb               87.048
+  95 │ GW_Armando_plate2_JF27G02       GW_Armando_plate2_JF27G02       KK        plumb           plumb               87.049
+  96 │ GW_Armando_plate2_JF30G01       GW_Armando_plate2_JF30G01       ST_vi     vir_misID       vir                 24.005
+  97 │ GW_Armando_plate2_JG01G01       GW_Armando_plate2_JG01G01       KK        plumb           plumb               87.05
+  98 │ GW_Armando_plate2_JG02G01       GW_Armando_plate2_JG02G01       KK        plumb           plumb               87.051
+  99 │ GW_Armando_plate2_JG02G03       GW_Armando_plate2_JG02G03       KK        plumb           plumb               87.052
+ 100 │ GW_Armando_plate2_JG10G02       GW_Armando_plate2_JG10G02       ST        plumb           plumb               87.053
+ 101 │ GW_Armando_plate2_JG10G03       GW_Armando_plate2_JG10G03       ST        plumb           plumb               87.054
+ 102 │ GW_Armando_plate2_JG12G02       GW_Armando_plate2_JG12G02       ST        plumb           plumb               87.055
+ 103 │ GW_Armando_plate2_JG12G03       GW_Armando_plate2_JG12G03       ST        plumb           plumb               87.056
+ 104 │ GW_Armando_plate2_LN11          GW_Armando_plate2_LN11          LN_rep    troch_LN_rep    troch_LN_rep        65.01
+ 105 │ GW_Armando_plate2_LN2           GW_Armando_plate2_LN2           LN_rep    troch_LN_rep    troch_LN_rep        58.01
+ 106 │ GW_Armando_plate2_NO_BC_TTGW05  GW_Armando_plate2_NO_BC_TTGW05  KK        plumb           blank              -99.0
+ 107 │ GW_Armando_plate2_NO_DNA        GW_Armando_plate2_NO_DNA        blank     blank           blank              -99.0
+ 108 │ GW_Armando_plate2_RF29G01       GW_Armando_plate2_RF29G01       BJ        obs_plumb       plumb_BJ            77.503
+ 109 │ GW_Armando_plate2_TTGW02        GW_Armando_plate2_TTGW02        MN        troch_MN        troch_west          53.0
+ 110 │ GW_Armando_plate2_TTGW03        GW_Armando_plate2_TTGW03        MN        troch_MN        troch_west          53.0
+ 111 │ GW_Armando_plate2_TTGW05_rep3   GW_Armando_plate2_TTGW05_rep3   MN_rep    troch_MN_rep    troch_west_rep      53.0
+ 112 │ GW_Armando_plate2_TTGW05_rep4   GW_Armando_plate2_TTGW05_rep4   MN_rep    troch_MN_rep    troch_west_rep      53.0
+ 113 │ GW_Armando_plate2_TTGW08        GW_Armando_plate2_TTGW08        SU        lud_Sukhto      lud_central         47.0
+ 114 │ GW_Armando_plate2_TTGW09        GW_Armando_plate2_TTGW09        SU        lud_Sukhto      lud_central         47.0
+ 115 │ GW_Armando_plate2_TTGW12        GW_Armando_plate2_TTGW12        TH        lud_Thallighar  lud_central         43.0
+ 116 │ GW_Armando_plate2_TTGW14        GW_Armando_plate2_TTGW14        TH        lud_Thallighar  lud_central         43.0
+ 117 │ GW_Armando_plate2_TTGW15        GW_Armando_plate2_TTGW15        TH        lud_Thallighar  lud_central         43.0
+ 118 │ GW_Armando_plate2_TTGW16        GW_Armando_plate2_TTGW16        TH        lud_Thallighar  lud_central         43.0
+ 119 │ GW_Armando_plate2_TTGW18        GW_Armando_plate2_TTGW18        TH        lud_Thallighar  lud_central         43.0
+ 120 │ GW_Armando_plate2_TTGW20        GW_Armando_plate2_TTGW20        SR        lud_Sural       lud_central         45.0
+ 121 │ GW_Armando_plate2_TTGW24        GW_Armando_plate2_TTGW24        SR        lud_Sural       lud_central         45.0
+ 122 │ GW_Armando_plate2_TTGW25        GW_Armando_plate2_TTGW25        SR        lud_Sural       lud_central         45.0
+ 123 │ GW_Armando_plate2_TTGW27        GW_Armando_plate2_TTGW27        SR        lud_Sural       lud_central         45.0
+ 124 │ GW_Armando_plate2_TTGW28        GW_Armando_plate2_TTGW28        SR        lud_Sural       lud_central         45.0
+ 125 │ GW_Armando_plate2_TTGW50        GW_Armando_plate2_TTGW50        NG        lud_Nainaghar   lud_central         49.0
+ 126 │ GW_Armando_plate2_TTGW51        GW_Armando_plate2_TTGW51        NG        lud_Nainaghar   lud_central         49.0
+ 127 │ GW_Armando_plate2_TTGW54        GW_Armando_plate2_TTGW54        NG        lud_Nainaghar   lud_central         49.0
+ 128 │ GW_Armando_plate2_TTGW56        GW_Armando_plate2_TTGW56        NG        lud_Nainaghar   lud_central         49.0
+ 129 │ GW_Armando_plate2_TTGW60        GW_Armando_plate2_TTGW60        SP        lud_Spiti       troch_west          55.0
+ 130 │ GW_Armando_plate2_TTGW61        GW_Armando_plate2_TTGW61        SP        lud_Spiti       troch_west          55.0
+ 131 │ GW_Armando_plate2_TTGW62        GW_Armando_plate2_TTGW62        SP        lud_Spiti       troch_west          55.0
+ 132 │ GW_Armando_plate2_TTGW67        GW_Armando_plate2_TTGW67        SP        lud_Spiti       troch_west          55.0
+ 133 │ GW_Armando_plate2_TTGW69        GW_Armando_plate2_TTGW69        SP        lud_Spiti       troch_west          55.0
+ 134 │ GW_Armando_plate2_TTGW73        GW_Armando_plate2_TTGW73        SA        lud_Sathrundi   lud_Sath            41.0
+ 135 │ GW_Armando_plate2_TTGW75        GW_Armando_plate2_TTGW75        SA        lud_Sathrundi   lud_Sath            41.0
+ 136 │ GW_Armando_plate2_TTGW77        GW_Armando_plate2_TTGW77        SA        lud_Sathrundi   lud_Sath            41.0
+ 137 │ GW_Armando_plate2_TTGW79        GW_Armando_plate2_TTGW79        SA        lud_Sathrundi   lud_Sath            41.0
+ 138 │ GW_Armando_plate2_TTGW80        GW_Armando_plate2_TTGW80        SA        lud_Sathrundi   lud_Sath            41.0
+ 139 │ GW_Armando_plate2_TTGW_15_01    GW_Armando_plate2_TTGW_15_01    SR        lud_Sural       lud_central         45.0
+ 140 │ GW_Armando_plate2_TTGW_15_02    GW_Armando_plate2_TTGW_15_02    SR        lud_Sural       lud_central         45.0
+ 141 │ GW_Armando_plate2_TTGW_15_03    GW_Armando_plate2_TTGW_15_03    SR        lud_Sural       lud_central         45.0
+ 142 │ GW_Armando_plate2_TTGW_15_04    GW_Armando_plate2_TTGW_15_04    SR        lud_Sural       lud_central         45.0
+ 143 │ GW_Armando_plate2_TTGW_15_06    GW_Armando_plate2_TTGW_15_06    SR        lud_Sural       lud_central         45.0
+ 144 │ GW_Armando_plate2_TTGW_15_10    GW_Armando_plate2_TTGW_15_10    SR        lud_Sural       lud_central         45.0
+ 145 │ GW_Lane5_AA1                    GW_Lane5_AA1                    AA        vir_S           vir_S               25.0
+ 146 │ GW_Lane5_AA10                   GW_Lane5_AA10                   AA        vir_S           vir_S               33.0
+ 147 │ GW_Lane5_AA11                   GW_Lane5_AA11                   AA        vir_S           vir_S               34.0
+ 148 │ GW_Lane5_AA3                    GW_Lane5_AA3                    AA        vir_S           vir_S               26.0
+ 149 │ GW_Lane5_AA4                    GW_Lane5_AA4                    AA        vir_S           vir_S               27.0
+ 150 │ GW_Lane5_AA5                    GW_Lane5_AA5                    AA        vir_S           vir_S               28.0
+ 151 │ GW_Lane5_AA6                    GW_Lane5_AA6                    AA        vir_S           vir_S               29.0
+ 152 │ GW_Lane5_AA7                    GW_Lane5_AA7                    AA        vir_S           vir_S               30.0
+ 153 │ GW_Lane5_AA8                    GW_Lane5_AA8                    AA        vir_S           vir_S               31.0
+ 154 │ GW_Lane5_AA9                    GW_Lane5_AA9                    AA        vir_S           vir_S               32.0
+ 155 │ GW_Lane5_AB1                    GW_Lane5_AB1                    AB        vir             vir                 20.0
+ 156 │ GW_Lane5_AB2                    GW_Lane5_AB2                    AB        vir             vir                 21.0
+ 157 │ GW_Lane5_AN1                    GW_Lane5_AN1                    AN        plumb           plumb               80.0
+ 158 │ GW_Lane5_AN2                    GW_Lane5_AN2                    AN        plumb           plumb               81.0
+ 159 │ GW_Lane5_BK2                    GW_Lane5_BK2                    BK        plumb           plumb               78.0
+ 160 │ GW_Lane5_BK3                    GW_Lane5_BK3                    BK        plumb           plumb               79.0
+ 161 │ GW_Lane5_DA2                    GW_Lane5_DA2                    XN        obs             obs                 73.0
+ 162 │ GW_Lane5_DA3                    GW_Lane5_DA3                    XN        obs             obs                 74.0
+ 163 │ GW_Lane5_DA4                    GW_Lane5_DA4                    XN        obs             obs                 75.0
+ 164 │ GW_Lane5_DA6                    GW_Lane5_DA6                    XN        obs             low_reads           76.0
+ 165 │ GW_Lane5_DA7                    GW_Lane5_DA7                    XN        obs             obs                 77.0
+ 166 │ GW_Lane5_EM1                    GW_Lane5_EM1                    EM        troch_EM        troch_EM            72.0
+ 167 │ GW_Lane5_IL1                    GW_Lane5_IL1                    IL        plumb           plumb               82.0
+ 168 │ GW_Lane5_IL2                    GW_Lane5_IL2                    IL        plumb           plumb               83.0
+ 169 │ GW_Lane5_IL4                    GW_Lane5_IL4                    IL        plumb           plumb               84.0
+ 170 │ GW_Lane5_KS1                    GW_Lane5_KS1                    OV        lud_KS          lud_KS              40.0
+ 171 │ GW_Lane5_KS2                    GW_Lane5_KS2                    OV        lud_KS          lud_KS              40.0
+ 172 │ GW_Lane5_LN1                    GW_Lane5_LN1                    LN        troch_LN        troch_LN            57.0
+ 173 │ GW_Lane5_LN10                   GW_Lane5_LN10                   LN        troch_LN        troch_LN            64.0
+ 174 │ GW_Lane5_LN11                   GW_Lane5_LN11                   LN        troch_LN        troch_LN            65.0
+ 175 │ GW_Lane5_LN12                   GW_Lane5_LN12                   LN        troch_LN        troch_LN            66.0
+ 176 │ GW_Lane5_LN14                   GW_Lane5_LN14                   LN        troch_LN        troch_LN            67.0
+ 177 │ GW_Lane5_LN16                   GW_Lane5_LN16                   LN        troch_LN        troch_LN            68.0
+ 178 │ GW_Lane5_LN18                   GW_Lane5_LN18                   LN        troch_LN        troch_LN            69.0
+ 179 │ GW_Lane5_LN19                   GW_Lane5_LN19                   LN        troch_LN        troch_LN            70.0
+ 180 │ GW_Lane5_LN2                    GW_Lane5_LN2                    LN        troch_LN        troch_LN            58.0
+ 181 │ GW_Lane5_LN20                   GW_Lane5_LN20                   LN        troch_LN        troch_LN            71.0
+ 182 │ GW_Lane5_LN3                    GW_Lane5_LN3                    LN        troch_LN        troch_LN            59.0
+ 183 │ GW_Lane5_LN4                    GW_Lane5_LN4                    LN        troch_LN        troch_LN            60.0
+ 184 │ GW_Lane5_LN6                    GW_Lane5_LN6                    LN        troch_LN        troch_LN            61.0
+ 185 │ GW_Lane5_LN7                    GW_Lane5_LN7                    LN        troch_LN        troch_LN            62.0
+ 186 │ GW_Lane5_LN8                    GW_Lane5_LN8                    LN        troch_LN        troch_LN            63.0
+ 187 │ GW_Lane5_MN1                    GW_Lane5_MN1                    MN        troch_MN        troch_west          51.0
+ 188 │ GW_Lane5_MN12                   GW_Lane5_MN12                   MN        troch_MN        troch_west          56.0
+ 189 │ GW_Lane5_MN3                    GW_Lane5_MN3                    MN        troch_MN        troch_west          52.0
+ 190 │ GW_Lane5_MN5                    GW_Lane5_MN5                    MN        troch_MN        troch_west          53.0
+ 191 │ GW_Lane5_MN8                    GW_Lane5_MN8                    MN        troch_MN        troch_west          54.0
+ 192 │ GW_Lane5_MN9                    GW_Lane5_MN9                    MN        troch_MN        troch_west          55.0
+ 193 │ GW_Lane5_NA1                    GW_Lane5_NA1                    NR        lud_PK          lud_PK              39.2
+ 194 │ GW_Lane5_NA3-3ul                GW_Lane5_NA3-3ul                NR        lud_PK          lud_PK              39.2
+ 195 │ GW_Lane5_PT11                   GW_Lane5_PT11                   KL        lud_KL          lud_central         42.0
+ 196 │ GW_Lane5_PT12                   GW_Lane5_PT12                   KL        lud_KL          lud_central         42.0
+ 197 │ GW_Lane5_PT2                    GW_Lane5_PT2                    ML        lud_ML          lud_ML              51.0
+ 198 │ GW_Lane5_PT3                    GW_Lane5_PT3                    PA        lud_PA          lud_central         46.0
+ 199 │ GW_Lane5_PT4                    GW_Lane5_PT4                    PA        lud_PA          lud_central         46.0
+ 200 │ GW_Lane5_PT6                    GW_Lane5_PT6                    KL        lud_KL          lud_central         42.0
+ 201 │ GW_Lane5_SH1                    GW_Lane5_SH1                    PK        lud_PK          lud_PK              39.1
+ 202 │ GW_Lane5_SH2                    GW_Lane5_SH2                    PK        lud_PK          lud_PK              39.1
+ 203 │ GW_Lane5_SH4                    GW_Lane5_SH4                    PK        lud_PK          lud_PK              39.1
+ 204 │ GW_Lane5_SH5                    GW_Lane5_SH5                    PK        lud_PK          lud_PK              39.1
+ 205 │ GW_Lane5_SL1                    GW_Lane5_SL1                    SL        plumb           plumb               95.0
+ 206 │ GW_Lane5_SL2                    GW_Lane5_SL2                    SL        plumb           plumb               96.0
+ 207 │ GW_Lane5_ST1                    GW_Lane5_ST1                    ST        plumb           plumb               85.0
+ 208 │ GW_Lane5_ST12                   GW_Lane5_ST12                   ST        plumb           plumb               87.0
+ 209 │ GW_Lane5_ST3                    GW_Lane5_ST3                    ST        plumb           plumb               86.0
+ 210 │ GW_Lane5_STvi1                  GW_Lane5_STvi1                  STvi      vir             vir                 22.0
+ 211 │ GW_Lane5_STvi2                  GW_Lane5_STvi2                  STvi      vir             vir                 23.0
+ 212 │ GW_Lane5_STvi3                  GW_Lane5_STvi3                  STvi      vir             vir                 24.0
+ 213 │ GW_Lane5_TA1                    GW_Lane5_TA1                    TA        plumb           plumb               94.0
+ 214 │ GW_Lane5_TL1                    GW_Lane5_TL1                    TL        vir             vir                  9.0
+ 215 │ GW_Lane5_TL10                   GW_Lane5_TL10                   TL        vir             vir                 17.0
+ 216 │ GW_Lane5_TL11                   GW_Lane5_TL11                   TL        vir             vir                 18.0
+ 217 │ GW_Lane5_TL12                   GW_Lane5_TL12                   TL        vir             vir                 19.0
+ 218 │ GW_Lane5_TL2                    GW_Lane5_TL2                    TL        vir             vir                 10.0
+ 219 │ GW_Lane5_TL3                    GW_Lane5_TL3                    TL        vir             vir                 11.0
+ 220 │ GW_Lane5_TL4                    GW_Lane5_TL4                    TL        vir             vir                 12.0
+ 221 │ GW_Lane5_TL5                    GW_Lane5_TL5                    TL        vir             vir                 13.0
+ 222 │ GW_Lane5_TL7                    GW_Lane5_TL7                    TL        vir             vir                 14.0
+ 223 │ GW_Lane5_TL8                    GW_Lane5_TL8                    TL        vir             vir                 15.0
+ 224 │ GW_Lane5_TL9                    GW_Lane5_TL9                    TL        vir             vir                 16.0
+ 225 │ GW_Lane5_TU1                    GW_Lane5_TU1                    TU        nit             nit                 35.0
+ 226 │ GW_Lane5_TU2                    GW_Lane5_TU2                    TU        nit             nit                 36.0
+ 227 │ GW_Lane5_UY1                    GW_Lane5_UY1                    UY        plumb           plumb               88.0
+ 228 │ GW_Lane5_UY2                    GW_Lane5_UY2                    UY        plumb           plumb               89.0
+ 229 │ GW_Lane5_UY3                    GW_Lane5_UY3                    UY        plumb           plumb               90.0
+ 230 │ GW_Lane5_UY4                    GW_Lane5_UY4                    UY        plumb           plumb               91.0
+ 231 │ GW_Lane5_UY5                    GW_Lane5_UY5                    UY        plumb           plumb               92.0
+ 232 │ GW_Lane5_UY6                    GW_Lane5_UY6                    UY        plumb           plumb               93.0
+ 233 │ GW_Lane5_YK1                    GW_Lane5_YK1                    YK        vir             vir                  1.0
+ 234 │ GW_Lane5_YK11                   GW_Lane5_YK11                   YK        vir             vir                  8.0
+ 235 │ GW_Lane5_YK3                    GW_Lane5_YK3                    YK        vir             vir                  2.0
+ 236 │ GW_Lane5_YK4                    GW_Lane5_YK4                    YK        vir             vir                  3.0
+ 237 │ GW_Lane5_YK5                    GW_Lane5_YK5                    YK        vir             vir                  4.0
+ 238 │ GW_Lane5_YK6                    GW_Lane5_YK6                    YK        vir             vir                  5.0
+ 239 │ GW_Lane5_YK7                    GW_Lane5_YK7                    YK        vir             vir                  6.0
+ 240 │ GW_Lane5_YK9                    GW_Lane5_YK9                    YK        vir             vir                  7.0
+ 241 │ GW_Liz_GBS_Liz10045             GW_Liz_GBS_Liz10045             ML        lud             lud_ML              51.01
+ 242 │ GW_Liz_GBS_Liz10094             GW_Liz_GBS_Liz10094             ML        lud             lud_ML              51.02
+ 243 │ GW_Liz_GBS_Liz5101              GW_Liz_GBS_Liz5101              ML        lud             lud_ML              51.03
+ 244 │ GW_Liz_GBS_Liz5101_R            GW_Liz_GBS_Liz5101_R            ML_rep    lud_rep         lud_ML_rep          51.04
+ 245 │ GW_Liz_GBS_Liz5118              GW_Liz_GBS_Liz5118              ML        lud             lud_ML              51.05
+ 246 │ GW_Liz_GBS_Liz5139              GW_Liz_GBS_Liz5139              ML        lud             lud_ML              51.06
+ 247 │ GW_Liz_GBS_Liz5142              GW_Liz_GBS_Liz5142              ML        lud             lud_ML              51.07
+ 248 │ GW_Liz_GBS_Liz5144              GW_Liz_GBS_Liz5144              ML        lud             lud_ML              51.08
+ 249 │ GW_Liz_GBS_Liz5150              GW_Liz_GBS_Liz5150              ML        lud             lud_ML              51.09
+ 250 │ GW_Liz_GBS_Liz5159              GW_Liz_GBS_Liz5159              ML        lud_chick       lud_ML              51.1
+ 251 │ GW_Liz_GBS_Liz5162              GW_Liz_GBS_Liz5162              ML        lud_chick       lud_ML              51.11
+ 252 │ GW_Liz_GBS_Liz5163              GW_Liz_GBS_Liz5163              ML        lud_chick       lud_ML              51.12
+ 253 │ GW_Liz_GBS_Liz5164              GW_Liz_GBS_Liz5164              ML        lud_chick       lud_ML              51.13
+ 254 │ GW_Liz_GBS_Liz5165              GW_Liz_GBS_Liz5165              ML        lud             lud_ML              51.14
+ 255 │ GW_Liz_GBS_Liz5167              GW_Liz_GBS_Liz5167              ML        lud_chick       lud_ML              51.15
+ 256 │ GW_Liz_GBS_Liz5168              GW_Liz_GBS_Liz5168              ML        lud_chick       lud_ML              51.16
+ 257 │ GW_Liz_GBS_Liz5169              GW_Liz_GBS_Liz5169              ML        lud_chick       lud_ML              51.17
+ 258 │ GW_Liz_GBS_Liz5171              GW_Liz_GBS_Liz5171              ML        lud             lud_ML              51.18
+ 259 │ GW_Liz_GBS_Liz5172              GW_Liz_GBS_Liz5172              ML        lud_chick       lud_ML              51.19
+ 260 │ GW_Liz_GBS_Liz5173              GW_Liz_GBS_Liz5173              ML        lud_chick       lud_ML              51.2
+ 261 │ GW_Liz_GBS_Liz5174              GW_Liz_GBS_Liz5174              ML        lud             lud_ML              51.21
+ 262 │ GW_Liz_GBS_Liz5175              GW_Liz_GBS_Liz5175              ML        lud             lud_ML              51.22
+ 263 │ GW_Liz_GBS_Liz5176              GW_Liz_GBS_Liz5176              ML        lud             lud_ML              51.23
+ 264 │ GW_Liz_GBS_Liz5177              GW_Liz_GBS_Liz5177              ML        lud_chick       lud_ML              51.24
+ 265 │ GW_Liz_GBS_Liz5178              GW_Liz_GBS_Liz5178              ML        lud_chick       lud_ML              51.25
+ 266 │ GW_Liz_GBS_Liz5179              GW_Liz_GBS_Liz5179              ML        lud_chick       lud_ML              51.26
+ 267 │ GW_Liz_GBS_Liz5180              GW_Liz_GBS_Liz5180              ML        lud             lud_ML              51.27
+ 268 │ GW_Liz_GBS_Liz5182              GW_Liz_GBS_Liz5182              ML        lud_chick       lud_ML              51.28
+ 269 │ GW_Liz_GBS_Liz5184              GW_Liz_GBS_Liz5184              ML        lud_chick       lud_ML              51.29
+ 270 │ GW_Liz_GBS_Liz5185              GW_Liz_GBS_Liz5185              ML        lud             lud_ML              51.3
+ 271 │ GW_Liz_GBS_Liz5186              GW_Liz_GBS_Liz5186              ML        lud_chick       lud_ML              51.31
+ 272 │ GW_Liz_GBS_Liz5187              GW_Liz_GBS_Liz5187              ML        lud_chick       lud_ML              51.32
+ 273 │ GW_Liz_GBS_Liz5188              GW_Liz_GBS_Liz5188              ML        lud             lud_ML              51.33
+ 274 │ GW_Liz_GBS_Liz5189              GW_Liz_GBS_Liz5189              ML        lud_chick       lud_ML              51.34
+ 275 │ GW_Liz_GBS_Liz5190              GW_Liz_GBS_Liz5190              ML        lud_chick       lud_ML              51.35
+ 276 │ GW_Liz_GBS_Liz5191              GW_Liz_GBS_Liz5191              ML        lud_chick       lud_ML              51.36
+ 277 │ GW_Liz_GBS_Liz5192              GW_Liz_GBS_Liz5192              ML        lud_chick       lud_ML              51.37
+ 278 │ GW_Liz_GBS_Liz5193              GW_Liz_GBS_Liz5193              ML        lud_chick       lud_ML              51.38
+ 279 │ GW_Liz_GBS_Liz5194              GW_Liz_GBS_Liz5194              ML        lud_chick       lud_ML              51.39
+ 280 │ GW_Liz_GBS_Liz5195              GW_Liz_GBS_Liz5195              ML        lud             lud_ML              51.4
+ 281 │ GW_Liz_GBS_Liz5197              GW_Liz_GBS_Liz5197              ML        lud             lud_ML              51.41
+ 282 │ GW_Liz_GBS_Liz5199              GW_Liz_GBS_Liz5199              ML        lud_chick       lud_ML              51.42
+ 283 │ GW_Liz_GBS_Liz6002              GW_Liz_GBS_Liz6002              ML        lud             lud_ML              51.43
+ 284 │ GW_Liz_GBS_Liz6006              GW_Liz_GBS_Liz6006              ML        lud             lud_ML              51.44
+ 285 │ GW_Liz_GBS_Liz6008              GW_Liz_GBS_Liz6008              ML        lud             lud_ML              51.45
+ 286 │ GW_Liz_GBS_Liz6009              GW_Liz_GBS_Liz6009              ML        lud             lud_ML              51.46
+ 287 │ GW_Liz_GBS_Liz6010              GW_Liz_GBS_Liz6010              ML        lud             lud_ML              51.47
+ 288 │ GW_Liz_GBS_Liz6012              GW_Liz_GBS_Liz6012              ML        lud             lud_ML              51.48
+ 289 │ GW_Liz_GBS_Liz6014              GW_Liz_GBS_Liz6014              ML        lud             lud_ML              51.49
+ 290 │ GW_Liz_GBS_Liz6055              GW_Liz_GBS_Liz6055              ML        lud             lud_ML              51.5
+ 291 │ GW_Liz_GBS_Liz6057              GW_Liz_GBS_Liz6057              ML        lud             lud_ML              51.51
+ 292 │ GW_Liz_GBS_Liz6060              GW_Liz_GBS_Liz6060              ML        lud             lud_ML              51.52
+ 293 │ GW_Liz_GBS_Liz6062              GW_Liz_GBS_Liz6062              ML        lud             lud_ML              51.53
+ 294 │ GW_Liz_GBS_Liz6063              GW_Liz_GBS_Liz6063              ML        lud             lud_ML              51.54
+ 295 │ GW_Liz_GBS_Liz6066              GW_Liz_GBS_Liz6066              ML        lud             lud_ML              51.55
+ 296 │ GW_Liz_GBS_Liz6072              GW_Liz_GBS_Liz6072              ML        lud             lud_ML              51.56
+ 297 │ GW_Liz_GBS_Liz6079              GW_Liz_GBS_Liz6079              ML        lud             lud_ML              51.57
+ 298 │ GW_Liz_GBS_Liz6203              GW_Liz_GBS_Liz6203              ML        lud_chick       lud_ML              51.58
+ 299 │ GW_Liz_GBS_Liz6204              GW_Liz_GBS_Liz6204              ML        lud_chick       lud_ML              51.59
+ 300 │ GW_Liz_GBS_Liz6461              GW_Liz_GBS_Liz6461              ML        lud             lud_ML              51.6
+ 301 │ GW_Liz_GBS_Liz6472              GW_Liz_GBS_Liz6472              ML        lud             lud_ML              51.61
+ 302 │ GW_Liz_GBS_Liz6478              GW_Liz_GBS_Liz6478              ML        lud             lud_ML              51.62
+ 303 │ GW_Liz_GBS_Liz6766              GW_Liz_GBS_Liz6766              ML        lud             lud_ML              51.63
+ 304 │ GW_Liz_GBS_Liz6776              GW_Liz_GBS_Liz6776              ML        lud             lud_ML              51.64
+ 305 │ GW_Liz_GBS_Liz6794              GW_Liz_GBS_Liz6794              ML        lud             lud_ML              51.65
+ 306 │ GW_Liz_GBS_P_fusc               GW_Liz_GBS_P_fusc               fusc      fusc            fusc               101.0
+ 307 │ GW_Liz_GBS_P_h_man              GW_Liz_GBS_P_h_man              hmand     hmand           hmand              102.0
+ 308 │ GW_Liz_GBS_P_humei              GW_Liz_GBS_P_humei              hume      hume            hume               103.0
+ 309 │ GW_Liz_GBS_P_inor               GW_Liz_GBS_P_inor               inor      inor            inor               104.0
+ 310 │ GW_Liz_GBS_S_burk               GW_Liz_GBS_S_burk               burk      burk            burk               105.0
+GOOD NEWS: names of individuals in metadata file and genotype ind file match perfectly.</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="filtering" class="level2">
+<h2 class="anchored" data-anchor-id="filtering">Filtering</h2>
+<section id="filter-specific-individuals" class="level4">
+<h4 class="anchored" data-anchor-id="filter-specific-individuals">Filter specific individuals</h4>
+<p>If there are certain individuals that we want to filter out prior to any additional analysis, we can do so here by setting filter to <code>true</code> and specifying the individual row numbers in <code>filter_out_inds</code>:</p>
+<div class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>filter <span class="op">=</span> <span class="cn">false</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>filter_out_inds <span class="op">=</span> [] <span class="co"># if filtering out individuals, specify their row number here, e.g. "[20, 103]"</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> filter</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Specify individuals to filter out:</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    ind_with_metadata_indFiltered <span class="op">=</span> ind_with_metadata[<span class="fu">Not</span>(filter_out_inds), <span class="op">:</span>]</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    geno_indFiltered <span class="op">=</span> geno[<span class="fu">Not</span>(filter_out_inds), <span class="op">:</span>]</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Specific individuals filtered out as requested"</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    ind_with_metadata_indFiltered <span class="op">=</span> ind_with_metadata</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    geno_indFiltered <span class="op">=</span> geno</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"No specific individuals requested to be filtered out"</span>)</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>No specific individuals requested to be filtered out</code></pre>
+</div>
+</div>
+</section>
+<section id="filter-individuals-based-on-missing-genotypes" class="level4">
+<h4 class="anchored" data-anchor-id="filter-individuals-based-on-missing-genotypes">Filter individuals based on missing genotypes</h4>
+<p>Here we determine number of missing SNPs per bird (40% for this round), and filter out those with more than a certain percent of missing SNPs:</p>
+<div class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>SNPmissing_percent_allowed_per_ind <span class="op">=</span> <span class="fl">40</span>   <span class="co"># this is the percentage threshold</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>threshold_missing <span class="op">=</span> loci_count <span class="op">*</span> SNPmissing_percent_allowed_per_ind<span class="op">/</span><span class="fl">100</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>numMissings <span class="op">=</span> <span class="fu">sum</span>(geno <span class="op">.==</span> <span class="op">-</span><span class="fl">1</span>, dims<span class="op">=</span><span class="fl">2</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>selection <span class="op">=</span> <span class="fu">vec</span>(numMissings <span class="op">.&lt;=</span> threshold_missing) <span class="co"># the vec command converts to BitVector rather than BitMatrix--important below</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>geno_indFiltered <span class="op">=</span> geno_indFiltered[selection, <span class="op">:</span>]</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Filtering out these individuals based on too many missing genotypes: "</span>, ind_with_metadata_indFiltered.ind[selection<span class="op">.==</span><span class="cn">false</span>])</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered <span class="op">=</span> ind_with_metadata_indFiltered[selection, <span class="op">:</span>];</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Filtering out these individuals based on too many missing genotypes: ["GW_Armando_plate1_JG08G02", "GW_Armando_plate1_JG10G01", "GW_Armando_plate1_NO_BC_TTGW05", "GW_Armando_plate1_NO_DNA", "GW_Armando_plate1_TTGW21", "GW_Armando_plate1_TTGW71", "GW_Armando_plate2_NO_BC_TTGW05", "GW_Armando_plate2_NO_DNA", "GW_Armando_plate2_TTGW15", "GW_Lane5_AA10", "GW_Lane5_DA6", "GW_Lane5_LN11", "GW_Liz_GBS_Liz5101", "GW_Liz_GBS_Liz5101_R", "GW_Liz_GBS_Liz5118", "GW_Liz_GBS_Liz5139", "GW_Liz_GBS_Liz5142", "GW_Liz_GBS_Liz5150", "GW_Liz_GBS_Liz5159", "GW_Liz_GBS_Liz5162", "GW_Liz_GBS_Liz5169", "GW_Liz_GBS_Liz5171", "GW_Liz_GBS_Liz5172", "GW_Liz_GBS_Liz5174", "GW_Liz_GBS_Liz5176", "GW_Liz_GBS_Liz5177", "GW_Liz_GBS_Liz5180", "GW_Liz_GBS_Liz5186", "GW_Liz_GBS_Liz5187", "GW_Liz_GBS_Liz5192", "GW_Liz_GBS_Liz5195", "GW_Liz_GBS_Liz6012", "GW_Liz_GBS_Liz6203", "GW_Liz_GBS_Liz6766", "GW_Liz_GBS_P_fusc", "GW_Liz_GBS_P_h_man", "GW_Liz_GBS_P_humei", "GW_Liz_GBS_P_inor", "GW_Liz_GBS_S_burk"]</code></pre>
+</div>
+</div>
+</section>
+<section id="filter-snps-with-too-many-missing-genotypes" class="level4">
+<h4 class="anchored" data-anchor-id="filter-snps-with-too-many-missing-genotypes">Filter SNPs with too many missing genotypes:</h4>
+<div class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># (remember that first column is arbitrary row number in input file)</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>missing_genotypes_per_SNP <span class="op">=</span> <span class="fu">sum</span>(geno_indFiltered <span class="op">.==</span> <span class="op">-</span><span class="fl">1</span>, dims<span class="op">=</span><span class="fl">1</span>)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>missing_genotypes_percent_allowed_per_site <span class="op">=</span> <span class="fl">5</span>   <span class="co"># this is the percentage threshold</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>threshold_genotypes_missing <span class="op">=</span> <span class="fu">size</span>(geno_indFiltered)[<span class="fl">1</span>] <span class="op">*</span> missing_genotypes_percent_allowed_per_site<span class="op">/</span><span class="fl">100</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>selection <span class="op">=</span> <span class="fu">vec</span>(missing_genotypes_per_SNP <span class="op">.&lt;=</span> threshold_genotypes_missing)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>geno_ind_SNP_filtered <span class="op">=</span> geno_indFiltered[<span class="op">:</span>, selection] </span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>pos_SNP_filtered <span class="op">=</span> pos_whole_genome[selection[<span class="fu">Not</span>(<span class="fl">1</span>)],<span class="op">:</span>]  <span class="co"># the Not(1) is needed because first column in geno is arbitrary row number</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Started with "</span>, <span class="fu">size</span>(geno_indFiltered, <span class="fl">2</span>)<span class="op">-</span><span class="fl">1</span>, <span class="st">" SNPs. After filtering SNPs for no more than "</span>, missing_genotypes_percent_allowed_per_site, <span class="st">"% missing genotypes, "</span>, <span class="fu">size</span>(geno_ind_SNP_filtered, <span class="fl">2</span>)<span class="op">-</span><span class="fl">1</span>, <span class="st">" SNPs remain."</span> )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Started with 2431709 SNPs. After filtering SNPs for no more than 5% missing genotypes, 1003400 SNPs remain.</code></pre>
+</div>
+</div>
+</section>
+<section id="nd-round-of-filtering-individuals" class="level4">
+<h4 class="anchored" data-anchor-id="nd-round-of-filtering-individuals">2nd round of filtering individuals</h4>
+<p>I added this in August 2023, to improve accuracy of imputation-based PCA, because I noticed outliers tended to have more missing data. Now I only allow up to 10% missing SNPs per individual.</p>
+<div class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>SNPmissing_percent_allowed_per_ind_round2 <span class="op">=</span> <span class="fl">10</span>   <span class="co"># this is the percentage threshold</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>threshold_missing <span class="op">=</span> (<span class="fu">size</span>(geno_ind_SNP_filtered, <span class="fl">2</span>) <span class="op">-</span> <span class="fl">1</span>) <span class="op">*</span> SNPmissing_percent_allowed_per_ind_round2<span class="op">/</span><span class="fl">100</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>numMissings <span class="op">=</span> <span class="fu">sum</span>(geno_ind_SNP_filtered <span class="op">.==</span> <span class="op">-</span><span class="fl">1</span>, dims<span class="op">=</span><span class="fl">2</span>)</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>selection <span class="op">=</span> <span class="fu">vec</span>(numMissings <span class="op">.&lt;=</span> threshold_missing) <span class="co"># the vec command converts to BitVector rather than BitMatrix--important below</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>geno_ind_SNP_ind_filtered <span class="op">=</span> geno_ind_SNP_filtered[selection, <span class="op">:</span>]</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="co"># print filtered out individuals:</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered.ind[selection<span class="op">.==</span><span class="cn">false</span>]</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Filtering out these individuals based on too many missing genotypes: "</span>, ind_with_metadata_indFiltered.ind[selection<span class="op">.==</span><span class="cn">false</span>])</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="co"># filtered out: ["GW_Armando_plate1_TTGW74", "GW_Armando_plate2_TTGW54", "GW_Lane5_AA8", "GW_Lane5_YK1"]</span></span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered <span class="op">=</span> ind_with_metadata_indFiltered[selection, <span class="op">:</span>]</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"This leaves "</span>, <span class="fu">size</span>(geno_ind_SNP_ind_filtered, <span class="fl">1</span>), <span class="st">" individuals and "</span>, <span class="fu">size</span>(geno_ind_SNP_ind_filtered, <span class="fl">2</span>)<span class="op">-</span><span class="fl">1</span>, <span class="st">" loci, with no individuals missing more than "</span>, SNPmissing_percent_allowed_per_ind_round2, <span class="st">"% of genotypes and no loci missing in more than "</span>, missing_genotypes_percent_allowed_per_site, <span class="st">"% of individuals."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Filtering out these individuals based on too many missing genotypes: ["GW_Armando_plate1_TTGW74", "GW_Armando_plate2_TTGW54", "GW_Lane5_AA8", "GW_Lane5_YK1"]
+This leaves 267 individuals and 1003400 loci, with no individuals missing more than 10% of genotypes and no loci missing in more than 5% of individuals.</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="estimate-relationships-of-individuals-using-pca" class="level2">
+<h2 class="anchored" data-anchor-id="estimate-relationships-of-individuals-using-pca">Estimate relationships of individuals using PCA</h2>
+<p>Our goal is to produce plots showing individuals in genotype space, using Principal Components Analysis. First we need to do a couple changes to our data matrix:</p>
+<p>For missing genotypes, change our code of <code>-1</code> to <code>missing</code>:</p>
+<div class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>genos_with_missing <span class="op">=</span> <span class="fu">Matrix</span><span class="dt">{Union{Missing, Int32}}</span>(geno_ind_SNP_ind_filtered)</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>genos_with_missing[genos_with_missing <span class="op">.==</span> <span class="op">-</span><span class="fl">1</span>] <span class="op">.=</span> <span class="cn">missing</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Remove the first column of the genotype matrix (which was an initial row number):</p>
+<div class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>genosOnly <span class="op">=</span> genos_with_missing[<span class="op">:</span>,<span class="fu">Not</span>(<span class="fl">1</span>)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="13">
+<pre><code>267×1003400 Matrix{Union{Missing, Int32}}:
+ 0  0  0  1  0  0  0  0  0  0  0  0  0  …  0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0  …  0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0  …  0  0  0  0  0  0  0  0  0  0  0  1
+ 0  0  0  0  0  0  0  0  1  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ ⋮              ⋮              ⋮        ⋱        ⋮              ⋮           
+ 0  0  0  0  0  0  0  0  0  0  0  0  0  …  0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0  …  0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0  …  0  0  0  0  0  0  0  0  0  0  0  0
+ 0  0  0  0  0  0  0  0  0  0  0  0  0     0  0  0  0  0  0  0  0  0  0  0  0</code></pre>
+</div>
+</div>
+<section id="impute-and-save-genotypes-for-each-scaffold" class="level4">
+<h4 class="anchored" data-anchor-id="impute-and-save-genotypes-for-each-scaffold">Impute and save genotypes for each scaffold</h4>
+<p>PCA requires imputation of missing genotypes. I did imputation for each scaffold above a certain size threshold. Those scaffolds (many of which correspond to whole chromosomes) are listed here:</p>
+<div class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>chromosomes_to_process <span class="op">=</span> [<span class="st">"gw2"</span>,</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw1"</span>,</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw3"</span>,</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gwZ"</span>,</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw1A"</span>,</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw4"</span>,</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw5"</span>,</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw7"</span>,</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw6"</span>,</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw8"</span>,</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw9"</span>,</span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw11"</span>,</span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw12"</span>,</span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw10"</span>,</span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw13"</span>,</span>
+<span id="cb22-16"><a href="#cb22-16" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw14"</span>,</span>
+<span id="cb22-17"><a href="#cb22-17" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw18"</span>,</span>
+<span id="cb22-18"><a href="#cb22-18" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw20"</span>,</span>
+<span id="cb22-19"><a href="#cb22-19" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw15"</span>,</span>
+<span id="cb22-20"><a href="#cb22-20" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw1B"</span>,</span>
+<span id="cb22-21"><a href="#cb22-21" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws100"</span>,</span>
+<span id="cb22-22"><a href="#cb22-22" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw17"</span>,</span>
+<span id="cb22-23"><a href="#cb22-23" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw19"</span>,</span>
+<span id="cb22-24"><a href="#cb22-24" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws101"</span>,</span>
+<span id="cb22-25"><a href="#cb22-25" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw4A"</span>,</span>
+<span id="cb22-26"><a href="#cb22-26" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw21"</span>,</span>
+<span id="cb22-27"><a href="#cb22-27" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw26"</span>,</span>
+<span id="cb22-28"><a href="#cb22-28" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws102"</span>,</span>
+<span id="cb22-29"><a href="#cb22-29" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw23"</span>,</span>
+<span id="cb22-30"><a href="#cb22-30" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw25"</span>,</span>
+<span id="cb22-31"><a href="#cb22-31" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws103"</span>,</span>
+<span id="cb22-32"><a href="#cb22-32" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw22"</span>,</span>
+<span id="cb22-33"><a href="#cb22-33" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws104"</span>,</span>
+<span id="cb22-34"><a href="#cb22-34" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw28"</span>,</span>
+<span id="cb22-35"><a href="#cb22-35" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw27"</span>,</span>
+<span id="cb22-36"><a href="#cb22-36" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw24"</span>,</span>
+<span id="cb22-37"><a href="#cb22-37" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws105"</span>,</span>
+<span id="cb22-38"><a href="#cb22-38" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws106"</span>,</span>
+<span id="cb22-39"><a href="#cb22-39" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws107"</span>,</span>
+<span id="cb22-40"><a href="#cb22-40" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws108"</span>,</span>
+<span id="cb22-41"><a href="#cb22-41" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws109"</span>,</span>
+<span id="cb22-42"><a href="#cb22-42" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws110"</span>,</span>
+<span id="cb22-43"><a href="#cb22-43" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws112"</span>];</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Imputation can take several minutes per scaffold, so I ran this imputation step separately from this Quarto notebook (otherwise render would take long) and saved the genotype data for each scaffold for loading in the next step. This is the code I used for imputing:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="fu">eachindex</span>(chromosomes_to_process)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    chrom <span class="op">=</span> chromosomes_to_process[i]</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    regionText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"chr"</span>, chrom)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    loci_selection <span class="op">=</span> (pos_SNP_filtered.chrom <span class="op">.==</span> chrom)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_region <span class="op">=</span> pos_SNP_filtered[loci_selection,<span class="op">:</span>]</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    genosOnly_region_for_imputing <span class="op">=</span> <span class="fu">Matrix</span><span class="dt">{Union{Missing, Float32}}</span>(genosOnly[<span class="op">:</span>,loci_selection])</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    <span class="pp">@time</span> imputed_genos <span class="op">=</span> Impute.<span class="fu">svd</span>(genosOnly_region_for_imputing)</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".imputedMissing.jld2"</span>)</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">jldsave</span>(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_region)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(<span class="st">"Chromosome "</span>, chrom, <span class="st">": Saved real and imputed genotypes for "</span>, <span class="fu">size</span>(pos_SNP_filtered_region, <span class="fl">1</span>),<span class="st">" SNPs and "</span>, <span class="fu">size</span>(genosOnly_region_for_imputing, <span class="fl">1</span>),<span class="st">" filtered individuals."</span>))</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now we can cycle through a set of chromosomes and plot a PCA for each. We need to first specify some groups to include in the plot, and their colors:</p>
+<div class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>groups_to_plot_PCA <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_misID"</span>,<span class="st">"vir_S"</span>,<span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>,<span class="st">"troch_west"</span>,<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>,<span class="st">"plumb_vir"</span>]</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>group_colors_PCA <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"grey"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"olivedrab3"</span>,<span class="st">"olivedrab2"</span>,<span class="st">"olivedrab1"</span>,<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>,<span class="st">"purple"</span>];</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now we’ll actually do the PCA and make the plot for each scaffold:</p>
+<div class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="fu">eachindex</span>(chromosomes_to_process)</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>    chrom <span class="op">=</span> chromosomes_to_process[i]</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    regionText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"chr"</span>, chrom)</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".imputedMissing.jld2"</span>)</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>    imputed_genos <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"imputed_genos"</span>)</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>    ind_with_metadata_indFiltered <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"ind_with_metadata_indFiltered"</span>)</span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_region <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"pos_SNP_filtered_region"</span>)</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(<span class="st">"Loaded "</span>,filename))</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(regionText, <span class="st">": "</span>, <span class="fu">size</span>(imputed_genos,<span class="fl">2</span>), <span class="st">" SNPs from "</span>, <span class="fu">size</span>(imputed_genos,<span class="fl">1</span>), <span class="st">" individuals"</span>))</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plotPCA</span>(imputed_genos, ind_with_metadata_indFiltered, groups_to_plot_PCA, group_colors_PCA; regionText)</span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw2.imputedMissing.jld2
+chrgw2: 91777 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw1.imputedMissing.jld2
+chrgw1: 79563 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw3.imputedMissing.jld2
+chrgw3: 81102 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgwZ.imputedMissing.jld2
+chrgwZ: 52592 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw1A.imputedMissing.jld2
+chrgw1A: 49350 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw4.imputedMissing.jld2
+chrgw4: 49196 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw5.imputedMissing.jld2
+chrgw5: 54499 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw7.imputedMissing.jld2
+chrgw7: 36037 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw6.imputedMissing.jld2
+chrgw6: 39725 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw8.imputedMissing.jld2
+chrgw8: 37331 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw9.imputedMissing.jld2
+chrgw9: 37593 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw11.imputedMissing.jld2
+chrgw11: 27232 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw12.imputedMissing.jld2
+chrgw12: 32811 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw10.imputedMissing.jld2
+chrgw10: 26617 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw13.imputedMissing.jld2
+chrgw13: 33138 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw14.imputedMissing.jld2
+chrgw14: 30686 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw18.imputedMissing.jld2
+chrgw18: 19123 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw20.imputedMissing.jld2
+chrgw20: 32361 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw15.imputedMissing.jld2
+chrgw15: 27257 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw1B.imputedMissing.jld2
+chrgw1B: 626 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgws100.imputedMissing.jld2
+chrgws100: 182 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw17.imputedMissing.jld2
+chrgw17: 26008 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw19.imputedMissing.jld2
+chrgw19: 25165 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgws101.imputedMissing.jld2
+chrgws101: 158 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw4A.imputedMissing.jld2
+chrgw4A: 18249 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw21.imputedMissing.jld2
+chrgw21: 13183 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw26.imputedMissing.jld2
+chrgw26: 14101 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgws102.imputedMissing.jld2
+chrgws102: 277 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw23.imputedMissing.jld2
+chrgw23: 13825 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw25.imputedMissing.jld2
+chrgw25: 3704 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgws103.imputedMissing.jld2
+chrgws103: 274 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw22.imputedMissing.jld2
+chrgw22: 5416 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgws104.imputedMissing.jld2
+chrgws104: 350 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw28.imputedMissing.jld2
+chrgw28: 11072 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw27.imputedMissing.jld2
+chrgw27: 9574 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw24.imputedMissing.jld2
+chrgw24: 13679 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgws105.imputedMissing.jld2
+chrgws105: 469 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgws106.imputedMissing.jld2
+chrgws106: 115 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgws107.imputedMissing.jld2
+chrgws107: 258 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgws108.imputedMissing.jld2
+chrgws108: 160 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgws109.imputedMissing.jld2
+chrgws109: 275 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgws110.imputedMissing.jld2
+chrgws110: 154 SNPs from 267 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgws112.imputedMissing.jld2
+chrgws112: 1850 SNPs from 267 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-2.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-3.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-4.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-5.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-6.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-7.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-8.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-9.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-10.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-11.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-12.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-13.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-14.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-15.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-16.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-17.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-18.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-19.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-20.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-21.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-22.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-23.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-24.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-25.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-26.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-27.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-28.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-29.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-30.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-31.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-32.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-33.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-34.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-35.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-36.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-37.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-38.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-39.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-40.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-41.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-42.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-43.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-16-output-44.png" class="img-fluid"></p>
+</div>
+</div>
+</section>
+<section id="whole-genome-pca" class="level3">
+<h3 class="anchored" data-anchor-id="whole-genome-pca">Whole-genome PCA</h3>
+<p>In addition to making PCA plots for each scaffold, we can do one for the whole genome. The imputing for the whole genome takes some time (almost 2 hours!), so I did this in advance and saved a file. This is incorporated into the code below–to actually do the imputing, set <code>do_imputing = true</code>. Otherwise this code will load the previously-imputed data.</p>
+<p>(NOTE: this is using an older version of the data–sometime need to update by removing <code>tempTagName</code> and replacing with <code>tagName</code>)</p>
+<div class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>genosOnly_for_imputing <span class="op">=</span> <span class="fu">Matrix</span><span class="dt">{Union{Missing, Float32}}</span>(genosOnly)</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="st">"wholeGenome"</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>tempTagName <span class="op">=</span> <span class="st">".June2023."</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tempTagName, regionText, <span class="st">".imputedMissing.jld2"</span>)</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="co"># to do the imputing, do this by setting to true, but TAKES A LONG TIME:</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>do_imputing <span class="op">=</span> <span class="cn">false</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> do_imputing</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>    <span class="pp">@time</span> imputed_genosOnly <span class="op">=</span> Impute.<span class="fu">svd</span>(genosOnly_for_imputing)</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># took almost 2 hours!</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">jldsave</span>(filename; imputed_genosOnly, ind_with_metadata_indFiltered, pos_SNP_filtered)</span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>    imputed_genosOnly_wholeGenome <span class="op">=</span> imputed_genosOnly</span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>    ind_with_metadata_indFiltered_wholeGenome <span class="op">=</span> ind_with_metadata_indFiltered</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_wholeGenome <span class="op">=</span> pos_SNP_filtered</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">"Saved matrix of real and imputed genotypes for filtered individuals. </span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span> <span class="co"># load the already saved imputing</span></span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>    imputed_genosOnly_wholeGenome <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"imputed_genosOnly"</span>)</span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>    ind_with_metadata_indFiltered_wholeGenome <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"ind_with_metadata_indFiltered"</span>)</span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_wholeGenome <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"pos_SNP_filtered"</span>)</span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(<span class="st">"Loaded "</span>,filename))</span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(regionText, <span class="st">": "</span>, <span class="fu">size</span>(imputed_genosOnly_wholeGenome, <span class="fl">2</span>), <span class="st">" SNPs from "</span>, <span class="fu">size</span>(imputed_genosOnly_wholeGenome, <span class="fl">1</span>), <span class="st">" individuals"</span>))</span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.June2023.wholeGenome.imputedMissing.jld2
+wholeGenome: 1003400 SNPs from 271 individuals</code></pre>
+</div>
+</div>
+<p>Now make the whole-genome PCA:</p>
+<div class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotPCA</span>(imputed_genosOnly_wholeGenome, ind_with_metadata_indFiltered_wholeGenome, groups_to_plot_PCA, group_colors_PCA; regionText)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-18-output-1.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="18">
+<pre><code>CairoMakie.Screen{IMAGE}</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="genotype-by-individual-plots" class="level2">
+<h2 class="anchored" data-anchor-id="genotype-by-individual-plots">Genotype-by-individual plots</h2>
+<p>Now, show individual genotypes for subsets of the dataset. Can choose individuals and genomic regions to plot, along with an Fst cutoff (only show SNPs with greater Fst than the cutoff).</p>
+<div class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>set <span class="op">=</span> <span class="st">"67_inds_around_ring"</span>  <span class="co">#"east_side_of_ring"    #"67_inds_around_ring"  # "west_side_of_ring"</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> set <span class="op">==</span> <span class="st">"67_inds_around_ring"</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    groups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"troch_LN"</span>,<span class="st">"plumb"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   </span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>    plotGroups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"lud_PK"</span>,<span class="st">"lud_KS"</span>,<span class="st">"lud_central"</span>,<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>, <span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>]</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>    plotGroupColors <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>, <span class="st">"pink"</span>,<span class="st">"red"</span>]</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>    numIndsToPlot <span class="op">=</span> [<span class="fl">10</span>, <span class="fl">5</span>, <span class="fl">6</span>, <span class="fl">2</span>, <span class="fl">7</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>] <span class="co"># maximum number of individuals to plot from each group</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>    group1 <span class="op">=</span> <span class="st">"vir"</span>   <span class="co"># these groups will determine the color used in the graph</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>    group2 <span class="op">=</span> <span class="st">"plumb"</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>    groupsToCompare <span class="op">=</span> <span class="st">"vir_plumb"</span>   <span class="co">#"Fst_among"  #"vir_troch_LN"       #"vir_plumb"      #"troch_LN_plumb"      #"vir_troch_LN"</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>    Fst_cutoff <span class="op">=</span> <span class="fl">0.7</span></span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>    missingFractionAllowed <span class="op">=</span> <span class="fl">0.2</span>  <span class="co"># only show SNPs with less than this fraction of missing data among individuals</span></span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a><span class="cf">elseif</span> set <span class="op">==</span> <span class="st">"37_inds_around_ring_plusAllVirPlumb"</span></span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>    groups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"troch_LN"</span>,<span class="st">"plumb"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)</span></span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>    plotGroups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"lud"</span>,<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>, <span class="st">"obs_plumb"</span>,<span class="st">"plumb"</span>]</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>    plotGroupColors <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"seagreen4"</span>,<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>, <span class="st">"pink"</span>,<span class="st">"red"</span>]</span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>    numIndsToPlot <span class="op">=</span> [<span class="fl">100</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">100</span>] <span class="co"># maximum number of individuals to plot from each group</span></span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>    group1 <span class="op">=</span> <span class="st">"vir"</span>   <span class="co"># these groups will determine the color used in the graph</span></span>
+<span id="cb31-19"><a href="#cb31-19" aria-hidden="true" tabindex="-1"></a>    group2 <span class="op">=</span> <span class="st">"plumb"</span></span>
+<span id="cb31-20"><a href="#cb31-20" aria-hidden="true" tabindex="-1"></a>    groupsToCompare <span class="op">=</span> <span class="st">"Fst_among"</span></span>
+<span id="cb31-21"><a href="#cb31-21" aria-hidden="true" tabindex="-1"></a>    Fst_cutoff <span class="op">=</span> <span class="fl">0.7</span></span>
+<span id="cb31-22"><a href="#cb31-22" aria-hidden="true" tabindex="-1"></a>    missingFractionAllowed <span class="op">=</span> <span class="fl">0.2</span>  <span class="co"># only show SNPs with less than this fraction of missing data among individuals</span></span>
+<span id="cb31-23"><a href="#cb31-23" aria-hidden="true" tabindex="-1"></a><span class="cf">elseif</span> set <span class="op">==</span> <span class="st">"west_side_of_ring"</span></span>
+<span id="cb31-24"><a href="#cb31-24" aria-hidden="true" tabindex="-1"></a>    groups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"troch_LN"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)</span></span>
+<span id="cb31-25"><a href="#cb31-25" aria-hidden="true" tabindex="-1"></a>    plotGroups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_misID"</span>,<span class="st">"vir_S"</span>,<span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>,<span class="st">"troch_west"</span>,<span class="st">"troch_LN"</span>]</span>
+<span id="cb31-26"><a href="#cb31-26" aria-hidden="true" tabindex="-1"></a>    plotGroupColors <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"grey"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"olivedrab3"</span>,<span class="st">"olivedrab2"</span>,<span class="st">"olivedrab1"</span>,<span class="st">"yellow"</span>]</span>
+<span id="cb31-27"><a href="#cb31-27" aria-hidden="true" tabindex="-1"></a>    numIndsToPlot <span class="op">=</span> [<span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>] <span class="co"># maximum number of individuals to plot from each group</span></span>
+<span id="cb31-28"><a href="#cb31-28" aria-hidden="true" tabindex="-1"></a>    group1 <span class="op">=</span> <span class="st">"vir"</span>   <span class="co"># these groups will determine the color used in the graph</span></span>
+<span id="cb31-29"><a href="#cb31-29" aria-hidden="true" tabindex="-1"></a>    group2 <span class="op">=</span> <span class="st">"troch_LN"</span></span>
+<span id="cb31-30"><a href="#cb31-30" aria-hidden="true" tabindex="-1"></a>    groupsToCompare <span class="op">=</span> <span class="st">"vir_troch_LN"</span> <span class="co"># "Fst_among"</span></span>
+<span id="cb31-31"><a href="#cb31-31" aria-hidden="true" tabindex="-1"></a>    Fst_cutoff <span class="op">=</span> <span class="fl">0.6</span></span>
+<span id="cb31-32"><a href="#cb31-32" aria-hidden="true" tabindex="-1"></a>    missingFractionAllowed <span class="op">=</span> <span class="fl">0.2</span>  <span class="co"># only show SNPs with less than this fraction of missing data among individuals</span></span>
+<span id="cb31-33"><a href="#cb31-33" aria-hidden="true" tabindex="-1"></a><span class="cf">elseif</span> set <span class="op">==</span> <span class="st">"all_ludlowi_plus_a_few_other"</span></span>
+<span id="cb31-34"><a href="#cb31-34" aria-hidden="true" tabindex="-1"></a>    groups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"troch_LN"</span>,<span class="st">"plumb"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)</span></span>
+<span id="cb31-35"><a href="#cb31-35" aria-hidden="true" tabindex="-1"></a>    plotGroups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>,<span class="st">"troch_west"</span>,<span class="st">"troch_LN"</span>,<span class="st">"plumb"</span>]</span>
+<span id="cb31-36"><a href="#cb31-36" aria-hidden="true" tabindex="-1"></a>    plotGroupColors <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"grey"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"olivedrab3"</span>,<span class="st">"olivedrab2"</span>,<span class="st">"olivedrab1"</span>,<span class="st">"yellow"</span>,<span class="st">"red"</span>]</span>
+<span id="cb31-37"><a href="#cb31-37" aria-hidden="true" tabindex="-1"></a>    numIndsToPlot <span class="op">=</span> [<span class="fl">4</span>, <span class="fl">4</span>, <span class="fl">4</span>, <span class="fl">1000</span>, <span class="fl">1000</span>, <span class="fl">1000</span>, <span class="fl">1000</span>, <span class="fl">1000</span>, <span class="fl">1000</span>, <span class="fl">4</span>, <span class="fl">4</span>] <span class="co"># maximum number of individuals to plot from each group</span></span>
+<span id="cb31-38"><a href="#cb31-38" aria-hidden="true" tabindex="-1"></a>    group1 <span class="op">=</span> <span class="st">"vir"</span>   <span class="co"># these groups will determine the color used in the graph</span></span>
+<span id="cb31-39"><a href="#cb31-39" aria-hidden="true" tabindex="-1"></a>    group2 <span class="op">=</span> <span class="st">"troch_LN"</span></span>
+<span id="cb31-40"><a href="#cb31-40" aria-hidden="true" tabindex="-1"></a>    groupsToCompare <span class="op">=</span> <span class="st">"vir_troch_LN"</span> <span class="co"># "Fst_among"</span></span>
+<span id="cb31-41"><a href="#cb31-41" aria-hidden="true" tabindex="-1"></a>    Fst_cutoff <span class="op">=</span> <span class="fl">0.6</span></span>
+<span id="cb31-42"><a href="#cb31-42" aria-hidden="true" tabindex="-1"></a>    missingFractionAllowed <span class="op">=</span> <span class="fl">0.2</span>  <span class="co"># only show SNPs with less than this fraction of missing data among individuals</span></span>
+<span id="cb31-43"><a href="#cb31-43" aria-hidden="true" tabindex="-1"></a><span class="cf">elseif</span> set <span class="op">==</span> <span class="st">"east_side_of_ring"</span></span>
+<span id="cb31-44"><a href="#cb31-44" aria-hidden="true" tabindex="-1"></a>    groups <span class="op">=</span> [<span class="st">"troch_LN"</span>,<span class="st">"obs"</span>,<span class="st">"plumb"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)</span></span>
+<span id="cb31-45"><a href="#cb31-45" aria-hidden="true" tabindex="-1"></a>    plotGroups <span class="op">=</span> [<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"obs_plumb"</span>,<span class="st">"plumb"</span>]</span>
+<span id="cb31-46"><a href="#cb31-46" aria-hidden="true" tabindex="-1"></a>    plotGroupColors <span class="op">=</span> [<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>]</span>
+<span id="cb31-47"><a href="#cb31-47" aria-hidden="true" tabindex="-1"></a>    numIndsToPlot <span class="op">=</span> [<span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>] <span class="co"># maximum number of individuals to plot from each group</span></span>
+<span id="cb31-48"><a href="#cb31-48" aria-hidden="true" tabindex="-1"></a>    group1 <span class="op">=</span> <span class="st">"troch_LN"</span>   <span class="co"># these groups will determine the color used in the graph</span></span>
+<span id="cb31-49"><a href="#cb31-49" aria-hidden="true" tabindex="-1"></a>    group2 <span class="op">=</span> <span class="st">"plumb"</span></span>
+<span id="cb31-50"><a href="#cb31-50" aria-hidden="true" tabindex="-1"></a>    groupsToCompare <span class="op">=</span> <span class="st">"troch_LN_plumb"</span></span>
+<span id="cb31-51"><a href="#cb31-51" aria-hidden="true" tabindex="-1"></a>    Fst_cutoff <span class="op">=</span> <span class="fl">0.7</span></span>
+<span id="cb31-52"><a href="#cb31-52" aria-hidden="true" tabindex="-1"></a>    missingFractionAllowed <span class="op">=</span> <span class="fl">0.2</span>  <span class="co"># only show SNPs with less than this fraction of missing data among individuals</span></span>
+<span id="cb31-53"><a href="#cb31-53" aria-hidden="true" tabindex="-1"></a><span class="cf">elseif</span> set <span class="op">==</span> <span class="st">"vir_plumb"</span></span>
+<span id="cb31-54"><a href="#cb31-54" aria-hidden="true" tabindex="-1"></a>    groups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"plumb"</span>]</span>
+<span id="cb31-55"><a href="#cb31-55" aria-hidden="true" tabindex="-1"></a>    plotGroups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"plumb_vir"</span>,<span class="st">"plumb"</span>]</span>
+<span id="cb31-56"><a href="#cb31-56" aria-hidden="true" tabindex="-1"></a>    plotGroupColors <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"purple"</span>,<span class="st">"red"</span>]</span>
+<span id="cb31-57"><a href="#cb31-57" aria-hidden="true" tabindex="-1"></a>    numIndsToPlot <span class="op">=</span> [<span class="fl">100</span>,<span class="fl">100</span>,<span class="fl">100</span>] <span class="co"># maximum number of individuals to plot from each group</span></span>
+<span id="cb31-58"><a href="#cb31-58" aria-hidden="true" tabindex="-1"></a>    group1 <span class="op">=</span> <span class="st">"vir"</span>   <span class="co"># these groups will determine the color used in the graph</span></span>
+<span id="cb31-59"><a href="#cb31-59" aria-hidden="true" tabindex="-1"></a>    group2 <span class="op">=</span> <span class="st">"plumb"</span></span>
+<span id="cb31-60"><a href="#cb31-60" aria-hidden="true" tabindex="-1"></a>    groupsToCompare <span class="op">=</span> <span class="st">"vir_plumb"</span></span>
+<span id="cb31-61"><a href="#cb31-61" aria-hidden="true" tabindex="-1"></a>    Fst_cutoff <span class="op">=</span>  <span class="fl">0.7</span></span>
+<span id="cb31-62"><a href="#cb31-62" aria-hidden="true" tabindex="-1"></a>    missingFractionAllowed <span class="op">=</span> <span class="fl">0.2</span>  <span class="co"># only show SNPs with less than this fraction of missing data among individuals</span></span>
+<span id="cb31-63"><a href="#cb31-63" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="19">
+<pre><code>0.2</code></pre>
+</div>
+</div>
+<section id="calculate-allele-freqs-and-sample-sizes-use-column-fst_group" class="level4">
+<h4 class="anchored" data-anchor-id="calculate-allele-freqs-and-sample-sizes-use-column-fst_group">Calculate allele freqs and sample sizes (use column Fst_group)</h4>
+<div class="cell" data-execution_count="19">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>freqs, sampleSizes, freqsRowNames <span class="op">=</span> <span class="fu">getFreqsAndSampleSizes</span>(genosOnly, ind_with_metadata_indFiltered.Fst_group, groups)</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated population allele frequencies and sample sizes"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Calculated population allele frequencies and sample sizes</code></pre>
+</div>
+</div>
+</section>
+<section id="calculate-fst" class="level4">
+<h4 class="anchored" data-anchor-id="calculate-fst">calculate Fst</h4>
+<div class="cell" data-execution_count="20">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>Fst, FstNumerator, FstDenominator, pairwiseNamesFst <span class="op">=</span> <span class="fu">getFst</span>(freqs, sampleSizes, groups; among<span class="op">=</span><span class="cn">true</span>)  <span class="co"># set among to FALSE if no among Fst wanted (some things won't work without it) </span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated Fst values"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Calculated Fst values</code></pre>
+</div>
+</div>
+</section>
+<section id="limit-the-individuals-to-include-in-plot" class="level4">
+<h4 class="anchored" data-anchor-id="limit-the-individuals-to-include-in-plot">limit the individuals to include in plot</h4>
+<div class="cell" data-execution_count="21">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>genosOnly_included, ind_with_metadata_included <span class="op">=</span> <span class="fu">limitIndsToPlot</span>(plotGroups, numIndsToPlot, genosOnly, ind_with_metadata_indFiltered);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="choose-the-scaffold-and-region-to-show" class="level4">
+<h4 class="anchored" data-anchor-id="choose-the-scaffold-and-region-to-show">choose the scaffold and region to show</h4>
+<div class="cell" data-execution_count="22">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>chr <span class="op">=</span> <span class="st">"gw26"</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>regionInfo <span class="op">=</span> <span class="fu">chooseChrRegion</span>(pos_SNP_filtered, chr; positionMin<span class="op">=</span><span class="fl">1</span>, positionMax<span class="op">=</span><span class="cn">NaN</span>) <span class="co"># this gets the maximum position for the chromosome</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="23">
+<pre><code>("gw26", 1, 8896755, "gw26_whole")</code></pre>
+</div>
+</div>
+<p>NOTE FOR LATER: SHOULD REALLY GET CHROMOSOME LENGTH FOR positionMax</p>
+</section>
+<section id="now-actually-make-the-plot" class="level4">
+<h4 class="anchored" data-anchor-id="now-actually-make-the-plot">Now actually make the plot</h4>
+<div class="cell" data-execution_count="23">
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>plotInfo <span class="op">=</span> <span class="fu">plotGenotypeByIndividual</span>(groupsToCompare, Fst_cutoff, missingFractionAllowed,</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, </span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a><span class="co"># plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-24-output-1.png" class="img-fluid"></p>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

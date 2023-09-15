@@ -198,7 +198,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>loci_count <span class="op">=</span> <span class="fu">size</span>(geno, <span class="fl">2</span>) <span class="op">-</span> <span class="fl">1</span>   <span class="co"># because the first column is not a SNP (just a count from zero)</span></span>
 <span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">string</span>(<span class="st">"Read in genotypic data at "</span>, loci_count,<span class="st">" loci for "</span>, indNum, <span class="st">" individuals. </span><span class="sc">\n</span><span class="st">"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> 52.515527 seconds (3.61 M allocations: 9.585 GiB, 0.20% gc time, 0.67% compilation time)
+<pre><code> 58.315328 seconds (3.61 M allocations: 9.585 GiB, 0.34% gc time, 1.20% compilation time)
 Read in genotypic data at 2431709 loci for 310 individuals. </code></pre>
 </div>
 </div>
@@ -1065,7 +1065,7 @@ wholeGenome: 1003400 SNPs from 271 individuals</code></pre>
 <section id="calculate-allele-freqs-and-sample-sizes-use-column-fst_group" class="level4">
 <h4 class="anchored" data-anchor-id="calculate-allele-freqs-and-sample-sizes-use-column-fst_group">Calculate allele freqs and sample sizes (use column Fst_group)</h4>
 <div class="cell" data-execution_count="19">
-<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>freqs, sampleSizes, freqsRowNames <span class="op">=</span> <span class="fu">getFreqsAndSampleSizes</span>(genosOnly, ind_with_metadata_indFiltered.Fst_group, groups)</span>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>freqs, sampleSizes <span class="op">=</span> <span class="fu">getFreqsAndSampleSizes</span>(genosOnly, ind_with_metadata_indFiltered.Fst_group, groups)</span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated population allele frequencies and sample sizes"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Calculated population allele frequencies and sample sizes</code></pre>

@@ -18,6 +18,9 @@ export getFreqsAndSampleSizes,
 using MultivariateStats
 using CairoMakie
 
+
+
+
 # function copied from IrwinLabGenomicsAnalysisScriptV2.jl :
 # calculate sample size (of individuals) and frequency of alternate allele. 
 # genoData is Matrix where rows are individuals and columns are loci.
@@ -30,12 +33,12 @@ using CairoMakie
 Calculate allele frequencies and sample sizes for each group and SNP.
 
 ​# Arguments
-* `genoData`: The genotype matrix, where rows are individuals and columns are loci, with genotype codes 0,1,2 meaning homozygous reference, heterozygote, homozygous alternate, and missing genotypes can be either -1 or `missing`.
-* `indGroup`: A vector providing the group name each individual belongs to.
-* `groupsToCalc`: A list of group names to include in calculations.
+- `genoData`: The genotype matrix, where rows are individuals and columns are loci, with genotype codes 0,1,2 meaning homozygous reference, heterozygote, homozygous alternate, and missing genotypes can be either -1 or `missing`.
+- `indGroup`: A vector providing the group name each individual belongs to.
+- `groupsToCalc`: A list of group names to include in calculations.
 
 # Notes
-* Returns a tuple containing 1) a matrix of frequencies, and 2) a matrix of samples sizes (in both, rows are groups and columns are loci). 
+Returns a tuple containing 1) a matrix of frequencies, and 2) a matrix of samples sizes (in both, rows are groups and columns are loci). 
 """
 function getFreqsAndSampleSizes(genoData, indGroup, groupsToCalc)
     genoData[ismissing.(genoData)] .= -1 # if "missing" datatype is use, convert to -1
@@ -55,9 +58,17 @@ function getFreqsAndSampleSizes(genoData, indGroup, groupsToCalc)
 end
 
 # function copied from IrwinLabGenomicsAnalysisScriptV2.jl :
-# get row names for use in Dxy and Fst matrices, 
-# or any others that compare populations pairwise.
-# groupsToCalc is a vector of names for the groups.
+"""
+    getPairwiseNames(groupsToCalc)::Vector{String}
+
+Using a list of names, return a list of paired names in format "name1_name2".
+
+​# Arguments
+- `groupsToCalc`: The list of names.
+
+# Notes
+Returns a vector of paired names.
+"""
 function getPairwiseNames(groupsToCalc)::Vector{String}
     groupCount = length(groupsToCalc)
     pairwiseNames = []
@@ -70,10 +81,26 @@ function getPairwiseNames(groupsToCalc)::Vector{String}
 end
 
 # function copied from IrwinLabGenomicsAnalysisScriptV2.jl :
-# calculate Fst (and numerator and denominator) for each site (bp), 
-# between pairs of groups (so pops (r) is 2), 
-# using the Weir&Cockerham 1984 approach to correct for sample size and number of pops.
-# Set "among=true" if wanting it to include a line for Fst among all groups.
+"""
+    getFst(freqs, sampleSizes, groupsToCalc; among=false)
+
+Calculate Fst for each locus, between pairs of groups and (optionally) among all groups. 
+    
+Fst is calculated according to Weir & Cockerham (1984), including their correction for sample size and number of groups.
+
+​# Arguments
+- `freqs`: Matrix containing alternate allele frequencies for each group (row) and SNP (column).
+- `sampleSizes`: Matrix containing sample sizes for each group (row) and SNP (column).
+- `groupsToCalc`: The list of group names.
+- `among`: Optional argument--set to "true" to also calculate Fst among all groups.
+
+# Notes
+Returns a tuple containing: 
+- Matrix of Fst values for each comparison (row) and locus (column).
+- Matrix of numerator values from the Fst calculation for each comparison (row) and locus (column).
+- Matrix of denominator values from the Fst calculation for each comparison (row) and locus (column).
+- Vector of comparison names.
+"""
 function getFst(freqs, sampleSizes, groupsToCalc; among=false)
     pairwiseNames = getPairwiseNames(groupsToCalc)
     groupCount = length(groupsToCalc)
@@ -128,8 +155,22 @@ function getFst(freqs, sampleSizes, groupsToCalc; among=false)
     return Fst, FstNum, FstDen, pairwiseNames
 end
 
-# Select individuals to plot (the maximum number per group given by numIndsToPlot).
-# Returns the reduced genotype matrix and metadata
+"""
+    limitIndsToPlot(plotGroups, numIndsToPlot, genoData, indMetadata)
+
+Select a subset of individuals, based on numbers within each group, for subsequent analysis.
+
+​# Arguments
+- `plotGroups`: Vector of names of groups to include.
+- `numIndsToPlot`: Vector of maximum number of individuals to include from each group (order as in `plotGroups`).
+- `genoData`: Matrix of genotypes (rows are individuals, columns are loci).
+- `indMetadata`: Matrix containing metadata for individuals (make sure there is an `Fst_group` column).
+
+# Notes
+Returns a tuple containing:
+- Matrix of genotypes for included individuals.
+- Matrix of metadata for included individuals.
+"""
 function limitIndsToPlot(plotGroups, numIndsToPlot, genoData, indMetadata)
     cumulativeRowSelection = []
     for i in eachindex(plotGroups)
@@ -144,9 +185,36 @@ function limitIndsToPlot(plotGroups, numIndsToPlot, genoData, indMetadata)
     return genoData_included, indMetadata_included
 end
 
-# do PCA and graph, based on saved imputed genotypes:
-plotPCA = function(genotypes, ind_with_metadata, groups_to_plot_PCA, group_colors_PCA; regionText="")
+"""
+    plotPCA(genotypes, ind_with_metadata, groups_to_plot_PCA, group_colors_PCA; sampleSet = "", regionText="", flip1 = false, flip2 = false)
+
+Do a principal components analysis based on genotypes of individuals (colored by group), and display PC1 vs. PC2.
+
+​# Arguments
+- `genotypes`: Genotype matrix (individuals in rows, loci in columns, with no missing data--can impute prior to this, to ensure no missing).
+- `indMetadata`: Matrix containing metadata for individuals (make sure there is an `Fst_group`` column).
+- `groups_to_plot_PCA`: Vector of names of groups to include.
+- `group_colors_PCA`: Vector listing plotting color for each each group.
+- `sampleSet`: Optional, for specifying a name of the sample set to appear in the plot title.
+- `regionText`: Optional, for specifying a name of the genomic region to appear in the plot title.
+- `flip1`: Optional, set to `true` if wanting to flip PC1 (i.e., multiply by -1)
+- `flip2`: Same but for PC2
+"""
+function plotPCA(genotypes, indMetadata, groups_to_plot_PCA, group_colors_PCA; 
+                    sampleSet = "", regionText="",
+                    flip1 = false, flip2 = false)
+    
     matrixForPCA = Matrix{Float32}(transpose(genotypes))
+
+    if sampleSet == "" && regionText == ""
+        plotTitle = "PCA"
+    elseif sampleSet == ""
+        plotTitle = string("PCA: ", regionText)
+    elseif regionText == ""
+        plotTitle = string("PCA of ", sampleSet)
+    else 
+        plotTitle = string("PCA of ", sampleSet, ": ", regionText)
+    end
 
     # this now works well--appears to NOT be scaling the variables to variance 1, which is good
     PCA_indGenos = fit(PCA, matrixForPCA; method = :svd, maxoutdim=3); # good to suppress output of this--otherwise many lines
@@ -158,18 +226,22 @@ plotPCA = function(genotypes, ind_with_metadata, groups_to_plot_PCA, group_color
     projection(PCA_indGenos)
     tvar(PCA_indGenos)
 
-    # flip axes:
-    PC1 = -PCA_values[1,:]
-    PC2 = -PCA_values[2,:]
+    # if chosen to, flip axes:
+    if flip1
+        PC1 = -PCA_values[1,:]
+    end
+    if flip2
+        PC2 = -PCA_values[2,:]
+    end
 
     f = CairoMakie.Figure()
     ax = Axis(f[1, 1],
-        title = string("PCA of greenish warblers: ",regionText),
+        title = plotTitle,
         xlabel = "PC1",
         ylabel = "PC2"
     )
     for i in eachindex(groups_to_plot_PCA) 
-        selection = ind_with_metadata.Fst_group .== groups_to_plot_PCA[i]
+        selection = indMetadata.Fst_group .== groups_to_plot_PCA[i]
         CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
     end
     display(f)
@@ -180,6 +252,26 @@ end
 # and will make a regionText string.
 # This will NOT actually filter SNPs to this range
 # (that is done within the plotGenotypeByIndividual function below).
+"""
+    chooseChrRegion(pos, chr; positionMin=1, positionMax=NaN)
+
+Designate a specific region of a chromosome for subsequent analysis.
+
+​# Arguments
+- `pos`: A matrix containing genomic location of each locus; must have a `chrom` column (name of scaffold) and a `position` column (numerical position on scaffold).
+- `chr`: The name of the chosen scaffold.
+- `positionMin`: Optional (default 1); the starting location of the chosen region.
+- `positionMax`: Optional (default the end of the scaffold); the ending location of the chosen region.
+
+# Notes
+Returns a tuple containing:
+- the scaffold name.
+- the minimum position.
+- the maximum position.
+- a string describing the region (e.g. `chr Z: 20000 to 1000000`)
+
+This function does not actually filter the genotype matrix--that can be done by providing the output of this to functions such as `plotGenotypeByIndividual()`.
+"""
 function chooseChrRegion(pos, chr; positionMin=1, positionMax=NaN)
     if positionMin == 1 && isnan(positionMax) # then include whole chromosome
         positionMax = last(pos.position[pos.chrom .== chr]) # get highest position value on chromosome
@@ -194,11 +286,40 @@ function chooseChrRegion(pos, chr; positionMin=1, positionMax=NaN)
 end
 
 
-# Genotype by individual plot
-# Graph genotypes of high-Fst loci along a chromosome
-# choose only loci that are variable in the dataset (SNPs), and above an Fst threshhold
-# regionInfo is a tuple produced by chooseChrRegion.
-# Makes the plot, and returns a matrix of plotted genotypes, and a vector of locations. 
+"""
+    plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+                            regionInfo, pos, Fst, pairwiseNamesFst,
+                            genoData, indMetadata, freqs, plotGroups, plotGroupColors;
+                            colorAllelesByGroup=true, group1=plotGroups[1])
+
+Construct a genotype-by-individual plot, including only loci that pass thresholds for Fst and missing data. 
+
+Under the default setting, alleles are colored (dark purple vs. light purple) according to whichever allele is designated as `group1`. 
+
+​# Arguments
+- `groupsToCompare`: The two groups (in format `name1_name2`) for filtering loci based on Fst.
+- `Fst_cutoff`: The minimum Fst for a locus to be included in the plot.
+- `missingFractionAllowed`: The maximum missing genotype fraction for a locus to be included.
+- `regionInfo`: Information regarding the scaffold and region of focus; a tuple provided by `chooseChrRegion()`.
+- `pos`: Matrix providing genomic location of each locus; there must be a `chrom` column and a `position` column.
+- `Fst`: Matrix of Fst values; can be produced by `getFst()`.
+- `pairwiseNamesFst`: Vector of pairwise names corresponding to rows in the `Fst` matrix.
+- `genoData`: Matrix containing genotype data (individuals in rows, loci in columns).
+- `indMetadata`: Matrix of metadata for individuals; must contain `Fst_group` and `plot_order` columns.
+- `freqs`: Matrix of alternate allele frequencies for each group (row) and locus (column).
+- `plotGroups`: Vector of group names to include in plot.
+- `plotGroupColors`: Vector of plotting colors corresponding to the groups.
+- `colorAllelesByGroup`: Optional; set to `false` to color alleles according to reference and alternate.
+- `group1`: Optional (default is `plotGroups[1]`); when `colorAllelesByGroup` is `true`, this is the group that determine which allele is dark purple.  
+
+
+# Notes
+Returns a tuple containing:
+- the figure
+- the plotted genotypes
+- the numerical positions (in the chosen scaffold) of the plotted loci
+- the sorted metadata matrix for the plotted individuals
+"""
 function plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
                             regionInfo, pos, Fst, pairwiseNamesFst,
                             genoData, indMetadata, freqs, plotGroups, plotGroupColors;

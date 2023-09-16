@@ -198,7 +198,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>loci_count <span class="op">=</span> <span class="fu">size</span>(geno, <span class="fl">2</span>) <span class="op">-</span> <span class="fl">1</span>   <span class="co"># because the first column is not a SNP (just a count from zero)</span></span>
 <span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">string</span>(<span class="st">"Read in genotypic data at "</span>, loci_count,<span class="st">" loci for "</span>, indNum, <span class="st">" individuals. </span><span class="sc">\n</span><span class="st">"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> 58.315328 seconds (3.61 M allocations: 9.585 GiB, 0.34% gc time, 1.20% compilation time)
+<pre><code> 52.036732 seconds (3.61 M allocations: 9.585 GiB, 0.27% gc time, 0.64% compilation time)
 Read in genotypic data at 2431709 loci for 310 individuals. </code></pre>
 </div>
 </div>
@@ -727,8 +727,11 @@ This leaves 267 individuals and 1003400 loci, with no individuals missing more t
 <span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_region <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"pos_SNP_filtered_region"</span>)</span>
 <span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(<span class="st">"Loaded "</span>,filename))</span>
 <span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(regionText, <span class="st">": "</span>, <span class="fu">size</span>(imputed_genos,<span class="fl">2</span>), <span class="st">" SNPs from "</span>, <span class="fu">size</span>(imputed_genos,<span class="fl">1</span>), <span class="st">" individuals"</span>))</span>
-<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plotPCA</span>(imputed_genos, ind_with_metadata_indFiltered, groups_to_plot_PCA, group_colors_PCA; regionText)</span>
-<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">plotPCA</span>(imputed_genos, ind_with_metadata_indFiltered, </span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>            groups_to_plot_PCA, group_colors_PCA; </span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>            sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>            flip1 <span class="op">=</span> <span class="cn">true</span>, flip2 <span class="op">=</span> <span class="cn">false</span>)</span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Aug2023.chrgw2.imputedMissing.jld2
 chrgw2: 91777 SNPs from 267 individuals
@@ -981,7 +984,11 @@ wholeGenome: 1003400 SNPs from 271 individuals</code></pre>
 </div>
 <p>Now make the whole-genome PCA:</p>
 <div class="cell" data-execution_count="17">
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotPCA</span>(imputed_genosOnly_wholeGenome, ind_with_metadata_indFiltered_wholeGenome, groups_to_plot_PCA, group_colors_PCA; regionText)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plotPCA</span>(imputed_genosOnly_wholeGenome,          </span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>        ind_with_metadata_indFiltered_wholeGenome, </span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>        groups_to_plot_PCA, group_colors_PCA;</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>        sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>        flip1 <span class="op">=</span> <span class="cn">true</span>, flip2 <span class="op">=</span> <span class="cn">true</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
 <p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-18-output-1.png" class="img-fluid"></p>
 </div>

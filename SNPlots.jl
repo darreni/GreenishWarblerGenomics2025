@@ -229,9 +229,13 @@ function plotPCA(genotypes, indMetadata, groups_to_plot_PCA, group_colors_PCA;
     # if chosen to, flip axes:
     if flip1
         PC1 = -PCA_values[1,:]
+    else
+        PC1 = PCA_values[1,:]
     end
     if flip2
         PC2 = -PCA_values[2,:]
+    else
+        PC2 = PCA_values[2,:]
     end
 
     f = CairoMakie.Figure()

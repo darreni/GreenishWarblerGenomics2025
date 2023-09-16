@@ -294,7 +294,8 @@ for i in eachindex(chromosomes_to_process)
     pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
     println(string("Loaded ",filename))
     println(string(regionText, ": ", size(imputed_genos,2), " SNPs from ", size(imputed_genos,1), " individuals"))
-    plotPCA(imputed_genos, ind_with_metadata_indFiltered, groups_to_plot_PCA, group_colors_PCA; 
+    plotPCA(imputed_genos, ind_with_metadata_indFiltered, 
+            groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText=regionText,
             flip1 = true, flip2 = false)
 end
@@ -332,7 +333,11 @@ end
 Now make the whole-genome PCA:
 
 ```{julia}
-plotPCA(imputed_genosOnly_wholeGenome, ind_with_metadata_indFiltered_wholeGenome, groups_to_plot_PCA, group_colors_PCA; regionText)
+plotPCA(imputed_genosOnly_wholeGenome,          
+        ind_with_metadata_indFiltered_wholeGenome, 
+        groups_to_plot_PCA, group_colors_PCA;
+        sampleSet = "greenish warblers", regionText=regionText,
+        flip1 = true, flip2 = true)
 ```
 
 ## Genotype-by-individual plots

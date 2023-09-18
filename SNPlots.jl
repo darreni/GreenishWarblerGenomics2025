@@ -197,8 +197,16 @@ Do a principal components analysis based on genotypes of individuals (colored by
 - `group_colors_PCA`: Vector listing plotting color for each each group.
 - `sampleSet`: Optional, for specifying a name of the sample set to appear in the plot title.
 - `regionText`: Optional, for specifying a name of the genomic region to appear in the plot title.
-- `flip1`: Optional, set to `true` if wanting to flip PC1 (i.e., multiply by -1)
-- `flip2`: Same but for PC2
+- `flip1`: Optional, set to `true` if wanting to flip PC1 (i.e., multiply by -1).
+- `flip2`: Same but for PC2.
+
+# Notes
+
+Returns a tuple containing:
+1) the PCA model.
+2) PC values of individuals (before any flipping of axes).
+3) PC1 values of individuals(after any flipping).
+4) PC2 values of individuals (after any flipping).
 """
 function plotPCA(genotypes, indMetadata, groups_to_plot_PCA, group_colors_PCA; 
                     sampleSet = "", regionText="",
@@ -249,7 +257,9 @@ function plotPCA(genotypes, indMetadata, groups_to_plot_PCA, group_colors_PCA;
         CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
     end
     display(f)
+    return (model = PCA_indGenos, values = PCA_values, PC1 = PC1, PC2 = PC2)
 end
+
 
 # Option to focus on a region of chromosome.
 # If not specified, this will set appropriate positionMin and positionMax for a chromosome

@@ -70,6 +70,7 @@ println("z = ", z)
 Choose working directory:
 
 ```{julia}
+repoDirectory = pwd() # this gets the starting working directory, for later use
 cd("/Users/darrenirwin/Dropbox/Darren's current work/")
 ```
 
@@ -130,15 +131,27 @@ end
 
 ## Filtering 
 
+#### Filter out duplicate runs (indicated with `_rep` in `Fst_group` column)
+
+```{julia}
+    selection = occursin.("_rep", ind_with_metadata.Fst_group)
+    println("Filtering out these runs because they are duplicates of another: ", ind_with_metadata.ind[selection])
+    ind_with_metadata_indFiltered = ind_with_metadata[Not(selection), :];
+```
+
 #### Filter specific individuals
 
 If there are certain individuals that we want to filter out prior to any additional analysis, we can do so here by setting filter to `true` and specifying the individual row numbers in `filter_out_inds`:
 
 ```{julia}
-filter = false
-filter_out_inds = [] # if filtering out individuals, specify their row number here, e.g. "[20, 103]"
+filter = true
+# filter_out_inds = [] # if filtering out individuals, specify their row number here, e.g. "[20, 103]"
+# Specify individuals to filter out:
+filter_out_inds = ["GW_Armando_plate1_AB1", "GW_Liz_GBS_P_fusc", "GW_Liz_GBS_P_h_man", "GW_Liz_GBS_P_humei", "GW_Liz_GBS_P_inor", "GW_Liz_GBS_S_burk"]
+##  REMOVE 1ST ONE ABOVE
 if filter
-    # Specify individuals to filter out:
+    in.(ind_with_metadata_indFiltered.ind, filter_out_inds) #DOESN'T YET WORK NOT BROADCASTING RIGHT
+    selection = ind_with_metadata_indFiltered.ind in filter_out_inds
     ind_with_metadata_indFiltered = ind_with_metadata[Not(filter_out_inds), :]
     geno_indFiltered = geno[Not(filter_out_inds), :]
     println("Specific individuals filtered out as requested")
@@ -149,6 +162,8 @@ else
 end
 ```
 
+
+
 #### Filter individuals based on missing genotypes 
 
 Here we determine number of missing SNPs per bird (40% for this round), and filter out those with more than a certain percent of missing SNPs:
@@ -157,6 +172,8 @@ Here we determine number of missing SNPs per bird (40% for this round), and filt
 SNPmissing_percent_allowed_per_ind = 40   # this is the percentage threshold
 threshold_missing = loci_count * SNPmissing_percent_allowed_per_ind/100
 numMissings = sum(geno .== -1, dims=2)
+ind_with_metadata_indFiltered.numMissings .= numMissings
+println(DataFrame(ind_with_metadata_indFiltered))
 selection = vec(numMissings .<= threshold_missing) # the vec command converts to BitVector rather than BitMatrix--important below
 geno_indFiltered = geno_indFiltered[selection, :]
 println("Filtering out these individuals based on too many missing genotypes: ", ind_with_metadata_indFiltered.ind[selection.==false])
@@ -310,7 +327,7 @@ In addition to making PCA plots for each scaffold, we can do one for the whole g
 ```{julia}
 genosOnly_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly)
 regionText = "wholeGenome"
-tempTagName = ".June2023."
+tempTagName = ".Sept2023."
 filename = string(baseName, tempTagName, regionText, ".imputedMissing.jld2")
 # to do the imputing, do this by setting to true, but TAKES A LONG TIME:
 do_imputing = false
@@ -333,11 +350,13 @@ end
 Now make the whole-genome PCA:
 
 ```{julia}
-plotPCA(imputed_genosOnly_wholeGenome,          
+GW_wholeGenome_PCA = plotPCA(imputed_genosOnly_wholeGenome,          
         ind_with_metadata_indFiltered_wholeGenome, 
         groups_to_plot_PCA, group_colors_PCA;
         sampleSet = "greenish warblers", regionText=regionText,
         flip1 = true, flip2 = true)
+ind_with_metadata_indFiltered_wholeGenome.PC1 = GW_wholeGenome_PCA.PC1
+ind_with_metadata_indFiltered_wholeGenome.PC2 = GW_wholeGenome_PCA.PC2
 ```
 
 ## Genotype-by-individual plots
@@ -446,5 +465,171 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFraction
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 ```
   
+---------------------
 
+## Calculate distances around ring
+
+The locations around the ring (assuming barrier in North) can be graphed against genomic PC1 (or other variables).
+
+#### Load lat/long data
+
+```{julia}
+cd(repoDirectory)
+latlong_filepath = "metadata/GW_locations_LatLong_2023.txt"
+latlongs = DataFrame(CSV.File(latlong_filepath))
+print(latlongs)
+```
+
+#### Make a quick plot to inspect latlong data:
+
+```{julia}
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "Research locations",
+    xlabel = "longitude (E)",
+    ylabel = "latitude (N)"
+)
+scatter!(latlongs.long_E, latlongs.lat_N)
+f
+```
+
+#### remove nitidus
+
+_Phylloscopus [t.] nitidus_ is outside of the main ring, so remove these samples from this analysis: 
+
+```{julia}
+latlongs2 = latlongs[Not(latlongs.subspecies .== "nitidus"), :]
+```
+
+#### Make a matrix of great circle distances 
+
+These are Haversine distances, assuming spherical Earth which is really close:
+
+```{julia}
+geoPoints = GeoLocation.(latlongs2.long_E, latlongs2.lat_N)
+# this next line is so neat--uses list comprehension to make a matrix of pairwise calculations
+distances = [(HaversineDistance(geoPoints[i], geoPoints[j])/1000) for i in eachindex(geoPoints), j in eachindex(geoPoints)]
+```
+
+#### Now adjust distances to assume no gene flow through centre of ring.
+
+```{julia}
+# get some key distances
+function getIndex(name, nameVector = latlongs2.Location_name)
+    findfirst(isequal(name), nameVector)
+end
+
+index_AA = getIndex("Ala_Archa")
+index_PK = getIndex("Naran_Pakistan")
+index_LN = getIndex("Langtang")
+index_EM = getIndex("Emeishan")
+index_XN = getIndex("Xining")
+index_BJ = getIndex("Beijing")
+index_last = nrow(latlongs2)
+
+dist_PK_to_LN = distances[index_PK, index_LN]
+dist_LN_to_EM = distances[index_LN, index_EM]
+dist_EM_to_BJ = distances[index_EM, index_BJ]
+
+# This next part will assume locations in the input file are arranged in order around ring:
+distsAroundRing = Matrix{Float32}(undef, size(distances)[1], size(distances)[2])
+# accept all distances within viridanus:
+
+# function for accepting straight-line great circle dists as distances between sets of sites
+acceptDists = function(straightGreatCircleDists, start, finish, distsAroundRing)
+    distsAroundRing[start:finish, start:finish] = straightGreatCircleDists[start:finish, start:finish]
+    return(distsAroundRing)
+end
+
+# accept all distances within viridanus:
+distsAroundRing = acceptDists(distances, 1, index_AA, distsAroundRing)
+
+# accept dist from AA to PK:
+distsAroundRing = acceptDists(distances, index_AA, index_PK, distsAroundRing)
+
+# accept all distances from PK to LN:
+distsAroundRing = acceptDists(distances, index_PK, index_LN, distsAroundRing)
+
+# accept dist from LN to EM:
+distsAroundRing = acceptDists(distances, index_LN, index_EM, distsAroundRing)
+
+# accept dists between EM, XN, BJ:
+distsAroundRing = acceptDists(distances, index_EM, index_BJ, distsAroundRing)
+
+# accept all distances within plumbeitarsus:
+distsAroundRing = acceptDists(distances, index_BJ, index_last, distsAroundRing)
+
+display(distsAroundRing)
+
+# function for adding up distances measured through certain sites:
+addDists = function(set1start, set1end, set2start, set2end, distsAroundRing)
+    firstDists = repeat(distsAroundRing[set1start:(set1end-1), set1end], 1, set2end-set2start+1)
+    secondDists = repeat(transpose(distsAroundRing[set1end, set2start:set2end]), set1end-set1start, 1)
+    totalDists = firstDists + secondDists
+    distsAroundRing[set1start:(set1end-1), set2start:set2end] = totalDists
+    distsAroundRing[set2start:set2end, set1start:(set1end-1)] = transpose(totalDists)
+    return(distsAroundRing)
+end
+
+# dists from viridanus to PK are sum of dists to AA plus AA to PK:
+distsAroundRing = addDists(1, index_AA, index_PK, index_PK, distsAroundRing)
+
+# dists from "northwest of PK" to Himalayas are sum of ringdists to PK plus PK to locations up to LN:
+distsAroundRing = addDists(1, index_PK, index_PK+1, index_LN, distsAroundRing)
+
+# dists from "west / northwest of LN" to EM are sum of dists to LN plus LN to EM:
+distsAroundRing = addDists(1, index_LN, index_EM, index_EM, distsAroundRing)
+
+# dists from "west / northwest of EM" to China are sum of dists to EM plus EM to (XN, BJ):
+distsAroundRing = addDists(1, index_EM, index_XN, index_BJ, distsAroundRing)
+
+# dists from "west of BJ" to east Siberia are sum of dists to BJ plus BJ to other plumbeitarsus:
+distsAroundRing = addDists(1, index_BJ, index_BJ+1, index_last, distsAroundRing)
+```
+
+#### Do Principal Coordinates Analysis on the distances around the ring
+
+This produces a single location axis around ring, going from west Siberia south, then east, then north to east Siberia.
+
+```{julia}
+PCO_around_ring = fit(MDS, distsAroundRing; distances=true, maxoutdim=1)
+# add this as a column to the data frame:
+latlongs2.LocationAroundRing = vec(-predict(PCO_around_ring))
+# another way: 
+# latlongs2[:, :LocationAroundRing] = vec(-predict(PCO_around_ring))
+latlongs2[:, [:location_short, :LocationAroundRing]]
+println(latlongs2[:, [:location_short, :LocationAroundRing]])
+```
+
+Add these ring locations to the metadata table:
+
+```{julia}
+ind_with_metadata_indFiltered_wholeGenome.ring_km .= NaN  # pre-allocate the column
+for i in axes(latlongs2, 1)
+    println(i)
+    match_indices = findall(ind_with_metadata_indFiltered_wholeGenome.location .== latlongs2.location_short[i])
+    ind_with_metadata_indFiltered_wholeGenome.ring_km[match_indices] .= latlongs2.LocationAroundRing[i]
+    print(ind_with_metadata_indFiltered_wholeGenome.ring_km)
+end
+```
+
+#### Plot location around ring vs. PC1:
+
+```{julia}
+# plot(ind_with_metadata_indFiltered_wholeGenome.ring_km, ind_with_metadata_indFiltered_wholeGenome.PC1)
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "Genomic PC1 around ring",
+    xlabel = "Location around ring (km)",
+    ylabel = "Genomic PC1"
+)
+jitterSize = 100   # in km
+x_plot_values = ind_with_metadata_indFiltered_wholeGenome.ring_km .+ jitterSize .* (rand(length(ind_with_metadata_indFiltered_wholeGenome.PC1)) .- 0.5)
+y_plot_values = ind_with_metadata_indFiltered_wholeGenome.PC1
+for i in eachindex(groups_to_plot_PCA) 
+    selection = ind_with_metadata_indFiltered_wholeGenome.Fst_group .== groups_to_plot_PCA[i]
+    CairoMakie.scatter!(ax, x_plot_values[selection], y_plot_values[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
+end
+display(f)
+```
 

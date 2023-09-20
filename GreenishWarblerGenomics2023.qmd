@@ -84,7 +84,7 @@ filenameTextMiddle = ".max2allele_noindel.vcf.maxmiss"
 # this was set by earlier filtering, and is just a record-keeper for the filenames:
 missingGenotypeThreshold = 60 
 filenameTextEnd = ".MQ20.lowHet.tab"
-tagName = ".Aug2023."   # choose a tag name for this analysis
+tagName = ".Sept2023."   # choose a tag name for this analysis
 # indicate name of metadata file, a text file with these column headings:
 # ID	location	group	Fst_group	plot_order
 metadataFile = "GW_genomics_2022_with_new_genome/GW_all4plates.Fst_groups.txt"
@@ -135,8 +135,9 @@ end
 
 ```{julia}
     selection = occursin.("_rep", ind_with_metadata.Fst_group)
-    println("Filtering out these runs because they are duplicates of another: ", ind_with_metadata.ind[selection])
+    println("""Filtering out these runs because they are duplicates of another, according to having "rep" in Fst_group: """, ind_with_metadata.ind[selection])
     ind_with_metadata_indFiltered = ind_with_metadata[Not(selection), :];
+    geno_indFiltered = view(geno, Not(selection), :)  # use of view() avoids copying large memory object
 ```
 
 #### Filter specific individuals
@@ -145,39 +146,33 @@ If there are certain individuals that we want to filter out prior to any additio
 
 ```{julia}
 filter = true
-# filter_out_inds = [] # if filtering out individuals, specify their row number here, e.g. "[20, 103]"
 # Specify individuals to filter out:
-filter_out_inds = ["GW_Armando_plate1_AB1", "GW_Liz_GBS_P_fusc", "GW_Liz_GBS_P_h_man", "GW_Liz_GBS_P_humei", "GW_Liz_GBS_P_inor", "GW_Liz_GBS_S_burk"]
-##  REMOVE 1ST ONE ABOVE
+filter_out_inds = ["GW_Liz_GBS_P_fusc", "GW_Liz_GBS_P_h_man", "GW_Liz_GBS_P_humei", "GW_Liz_GBS_P_inor", "GW_Liz_GBS_S_burk"]
 if filter
-    in.(ind_with_metadata_indFiltered.ind, filter_out_inds) #DOESN'T YET WORK NOT BROADCASTING RIGHT
-    selection = ind_with_metadata_indFiltered.ind in filter_out_inds
-    ind_with_metadata_indFiltered = ind_with_metadata[Not(filter_out_inds), :]
-    geno_indFiltered = geno[Not(filter_out_inds), :]
-    println("Specific individuals filtered out as requested")
+    selection = map(in(filter_out_inds), ind_with_metadata_indFiltered.ind)
+    filtered_out = ind_with_metadata_indFiltered.ind[selection]
+    ind_with_metadata_indFiltered = ind_with_metadata_indFiltered[Not(selection), :]
+    geno_indFiltered = view(geno_indFiltered, Not(selection), :)
+    println("Specific individuals filtered out as requested: ", filtered_out)
 else
-    ind_with_metadata_indFiltered = ind_with_metadata
-    geno_indFiltered = geno
-    println("No specific individuals requested to be filtered out")
+    println("No specific individuals filtered (because filter not true)")
 end
 ```
 
-
-
 #### Filter individuals based on missing genotypes 
 
-Here we determine number of missing SNPs per bird (40% for this round), and filter out those with more than a certain percent of missing SNPs:
+Here we determine number of missing SNPs per individual (40% for this round), and filter out those individual datasets with more than a certain percent of missing SNPs:
 
 ```{julia}
 SNPmissing_percent_allowed_per_ind = 40   # this is the percentage threshold
 threshold_missing = loci_count * SNPmissing_percent_allowed_per_ind/100
-numMissings = sum(geno .== -1, dims=2)
+numMissings = sum(geno_indFiltered .== -1, dims=2)
 ind_with_metadata_indFiltered.numMissings .= numMissings
 println(DataFrame(ind_with_metadata_indFiltered))
 selection = vec(numMissings .<= threshold_missing) # the vec command converts to BitVector rather than BitMatrix--important below
-geno_indFiltered = geno_indFiltered[selection, :]
 println("Filtering out these individuals based on too many missing genotypes: ", ind_with_metadata_indFiltered.ind[selection.==false])
 ind_with_metadata_indFiltered = ind_with_metadata_indFiltered[selection, :];
+geno_indFiltered = view(geno_indFiltered, selection, :);
 ```
 
 #### Filter SNPs with too many missing genotypes:
@@ -278,7 +273,7 @@ chromosomes_to_process = ["gw2",
 
 Imputation can take several minutes per scaffold, so I ran this imputation step separately from this Quarto notebook (otherwise render would take long) and saved the genotype data for each scaffold for loading in the next step. This is the code I used for imputing:
 
-```julia
+```{julia}
 for i in eachindex(chromosomes_to_process)
     chrom = chromosomes_to_process[i]
     regionText = string("chr", chrom)

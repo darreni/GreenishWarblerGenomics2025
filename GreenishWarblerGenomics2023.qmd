@@ -273,7 +273,7 @@ chromosomes_to_process = ["gw2",
 
 Imputation can take several minutes per scaffold, so I ran this imputation step separately from this Quarto notebook (otherwise render would take long) and saved the genotype data for each scaffold for loading in the next step. This is the code I used for imputing:
 
-```{julia}
+```julia
 for i in eachindex(chromosomes_to_process)
     chrom = chromosomes_to_process[i]
     regionText = string("chr", chrom)
@@ -322,8 +322,7 @@ In addition to making PCA plots for each scaffold, we can do one for the whole g
 ```{julia}
 genosOnly_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly)
 regionText = "wholeGenome"
-tempTagName = ".Sept2023."
-filename = string(baseName, tempTagName, regionText, ".imputedMissing.jld2")
+filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
 # to do the imputing, do this by setting to true, but TAKES A LONG TIME:
 do_imputing = false
 if do_imputing

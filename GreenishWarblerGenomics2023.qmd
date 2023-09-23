@@ -47,6 +47,7 @@ using DelimitedFiles # for reading delimited files (the genotypic data)
 using Impute # for imputing missing genotypes
 using JLD2 # for saving data
 using CairoMakie # for plots
+using PrettyTables
 CairoMakie.activate!()  # this makes CairoMakie the main package for figures (in case another already loaded)
 ```
 
@@ -120,8 +121,8 @@ print(string("Read in genotypic data at ", loci_count," loci for ", indNum, " in
 ### Check that individuals are same in genotype data and metadata 
 ```{julia}
 ind_with_metadata = hcat(ind, metadata)
-print(ind_with_metadata)
-print("\n")  # prints a line break 
+println(ind_with_metadata)
+println()  # prints a line break 
 if isequal(ind_with_metadata.ind, ind_with_metadata.ID)
     println("GOOD NEWS: names of individuals in metadata file and genotype ind file match perfectly.")
 else
@@ -135,9 +136,11 @@ end
 
 ```{julia}
     selection = occursin.("_rep", ind_with_metadata.Fst_group)
-    println("""Filtering out these runs because they are duplicates of another, according to having "rep" in Fst_group: """, ind_with_metadata.ind[selection])
+    println("""Filtering out these runs because they are duplicates of another,
+    according to having "rep" in Fst_group: """)
+    display(ind_with_metadata.ind[selection])
     ind_with_metadata_indFiltered = ind_with_metadata[Not(selection), :];
-    geno_indFiltered = view(geno, Not(selection), :)  # use of view() avoids copying large memory object
+    geno_indFiltered = view(geno, Not(selection), :);  # use of view() avoids copying large memory object
 ```
 
 #### Filter specific individuals
@@ -153,7 +156,8 @@ if filter
     filtered_out = ind_with_metadata_indFiltered.ind[selection]
     ind_with_metadata_indFiltered = ind_with_metadata_indFiltered[Not(selection), :]
     geno_indFiltered = view(geno_indFiltered, Not(selection), :)
-    println("Specific individuals filtered out as requested: ", filtered_out)
+    println("Specific individuals filtered out as requested: ")
+    display(filtered_out)
 else
     println("No specific individuals filtered (because filter not true)")
 end
@@ -168,11 +172,15 @@ SNPmissing_percent_allowed_per_ind = 40   # this is the percentage threshold
 threshold_missing = loci_count * SNPmissing_percent_allowed_per_ind/100
 numMissings = sum(geno_indFiltered .== -1, dims=2)
 ind_with_metadata_indFiltered.numMissings .= numMissings
-println(DataFrame(ind_with_metadata_indFiltered))
 selection = vec(numMissings .<= threshold_missing) # the vec command converts to BitVector rather than BitMatrix--important below
-println("Filtering out these individuals based on too many missing genotypes: ", ind_with_metadata_indFiltered.ind[selection.==false])
-ind_with_metadata_indFiltered = ind_with_metadata_indFiltered[selection, :];
+println("Filtering out these individuals based on too many missing genotypes: ")
+filtered_inds = ind_with_metadata_indFiltered.ind[selection.==false]
+println(DataFrame(filtered_inds = filtered_inds)) # did this to print all lines
+ind_with_metadata_indFiltered = ind_with_metadata_indFiltered[selection, :]
 geno_indFiltered = view(geno_indFiltered, selection, :);
+println()
+println("Here are the remaining individuals: ")
+println(DataFrame(ind_with_metadata_indFiltered))
 ```
 
 #### Filter SNPs with too many missing genotypes:
@@ -184,7 +192,8 @@ threshold_genotypes_missing = size(geno_indFiltered)[1] * missing_genotypes_perc
 selection = vec(missing_genotypes_per_SNP .<= threshold_genotypes_missing)
 geno_ind_SNP_filtered = geno_indFiltered[:, selection] 
 pos_SNP_filtered = pos_whole_genome[selection[Not(1)],:]  # the Not(1) is needed because first column in geno is arbitrary row number
-println("Started with ", size(geno_indFiltered, 2)-1, " SNPs. After filtering SNPs for no more than ", missing_genotypes_percent_allowed_per_site, "% missing genotypes, ", size(geno_ind_SNP_filtered, 2)-1, " SNPs remain." )
+println("Started with ", size(geno_indFiltered, 2)-1, " SNPs.
+After filtering SNPs for no more than ", missing_genotypes_percent_allowed_per_site, "% missing genotypes, ", size(geno_ind_SNP_filtered, 2)-1, " SNPs remain." )
 ```
 
 #### 2nd round of filtering individuals
@@ -197,12 +206,13 @@ threshold_missing = (size(geno_ind_SNP_filtered, 2) - 1) * SNPmissing_percent_al
 numMissings = sum(geno_ind_SNP_filtered .== -1, dims=2)
 selection = vec(numMissings .<= threshold_missing) # the vec command converts to BitVector rather than BitMatrix--important below
 geno_ind_SNP_ind_filtered = geno_ind_SNP_filtered[selection, :]
-# print filtered out individuals:
-ind_with_metadata_indFiltered.ind[selection.==false]
-println("Filtering out these individuals based on too many missing genotypes: ", ind_with_metadata_indFiltered.ind[selection.==false])
-# filtered out: ["GW_Armando_plate1_TTGW74", "GW_Armando_plate2_TTGW54", "GW_Lane5_AA8", "GW_Lane5_YK1"]
+println("Filtering out these individuals based on too many missing genotypes: ")
+filtered_inds = ind_with_metadata_indFiltered.ind[selection.==false]
+println(DataFrame(filtered_inds = filtered_inds)) # did this to print all lines
 ind_with_metadata_indFiltered = ind_with_metadata_indFiltered[selection, :]
-println("This leaves ", size(geno_ind_SNP_ind_filtered, 1), " individuals and ", size(geno_ind_SNP_ind_filtered, 2)-1, " loci, with no individuals missing more than ", SNPmissing_percent_allowed_per_ind_round2, "% of genotypes and no loci missing in more than ", missing_genotypes_percent_allowed_per_site, "% of individuals.")
+println("This leaves ", size(geno_ind_SNP_ind_filtered, 1), " individuals and ", size(geno_ind_SNP_ind_filtered, 2)-1, " loci, 
+with no individuals missing more than ", SNPmissing_percent_allowed_per_ind_round2, "% of genotypes
+and no loci missing in more than ", missing_genotypes_percent_allowed_per_site, "% of individuals.")
 ```
 
 ## Estimate relationships of individuals using PCA
@@ -309,13 +319,13 @@ for i in eachindex(chromosomes_to_process)
     plotPCA(imputed_genos, ind_with_metadata_indFiltered, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText=regionText,
-            flip1 = true, flip2 = false)
+            flip1 = true, flip2 = true)
 end
 ```
 
 ### Whole-genome PCA
 
-In addition to making PCA plots for each scaffold, we can do one for the whole genome. The imputing for the whole genome takes some time (almost 2 hours!), so I did this in advance and saved a file. This is incorporated into the code below--to actually do the imputing, set `do_imputing = true`. Otherwise this code will load the previously-imputed data.
+In addition to making PCA plots for each scaffold, we can do one for the whole genome. The imputing for the whole genome takes some time (almost 2 hours!) for this dataset because the earlier GBS plates had low read depth so more missing genotypes, so I did this in advance and saved a file. This is incorporated into the code below--to actually do the imputing, set `do_imputing = true`. Otherwise this code will load the previously-imputed data.
 
 (NOTE: this is using an older version of the data--sometime need to update by removing `tempTagName` and replacing with `tagName`)
 
@@ -350,7 +360,7 @@ GW_wholeGenome_PCA = plotPCA(imputed_genosOnly_wholeGenome,
         sampleSet = "greenish warblers", regionText=regionText,
         flip1 = true, flip2 = true)
 ind_with_metadata_indFiltered_wholeGenome.PC1 = GW_wholeGenome_PCA.PC1
-ind_with_metadata_indFiltered_wholeGenome.PC2 = GW_wholeGenome_PCA.PC2
+ind_with_metadata_indFiltered_wholeGenome.PC2 = GW_wholeGenome_PCA.PC2;
 ```
 
 ## Genotype-by-individual plots
@@ -487,12 +497,13 @@ scatter!(latlongs.long_E, latlongs.lat_N)
 f
 ```
 
-#### remove nitidus
+#### remove "Green warbler" _nitidus_
 
 _Phylloscopus [t.] nitidus_ is outside of the main ring, so remove these samples from this analysis: 
 
 ```{julia}
-latlongs2 = latlongs[Not(latlongs.subspecies .== "nitidus"), :]
+latlongs2 = latlongs[Not(latlongs.subspecies .== "nitidus"), :];
+display(latlongs2)
 ```
 
 #### Make a matrix of great circle distances 
@@ -553,8 +564,6 @@ distsAroundRing = acceptDists(distances, index_EM, index_BJ, distsAroundRing)
 # accept all distances within plumbeitarsus:
 distsAroundRing = acceptDists(distances, index_BJ, index_last, distsAroundRing)
 
-display(distsAroundRing)
-
 # function for adding up distances measured through certain sites:
 addDists = function(set1start, set1end, set2start, set2end, distsAroundRing)
     firstDists = repeat(distsAroundRing[set1start:(set1end-1), set1end], 1, set2end-set2start+1)
@@ -578,7 +587,7 @@ distsAroundRing = addDists(1, index_LN, index_EM, index_EM, distsAroundRing)
 distsAroundRing = addDists(1, index_EM, index_XN, index_BJ, distsAroundRing)
 
 # dists from "west of BJ" to east Siberia are sum of dists to BJ plus BJ to other plumbeitarsus:
-distsAroundRing = addDists(1, index_BJ, index_BJ+1, index_last, distsAroundRing)
+distsAroundRing = addDists(1, index_BJ, index_BJ+1, index_last, distsAroundRing);
 ```
 
 #### Do Principal Coordinates Analysis on the distances around the ring
@@ -600,10 +609,8 @@ Add these ring locations to the metadata table:
 ```{julia}
 ind_with_metadata_indFiltered_wholeGenome.ring_km .= NaN  # pre-allocate the column
 for i in axes(latlongs2, 1)
-    println(i)
     match_indices = findall(ind_with_metadata_indFiltered_wholeGenome.location .== latlongs2.location_short[i])
-    ind_with_metadata_indFiltered_wholeGenome.ring_km[match_indices] .= latlongs2.LocationAroundRing[i]
-    print(ind_with_metadata_indFiltered_wholeGenome.ring_km)
+    ind_with_metadata_indFiltered_wholeGenome.ring_km[match_indices] .= latlongs2.LocationAroundRing[i];
 end
 ```
 
@@ -624,6 +631,6 @@ for i in eachindex(groups_to_plot_PCA)
     selection = ind_with_metadata_indFiltered_wholeGenome.Fst_group .== groups_to_plot_PCA[i]
     CairoMakie.scatter!(ax, x_plot_values[selection], y_plot_values[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
 end
-display(f)
+display(f);
 ```
 

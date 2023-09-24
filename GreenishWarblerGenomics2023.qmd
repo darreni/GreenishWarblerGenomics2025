@@ -5,11 +5,11 @@ date: "9/10/2023"
 execute:
   echo: true
 format:
+  html:
+    code-fold: false
   pdf:
     keep-tex: false
     monofont: "JuliaMono"
-  html:
-    code-fold: false
 jupyter: julia-1.9
 ---
 
@@ -221,14 +221,14 @@ Our goal is to produce plots showing individuals in genotype space, using Princi
 
 Remove the first column of the genotype matrix (which was an initial row number):
 ```{julia}
-genotypes = geno_ind_SNP_ind_filtered[:, Not(1)]
+genosOnly = geno_ind_SNP_ind_filtered[:, Not(1)]
 ```
 
 For missing genotypes, change our code of `-1` to `missing`:
 
 ```{julia}
-genos_with_missing = Matrix{Union{Missing, Int32}}(genotypes)
-genos_with_missing[genos_with_missing .== -1] .= missing;
+genosOnly_with_missing = Matrix{Union{Missing, Int32}}(genosOnly)
+genosOnly_with_missing[genosOnly_with_missing .== -1] .= missing;
 ```
 
 #### Impute and save genotypes for each scaffold
@@ -289,7 +289,7 @@ for i in eachindex(chromosomes_to_process)
     regionText = string("chr", chrom)
     loci_selection = (pos_SNP_filtered.chrom .== chrom)
     pos_SNP_filtered_region = pos_SNP_filtered[loci_selection,:]
-    genosOnly_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly[:,loci_selection])
+    genosOnly_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing[:,loci_selection])
     @time imputed_genos = Impute.svd(genosOnly_region_for_imputing)
     filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
     jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_region)
@@ -327,10 +327,8 @@ end
 
 In addition to making PCA plots for each scaffold, we can do one for the whole genome. The imputing for the whole genome takes some time (almost 2 hours!) for this dataset because the earlier GBS plates had low read depth so more missing genotypes, so I did this in advance and saved a file. This is incorporated into the code below--to actually do the imputing, set `do_imputing = true`. Otherwise this code will load the previously-imputed data.
 
-(NOTE: this is using an older version of the data--sometime need to update by removing `tempTagName` and replacing with `tagName`)
-
 ```{julia}
-genosOnly_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly)
+genosOnly_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing)
 regionText = "wholeGenome"
 filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
 # to do the imputing, do this by setting to true, but TAKES A LONG TIME:
@@ -436,7 +434,7 @@ end
 #### Calculate allele freqs and sample sizes (use column Fst_group)
 
 ```{julia}
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly, ind_with_metadata_indFiltered.Fst_group, groups)
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
 println("Calculated population allele frequencies and sample sizes")
 ```
 
@@ -449,7 +447,7 @@ println("Calculated Fst values")
 #### limit the individuals to include in plot
 
 ```{julia}
-genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly, ind_with_metadata_indFiltered);
+genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing, ind_with_metadata_indFiltered);
 ```
 
 #### choose the scaffold and region to show
@@ -645,7 +643,7 @@ chrom = "gwZ"
 regionText = string("chr", chrom)
 loci_selection = (pos_SNP_filtered.chrom .== chrom)
 pos_SNP_filtered_gwZ = pos_SNP_filtered[loci_selection,:]
-genotypes_gwZ = genotypes[:,loci_selection]
+genotypes_gwZ = genosOnly[:,loci_selection]
 numHetSNPs = sum(genotypes_gwZ .== 1, dims=2)
 numGenotypedSNPs = sum(map(in([0, 1, 2]), genotypes_gwZ), dims=2)
 hetFraction = numHetSNPs ./ numGenotypedSNPs
@@ -697,6 +695,159 @@ CairoMakie.scatter!(ax, x_plot_values, y_plot_values, marker = :diamond, color="
 display(f);
 ```
 
-I don't think number missing is very helpful--probably similar in males and females.
+I don't think number missing is very helpful--probably similar in females and males.
 
-Maybe will try this: see which SNPs are associated with PC2 of the Z chromosome PCA, and see which show high Fst between the high heterozygosity and low heterozygosity groups. If similar, then remove the SNPs with high 
+I realized that Z-chromosome read depth is probably the best way I presently have to infer sex of individuals. So I used vcftools to compare average SNP read depth on chr gwZ and the largest of the autosomes, gw2. These commands were run in the Terminal (I've simplified the file paths here):
+
+```
+vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf --chr gwZ --depth --out GW2022_all4plates.genotypes.SNPs_only.chrgwZ.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf
+
+# After filtering, kept 310 out of 310 Individuals
+# Outputting Mean Depth by Individual
+# After filtering, kept 134926 out of a possible 2431709 Sites
+# Run Time = 155.00 seconds
+
+vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf --chr gw2 --depth --out GW2022_all4plates.genotypes.SNPs_only.chrgw2.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf
+
+# After filtering, kept 310 out of 310 Individuals
+# Outputting Mean Depth by Individual
+# After filtering, kept 229227 out of a possible 2431709 Sites
+# Run Time = 155.00 seconds
+```
+
+The plan is to load these read depth files into Julia and determine sex of individuals from the ratio of read depth on chromosome Z to chromosome 2:
+
+```{julia}
+filename_gwZ = "metadata/GW2022_all4plates.genotypes.SNPs_only.chrgwZ.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf.idepth"
+readDepthZ = DataFrame(CSV.File(filename_gwZ))
+
+filename_gw2 = "metadata/GW2022_all4plates.genotypes.SNPs_only.chrgw2.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf.idepth"
+readDepth2 = DataFrame(CSV.File(filename_gw2))
+
+readDepthRatioZto2 = innerjoin(readDepthZ, readDepth2, on = :INDV, renamecols = "_gwZ" => "_gw2")
+
+readDepthRatioZto2[!, :depthRatio] = readDepthRatioZto2.MEAN_DEPTH_gwZ ./ readDepthRatioZto2.MEAN_DEPTH_gw2
+
+ind_with_metadata_indFiltered_sex = leftjoin(ind_with_metadata_indFiltered, readDepthRatioZto2, on = :ind => :INDV)
+
+plot(ind_with_metadata_indFiltered_sex.depthRatio)
+```
+
+That is quite a clear difference. The cluster with the lower Z / autosome read depth ratio should correspond to females (one copy of Z), whereas the higher Z / autosome ratio should be males. Interestingly, the ratios are a little higher than the expected 0.5 and 1, likely due to some repetitive elements (on the Z) and some W fragments being mapped to Z. Additional, the pseudoautosomal region, which is homologous and recombines between Z and W, will drive up Z read depth in females.
+
+It is these SNPs with a W copy that I will now try to detect and remove. They should show high heterozygosity in females.
+
+```{julia}
+females = ind_with_metadata_indFiltered_sex.depthRatio .< 0.8
+num_females = sum(females)
+females_genotypes_gwZ = view(genotypes_gwZ, females, :)
+numHetsPerSNP_females = vec(sum(females_genotypes_gwZ .== 1, dims=1))
+female_heterozygosity = numHetsPerSNP_females ./ num_females
+CairoMakie.hist(female_heterozygosity)
+CairoMakie.plot(female_heterozygosity)
+
+# compare with males:
+males = ind_with_metadata_indFiltered_sex.depthRatio .> 0.9
+num_males = sum(males)
+males_genotypes_gwZ = view(genotypes_gwZ, males, :)
+numHetsPerSNP_males = vec(sum(males_genotypes_gwZ .== 1, dims=1))
+male_heterozygosity = numHetsPerSNP_males ./ num_males
+CairoMakie.hist(male_heterozygosity)
+CairoMakie.plot(male_heterozygosity)
+
+CairoMakie.scatter(vec(numHetsPerSNP_females ./ num_females), vec(numHetsPerSNP_males ./ num_males),
+    xlabel = "Proportion females heterozygous",
+    ylabel = "Proportion males heterozygous")
+
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "Heterozygosity by sex of putative Z-chromosome SNPs",
+    xlabel = "Proportion females heterozygous",
+    ylabel = "Proportion males heterozygous"
+)
+x_plot_values = female_heterozygosity
+y_plot_values = male_heterozygosity
+CairoMakie.scatter!(ax, x_plot_values, y_plot_values, marker = :diamond, color="black", markersize=10, strokewidth=0.5)
+display(f);
+```
+
+This really clarifies things. The SNPs in the middle of the graph, with similar heterozygosity in females and males, are consistent with being pseudoautosomal SNPs. But the SNPs that have much higher female heterozygosity than male heterozygosity could be non-pseudoautosomal SNPs with reads from the W mapping to the Z, and giving appearance of Z heterozygosity in females (and not males). It is these SNPs we should remove. Also, there are a few with > 0.5 heterozygosity in males, which should be removed because they are likely due to paralogs.
+
+So, going to remove SNPs according to these rules:
+If (female heterozygosity is above 0.05) AND (ratio of male to female heterozygosity is less than 1/2), REMOVE the SNP from consideration.
+If (male heterozygosity is above 0.5), REMOVE the SNP.
+
+```{julia}
+removed_SNPs = (male_heterozygosity .> 0.5) .||
+                ((female_heterozygosity .> 0.05) .&& 
+                ((male_heterozygosity ./ female_heterozygosity) .< 0.5 ))
+genotypes_gwZ_SNPfiltered = genotypes_gwZ[:, Not(removed_SNPs)]
+pos_SNP_filtered_gwZ_SNPfiltered = pos_SNP_filtered_gwZ[Not(removed_SNPs),:]
+println("This filtering removed ", sum(removed_SNPs), " SNPs.")
+```
+
+Check that the filtering did remove the problematic SNPs:
+
+```{julia}
+females_genotypes_gwZ = view(genotypes_gwZ_SNPfiltered, females, :)
+numHetsPerSNP_females = vec(sum(females_genotypes_gwZ .== 1, dims=1))
+female_heterozygosity = numHetsPerSNP_females ./ num_females
+CairoMakie.hist(female_heterozygosity)
+CairoMakie.plot(female_heterozygosity)
+
+# compare with males:
+males_genotypes_gwZ = view(genotypes_gwZ_SNPfiltered, males, :)
+numHetsPerSNP_males = vec(sum(males_genotypes_gwZ .== 1, dims=1))
+male_heterozygosity = numHetsPerSNP_males ./ num_males
+CairoMakie.hist(male_heterozygosity)
+CairoMakie.plot(male_heterozygosity)
+
+CairoMakie.scatter(vec(numHetsPerSNP_females ./ num_females), vec(numHetsPerSNP_males ./ num_males),
+    xlabel = "Proportion females heterozygous",
+    ylabel = "Proportion males heterozygous")
+
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "After filtering of SNPs: Heterozygosity by sex of putative Z-chromosome SNPs",
+    xlabel = "Proportion females heterozygous",
+    ylabel = "Proportion males heterozygous"
+)
+x_plot_values = female_heterozygosity
+y_plot_values = male_heterozygosity
+CairoMakie.scatter!(ax, x_plot_values, y_plot_values, marker = :diamond, color="black", markersize=10, strokewidth=0.5)
+display(f);
+```
+
+Looks good. Now impute and do the PCA:
+
+```{julia}
+genotypes_gwZ_SNPfiltered_with_missing = Matrix{Union{Missing, Float32}}(genotypes_gwZ_SNPfiltered)
+# change "-1" to "missing":
+genotypes_gwZ_SNPfiltered_with_missing[genotypes_gwZ_SNPfiltered_with_missing .== -1] .= missing;
+regionText = "gwZ_cleaned"
+filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
+# to do the imputing, do this by setting to true:
+cd("/Users/darrenirwin/Dropbox/Darren's current work/")
+do_imputing = false
+if do_imputing
+    @time imputed_genos = Impute.svd(genotypes_gwZ_SNPfiltered_with_missing)
+    # took 102 sec
+    jldsave(filename; imputed_genos, ind_with_metadata_indFiltered_sex, pos_SNP_filtered_gwZ_SNPfiltered)
+    imputed_genos_chrZcleaned = imputed_genos
+    ind_with_metadata_indFiltered_sex_chrZcleaned = ind_with_metadata_indFiltered_sex
+    pos_SNP_filtered_chZcleaned = pos_SNP_filtered_gwZ_SNPfiltered
+    print("Saved matrix of real and imputed Z chromosome genotypes. \n")
+else # load the already saved imputing
+    imputed_genos_chrZcleaned = load(filename, "imputed_genos")
+    ind_with_metadata_indFiltered_sex_chrZcleaned = load(filename, "ind_with_metadata_indFiltered_sex")
+    pos_SNP_filtered_chZcleaned = load(filename, "pos_SNP_filtered_gwZ_SNPfiltered")
+    println(string("Loaded ",filename))
+    println(string(regionText, ": ", size(imputed_genos_chrZcleaned, 2), " SNPs from ", size(imputed_genos_chrZcleaned, 1), " individuals"))
+end
+plotPCA(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText=regionText,
+            flip1 = true, flip2 = true)
+```
+
+Looks Great!! Now have a Z chromosome PCA with both males and females, based on only Z-chromosome markers.

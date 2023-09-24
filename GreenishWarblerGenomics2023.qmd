@@ -219,16 +219,16 @@ and no loci missing in more than ", missing_genotypes_percent_allowed_per_site, 
 
 Our goal is to produce plots showing individuals in genotype space, using Principal Components Analysis. First we need to do a couple changes to our data matrix:
 
+Remove the first column of the genotype matrix (which was an initial row number):
+```{julia}
+genotypes = geno_ind_SNP_ind_filtered[:, Not(1)]
+```
+
 For missing genotypes, change our code of `-1` to `missing`:
 
 ```{julia}
-genos_with_missing = Matrix{Union{Missing, Int32}}(geno_ind_SNP_ind_filtered)
+genos_with_missing = Matrix{Union{Missing, Int32}}(genotypes)
 genos_with_missing[genos_with_missing .== -1] .= missing;
-```
-
-Remove the first column of the genotype matrix (which was an initial row number):
-```{julia}
-genosOnly = genos_with_missing[:,Not(1)]
 ```
 
 #### Impute and save genotypes for each scaffold
@@ -503,7 +503,7 @@ _Phylloscopus [t.] nitidus_ is outside of the main ring, so remove these samples
 
 ```{julia}
 latlongs2 = latlongs[Not(latlongs.subspecies .== "nitidus"), :];
-display(latlongs2)
+print(latlongs2)
 ```
 
 #### Make a matrix of great circle distances 
@@ -634,3 +634,69 @@ end
 display(f);
 ```
 
+# Z chromosome differentiation
+
+The PCA of Z chromosome variation (see far above) showed some unexpected structure, which I think it likely due to females being shifted (especially on PC2) compared to males. I think this is likely due to females having W chromosomes, reads from which are sometimes incorrectly mapped to the Z. Hence a small fraction of SNPs differ between females and males (with females called as heterozygotes, males as homozygotes, at those SNPs). However, at loci that are only on the Z, males can be heterozygous (2 alleles) whereas females can only be hemizygous (one allele). I am not sure of the net effect.
+
+To remove this problem, we could take several approaches (e.g., remove problematic SNPs, or look at one sex at a time). Here we'll plot only males as that will remove the W chromosome. To infer sex of the birds, we'll try plotting heterozygosity of Z chromosome SNPs per bird.
+
+```{julia}
+chrom = "gwZ"
+regionText = string("chr", chrom)
+loci_selection = (pos_SNP_filtered.chrom .== chrom)
+pos_SNP_filtered_gwZ = pos_SNP_filtered[loci_selection,:]
+genotypes_gwZ = genotypes[:,loci_selection]
+numHetSNPs = sum(genotypes_gwZ .== 1, dims=2)
+numGenotypedSNPs = sum(map(in([0, 1, 2]), genotypes_gwZ), dims=2)
+hetFraction = numHetSNPs ./ numGenotypedSNPs
+ind_with_metadata_indFiltered[!, :hetFractionZ] .= hetFraction
+
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "Average heterozygosity at SNPs on the Z chromosome",
+    xlabel = "Individual (order as in metadata)",
+    ylabel = "Heterozygosity (as fraction of genotypes SNPs)"
+)
+x_plot_values = eachindex(ind_with_metadata_indFiltered.hetFractionZ)
+y_plot_values = ind_with_metadata_indFiltered.hetFractionZ
+CairoMakie.scatter!(ax, x_plot_values, y_plot_values, marker = :diamond, color="black", markersize=10, strokewidth=0.5)
+display(f);
+```
+
+That doesn't provide super clear separation.
+
+Let's try looking at number of missing genotypes:
+
+```{julia}
+missingGenotypeCount = sum(genotypes_gwZ .== -1, dims=2)
+ind_with_metadata_indFiltered[!, :missingZgenotypeCount] .= missingGenotypeCount
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "Number of missing SNP genotypes on the Z chromosome",
+    xlabel = "Individual (order as in metadata)",
+    ylabel = "Number of missing SNPs (out of 53336 SNPs)"
+)
+x_plot_values = eachindex(ind_with_metadata_indFiltered.missingZgenotypeCount)
+y_plot_values = ind_with_metadata_indFiltered.missingZgenotypeCount
+CairoMakie.scatter!(ax, x_plot_values, y_plot_values, marker = :diamond, color="black", markersize=10, strokewidth=0.5)
+display(f);
+```
+
+Now let's plot those together:
+
+```{julia}
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "Missing vs. fraction heterozygous Z SNPs",
+    xlabel = "Number missing genotypes",
+    ylabel = "Fraction heterozygous"
+)
+x_plot_values = ind_with_metadata_indFiltered.missingZgenotypeCount
+y_plot_values = ind_with_metadata_indFiltered.hetFractionZ
+CairoMakie.scatter!(ax, x_plot_values, y_plot_values, marker = :diamond, color="black", markersize=10, strokewidth=0.5)
+display(f);
+```
+
+I don't think number missing is very helpful--probably similar in males and females.
+
+Maybe will try this: see which SNPs are associated with PC2 of the Z chromosome PCA, and see which show high Fst between the high heterozygosity and low heterozygosity groups. If similar, then remove the SNPs with high 

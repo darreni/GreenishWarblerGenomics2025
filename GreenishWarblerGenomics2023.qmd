@@ -851,3 +851,89 @@ plotPCA(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned
 ```
 
 Looks Great!! Now have a Z chromosome PCA with both males and females, based on only Z-chromosome markers.
+
+#### Genotype-by-individual plots for Z chromosome
+
+```{julia}
+set = "67_inds_around_ring"  #"east_side_of_ring"    #"67_inds_around_ring"  # "west_side_of_ring"
+
+if set == "67_inds_around_ring"
+    groups = ["vir","troch_LN","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
+    plotGroups = ["vir","vir_S","lud_PK","lud_KS","lud_central","troch_LN","troch_EM","obs", "plumb_BJ","plumb"]
+    plotGroupColors = ["blue","turquoise1","seagreen4","seagreen3","seagreen2","yellow","gold","orange", "pink","red"]
+    numIndsToPlot = [10, 5, 6, 2, 7, 15, 15, 15, 15, 15] # maximum number of individuals to plot from each group
+    group1 = "vir"   # these groups will determine the color used in the graph
+    group2 = "plumb"
+    groupsToCompare = "vir_plumb"   #"Fst_among"  #"vir_troch_LN"       #"vir_plumb"      #"troch_LN_plumb"      #"vir_troch_LN"
+    Fst_cutoff = 0.95
+    missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+elseif set == "37_inds_around_ring_plusAllVirPlumb"
+    groups = ["vir","troch_LN","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
+    plotGroups = ["vir","lud","troch_LN","troch_EM","obs", "obs_plumb","plumb"]
+    plotGroupColors = ["blue","seagreen4","yellow","gold","orange", "pink","red"]
+    numIndsToPlot = [100, 15, 15, 15, 15, 15, 100] # maximum number of individuals to plot from each group
+    group1 = "vir"   # these groups will determine the color used in the graph
+    group2 = "plumb"
+    groupsToCompare = "Fst_among"
+    Fst_cutoff = 0.7
+    missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+elseif set == "west_side_of_ring"
+    groups = ["vir","troch_LN"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
+    plotGroups = ["vir","vir_misID","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
+    plotGroupColors = ["blue","blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow"]
+    numIndsToPlot = [15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15] # maximum number of individuals to plot from each group
+    group1 = "vir"   # these groups will determine the color used in the graph
+    group2 = "troch_LN"
+    groupsToCompare = "vir_troch_LN" # "Fst_among"
+    Fst_cutoff = 0.6
+    missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+elseif set == "all_ludlowi_plus_a_few_other"
+    groups = ["vir","troch_LN","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
+    plotGroups = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","plumb"]
+    plotGroupColors = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","red"]
+    numIndsToPlot = [4, 4, 4, 1000, 1000, 1000, 1000, 1000, 1000, 4, 4] # maximum number of individuals to plot from each group
+    group1 = "vir"   # these groups will determine the color used in the graph
+    group2 = "troch_LN"
+    groupsToCompare = "vir_troch_LN" # "Fst_among"
+    Fst_cutoff = 0.6
+    missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+elseif set == "east_side_of_ring"
+    groups = ["troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
+    plotGroups = ["troch_LN","troch_EM","obs","obs_plumb","plumb"]
+    plotGroupColors = ["yellow","gold","orange","pink","red"]
+    numIndsToPlot = [15, 15, 15, 15, 15] # maximum number of individuals to plot from each group
+    group1 = "troch_LN"   # these groups will determine the color used in the graph
+    group2 = "plumb"
+    groupsToCompare = "troch_LN_plumb"
+    Fst_cutoff = 0.7
+    missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+elseif set == "vir_plumb"
+    groups = ["vir","plumb"]
+    plotGroups = ["vir","plumb_vir","plumb"]
+    plotGroupColors = ["blue","purple","red"]
+    numIndsToPlot = [100,100,100] # maximum number of individuals to plot from each group
+    group1 = "vir"   # these groups will determine the color used in the graph
+    group2 = "plumb"
+    groupsToCompare = "vir_plumb"
+    Fst_cutoff =  0.7
+    missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+end
+
+# Calculate allele freqs and sample sizes (use column Fst_group)
+freqs, sampleSizes = getFreqsAndSampleSizes(genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned.Fst_group, groups)
+println("Calculated population allele frequencies and sample sizes")
+
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+println("Calculated Fst values")
+
+genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned);
+
+chr = "gwZ"
+regionInfo = chooseChrRegion(pos_SNP_filtered_chZcleaned, chr; positionMin=1, positionMax=NaN) # this gets the maximum position for the chromosome
+
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
+# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
+```
+  

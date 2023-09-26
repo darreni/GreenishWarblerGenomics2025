@@ -824,7 +824,7 @@ Looks good. Now impute and do the PCA:
 genotypes_gwZ_SNPfiltered_with_missing = Matrix{Union{Missing, Float32}}(genotypes_gwZ_SNPfiltered)
 # change "-1" to "missing":
 genotypes_gwZ_SNPfiltered_with_missing[genotypes_gwZ_SNPfiltered_with_missing .== -1] .= missing;
-regionText = "gwZ_cleaned"
+regionText = "chrgwZ_cleaned"
 filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
 # to do the imputing, do this by setting to true:
 cd("/Users/darrenirwin/Dropbox/Darren's current work/")
@@ -832,15 +832,15 @@ do_imputing = false
 if do_imputing
     @time imputed_genos = Impute.svd(genotypes_gwZ_SNPfiltered_with_missing)
     # took 102 sec
-    jldsave(filename; imputed_genos, ind_with_metadata_indFiltered_sex, pos_SNP_filtered_gwZ_SNPfiltered)
+    jldsave(filename; imputed_genos, ind_with_metadata_indFiltered = ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region = pos_SNP_filtered_gwZ_SNPfiltered)
     imputed_genos_chrZcleaned = imputed_genos
     ind_with_metadata_indFiltered_sex_chrZcleaned = ind_with_metadata_indFiltered_sex
     pos_SNP_filtered_chZcleaned = pos_SNP_filtered_gwZ_SNPfiltered
     print("Saved matrix of real and imputed Z chromosome genotypes. \n")
 else # load the already saved imputing
     imputed_genos_chrZcleaned = load(filename, "imputed_genos")
-    ind_with_metadata_indFiltered_sex_chrZcleaned = load(filename, "ind_with_metadata_indFiltered_sex")
-    pos_SNP_filtered_chZcleaned = load(filename, "pos_SNP_filtered_gwZ_SNPfiltered")
+    ind_with_metadata_indFiltered_sex_chrZcleaned = load(filename, "ind_with_metadata_indFiltered")
+    pos_SNP_filtered_chZcleaned = load(filename, "pos_SNP_filtered_region")
     println(string("Loaded ",filename))
     println(string(regionText, ": ", size(imputed_genos_chrZcleaned, 2), " SNPs from ", size(imputed_genos_chrZcleaned, 1), " individuals"))
 end
@@ -936,4 +936,42 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFraction
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 ```
-  
+
+# Make final whole-genome PCA 
+
+Now that the Z-chromosome problem has been solved (by removing SNPs 
+that had a divergent W sequence mapped onto that Z location), we can construct
+a new whole-genome PCA. I will combine the saved imputed genotypes for 
+each chromosome into a large data matrix, and conduct PCA on that:
+
+```{julia}
+chromosomes_to_process[chromosomes_to_process .== "gwZ"] .= "gwZ_cleaned"
+# initialize data structures for gneotypes and positions
+genos_imputed_loaded = Matrix{Union{Missing, Float32}}(undef, nrow(ind_with_metadata_indFiltered), 0)
+pos_SNP_loaded = DataFrame(chrom = String[], position = Int64[])
+for i in eachindex(chromosomes_to_process)
+    chrom = chromosomes_to_process[i]
+    regionText = string("chr", chrom)
+    filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
+    imputed_genos_one_chr = load(filename, "imputed_genos")
+    genos_imputed_loaded = hcat(genos_imputed_loaded, imputed_genos_one_chr)
+    if ind_with_metadata_indFiltered.ind != load(filename, "ind_with_metadata_indFiltered")[:, :ind]
+        println("""Warning: "ind" columns in loaded data and memory data don't match.""")
+    end
+    pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
+    pos_SNP_loaded = vcat(pos_SNP_loaded, pos_SNP_filtered_region)
+    # println(string("Loaded ",filename))
+    # println(string(regionText, ": ", size(imputed_genos_one_chr,2), " SNPs from ", size(imputed_genos_one_chr,1), " individuals"))
+end
+PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered, 
+        groups_to_plot_PCA, group_colors_PCA; 
+        sampleSet = "greenish warblers", regionText = "wholeGenome",
+        flip1 = true, flip2 = true)
+totalObservationVariance = var(PCA_wholeGenome.model) 
+PC1_variance, PC2_variance = principalvars(PCA_wholeGenome.model)[1:2]
+PC1_prop_variance = PC1_variance / totalObservationVariance
+PC2_prop_variance = PC2_variance / totalObservationVariance
+println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
+PC2 explains ", 100*PC2_prop_variance, "%.")
+```
+

@@ -200,7 +200,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>loci_count <span class="op">=</span> <span class="fu">size</span>(geno, <span class="fl">2</span>) <span class="op">-</span> <span class="fl">1</span>   <span class="co"># because the first column is not a SNP (just a count from zero)</span></span>
 <span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">string</span>(<span class="st">"Read in genotypic data at "</span>, loci_count,<span class="st">" loci for "</span>, indNum, <span class="st">" individuals. </span><span class="sc">\n</span><span class="st">"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> 60.252371 seconds (3.94 M allocations: 15.994 GiB, 0.34% gc time, 1.18% compilation time)
+<pre><code> 56.174248 seconds (3.94 M allocations: 15.994 GiB, 0.30% gc time, 1.08% compilation time)
 Read in genotypic data at 2431709 loci for 310 individuals. </code></pre>
 </div>
 </div>
@@ -1973,7 +1973,7 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 <div class="sourceCode cell-code" id="cb65"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ_SNPfiltered_with_missing <span class="op">=</span> <span class="fu">Matrix</span><span class="dt">{Union{Missing, Float32}}</span>(genotypes_gwZ_SNPfiltered)</span>
 <span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a><span class="co"># change "-1" to "missing":</span></span>
 <span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ_SNPfiltered_with_missing[genotypes_gwZ_SNPfiltered_with_missing <span class="op">.==</span> <span class="op">-</span><span class="fl">1</span>] <span class="op">.=</span> <span class="cn">missing</span>;</span>
-<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="st">"gwZ_cleaned"</span></span>
+<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="st">"chrgwZ_cleaned"</span></span>
 <span id="cb65-5"><a href="#cb65-5" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".imputedMissing.jld2"</span>)</span>
 <span id="cb65-6"><a href="#cb65-6" aria-hidden="true" tabindex="-1"></a><span class="co"># to do the imputing, do this by setting to true:</span></span>
 <span id="cb65-7"><a href="#cb65-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(<span class="st">"/Users/darrenirwin/Dropbox/Darren's current work/"</span>)</span>
@@ -1981,15 +1981,15 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 <span id="cb65-9"><a href="#cb65-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> do_imputing</span>
 <span id="cb65-10"><a href="#cb65-10" aria-hidden="true" tabindex="-1"></a>    <span class="pp">@time</span> imputed_genos <span class="op">=</span> Impute.<span class="fu">svd</span>(genotypes_gwZ_SNPfiltered_with_missing)</span>
 <span id="cb65-11"><a href="#cb65-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># took 102 sec</span></span>
-<span id="cb65-12"><a href="#cb65-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">jldsave</span>(filename; imputed_genos, ind_with_metadata_indFiltered_sex, pos_SNP_filtered_gwZ_SNPfiltered)</span>
+<span id="cb65-12"><a href="#cb65-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">jldsave</span>(filename; imputed_genos, ind_with_metadata_indFiltered <span class="op">=</span> ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region <span class="op">=</span> pos_SNP_filtered_gwZ_SNPfiltered)</span>
 <span id="cb65-13"><a href="#cb65-13" aria-hidden="true" tabindex="-1"></a>    imputed_genos_chrZcleaned <span class="op">=</span> imputed_genos</span>
 <span id="cb65-14"><a href="#cb65-14" aria-hidden="true" tabindex="-1"></a>    ind_with_metadata_indFiltered_sex_chrZcleaned <span class="op">=</span> ind_with_metadata_indFiltered_sex</span>
 <span id="cb65-15"><a href="#cb65-15" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_chZcleaned <span class="op">=</span> pos_SNP_filtered_gwZ_SNPfiltered</span>
 <span id="cb65-16"><a href="#cb65-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">"Saved matrix of real and imputed Z chromosome genotypes. </span><span class="sc">\n</span><span class="st">"</span>)</span>
 <span id="cb65-17"><a href="#cb65-17" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span> <span class="co"># load the already saved imputing</span></span>
 <span id="cb65-18"><a href="#cb65-18" aria-hidden="true" tabindex="-1"></a>    imputed_genos_chrZcleaned <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"imputed_genos"</span>)</span>
-<span id="cb65-19"><a href="#cb65-19" aria-hidden="true" tabindex="-1"></a>    ind_with_metadata_indFiltered_sex_chrZcleaned <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"ind_with_metadata_indFiltered_sex"</span>)</span>
-<span id="cb65-20"><a href="#cb65-20" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_chZcleaned <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"pos_SNP_filtered_gwZ_SNPfiltered"</span>)</span>
+<span id="cb65-19"><a href="#cb65-19" aria-hidden="true" tabindex="-1"></a>    ind_with_metadata_indFiltered_sex_chrZcleaned <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"ind_with_metadata_indFiltered"</span>)</span>
+<span id="cb65-20"><a href="#cb65-20" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_chZcleaned <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"pos_SNP_filtered_region"</span>)</span>
 <span id="cb65-21"><a href="#cb65-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(<span class="st">"Loaded "</span>,filename))</span>
 <span id="cb65-22"><a href="#cb65-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(regionText, <span class="st">": "</span>, <span class="fu">size</span>(imputed_genos_chrZcleaned, <span class="fl">2</span>), <span class="st">" SNPs from "</span>, <span class="fu">size</span>(imputed_genos_chrZcleaned, <span class="fl">1</span>), <span class="st">" individuals"</span>))</span>
 <span id="cb65-23"><a href="#cb65-23" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
@@ -1998,14 +1998,14 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 <span id="cb65-26"><a href="#cb65-26" aria-hidden="true" tabindex="-1"></a>            sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
 <span id="cb65-27"><a href="#cb65-27" aria-hidden="true" tabindex="-1"></a>            flip1 <span class="op">=</span> <span class="cn">true</span>, flip2 <span class="op">=</span> <span class="cn">true</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Sept2023.gwZ_cleaned.imputedMissing.jld2
-gwZ_cleaned: 51505 SNPs from 257 individuals</code></pre>
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Sept2023.chrgwZ_cleaned.imputedMissing.jld2
+chrgwZ_cleaned: 51505 SNPs from 257 individuals</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-41-output-2.png" class="img-fluid"></p>
 </div>
 <div class="cell-output cell-output-display" data-execution_count="41">
-<pre><code>(model = PCA(indim = 51505, outdim = 3, principalratio = 0.28502125), values = Float32[26.585447 -27.49068 … 2.1198876 -1.8256006; -15.928179 -12.104057 … 16.679796 18.990643; 12.129835 0.41055506 … 2.7433743 1.1798751], PC1 = Float32[-26.585447, 27.49068, 25.138144, 26.224026, 26.451904, 24.595833, 26.751513, 9.388178, 27.13595, 25.610985  …  0.15021078, -9.692322, -3.92161, 1.3749973, -0.96147364, 1.8705733, -19.863256, 1.5226561, -2.1198876, 1.8256006], PC2 = Float32[15.928179, 12.104057, 11.937754, 11.827578, 10.880355, 11.779166, 11.21053, 13.135892, 11.022734, 11.508869  …  -19.438717, -7.5519156, -14.954853, -19.304909, -20.682, -19.056437, 6.973512, -22.193033, -16.679796, -18.990643])</code></pre>
+<pre><code>(model = PCA(indim = 51505, outdim = 3, principalratio = 0.28502297), values = Float32[26.585491 -27.490622 … 2.1198847 -1.8255953; -15.928137 -12.104014 … 16.679821 18.990711; 12.129704 0.41056082 … 2.7433512 1.17988], PC1 = Float32[-26.585491, 27.490622, 25.138126, 26.22403, 26.451881, 24.59582, 26.7515, 9.388118, 27.135931, 25.610964  …  0.15019822, -9.692323, -3.9216084, 1.3752123, -0.9614751, 1.8705837, -19.863216, 1.5226417, -2.1198847, 1.8255953], PC2 = Float32[15.928137, 12.104014, 11.9377365, 11.827559, 10.8803425, 11.779139, 11.210504, 13.135842, 11.022703, 11.508832  …  -19.438747, -7.5519676, -14.954897, -19.304186, -20.682032, -19.056465, 6.973544, -22.193075, -16.679821, -18.990711])</code></pre>
 </div>
 </div>
 <p>Looks Great!! Now have a Z chromosome PCA with both males and females, based on only Z-chromosome markers.</p>
@@ -2101,6 +2101,47 @@ Calculated Fst values</code></pre>
 </div>
 </div>
 </section>
+</section>
+<section id="make-final-whole-genome-pca" class="level1">
+<h1>Make final whole-genome PCA</h1>
+<p>Now that the Z-chromosome problem has been solved (by removing SNPs that had a divergent W sequence mapped onto that Z location), we can construct a new whole-genome PCA. I will combine the saved imputed genotypes for each chromosome into a large data matrix, and conduct PCA on that:</p>
+<div class="cell" data-execution_count="42">
+<div class="sourceCode cell-code" id="cb70"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a>chromosomes_to_process[chromosomes_to_process <span class="op">.==</span> <span class="st">"gwZ"</span>] <span class="op">.=</span> <span class="st">"gwZ_cleaned"</span></span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a><span class="co"># initialize data structures for gneotypes and positions</span></span>
+<span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a>genos_imputed_loaded <span class="op">=</span> <span class="fu">Matrix</span><span class="dt">{Union{Missing, Float32}}</span>(<span class="cn">undef</span>, <span class="fu">nrow</span>(ind_with_metadata_indFiltered), <span class="fl">0</span>)</span>
+<span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a>pos_SNP_loaded <span class="op">=</span> <span class="fu">DataFrame</span>(chrom <span class="op">=</span> <span class="dt">String</span>[], position <span class="op">=</span> <span class="dt">Int64</span>[])</span>
+<span id="cb70-5"><a href="#cb70-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="fu">eachindex</span>(chromosomes_to_process)</span>
+<span id="cb70-6"><a href="#cb70-6" aria-hidden="true" tabindex="-1"></a>    chrom <span class="op">=</span> chromosomes_to_process[i]</span>
+<span id="cb70-7"><a href="#cb70-7" aria-hidden="true" tabindex="-1"></a>    regionText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"chr"</span>, chrom)</span>
+<span id="cb70-8"><a href="#cb70-8" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".imputedMissing.jld2"</span>)</span>
+<span id="cb70-9"><a href="#cb70-9" aria-hidden="true" tabindex="-1"></a>    imputed_genos_one_chr <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"imputed_genos"</span>)</span>
+<span id="cb70-10"><a href="#cb70-10" aria-hidden="true" tabindex="-1"></a>    genos_imputed_loaded <span class="op">=</span> <span class="fu">hcat</span>(genos_imputed_loaded, imputed_genos_one_chr)</span>
+<span id="cb70-11"><a href="#cb70-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> ind_with_metadata_indFiltered.ind <span class="op">!=</span> <span class="fu">load</span>(filename, <span class="st">"ind_with_metadata_indFiltered"</span>)[<span class="op">:</span>, <span class="op">:</span>ind]</span>
+<span id="cb70-12"><a href="#cb70-12" aria-hidden="true" tabindex="-1"></a>        <span class="fu">println</span>(<span class="st">"""Warning: "ind" columns in loaded data and memory data don't match."""</span>)</span>
+<span id="cb70-13"><a href="#cb70-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb70-14"><a href="#cb70-14" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_region <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"pos_SNP_filtered_region"</span>)</span>
+<span id="cb70-15"><a href="#cb70-15" aria-hidden="true" tabindex="-1"></a>    pos_SNP_loaded <span class="op">=</span> <span class="fu">vcat</span>(pos_SNP_loaded, pos_SNP_filtered_region)</span>
+<span id="cb70-16"><a href="#cb70-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># println(string("Loaded ",filename))</span></span>
+<span id="cb70-17"><a href="#cb70-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># println(string(regionText, ": ", size(imputed_genos_one_chr,2), " SNPs from ", size(imputed_genos_one_chr,1), " individuals"))</span></span>
+<span id="cb70-18"><a href="#cb70-18" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb70-19"><a href="#cb70-19" aria-hidden="true" tabindex="-1"></a>PCA_wholeGenome <span class="op">=</span> <span class="fu">plotPCA</span>(genos_imputed_loaded, ind_with_metadata_indFiltered, </span>
+<span id="cb70-20"><a href="#cb70-20" aria-hidden="true" tabindex="-1"></a>        groups_to_plot_PCA, group_colors_PCA; </span>
+<span id="cb70-21"><a href="#cb70-21" aria-hidden="true" tabindex="-1"></a>        sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText <span class="op">=</span> <span class="st">"wholeGenome"</span>,</span>
+<span id="cb70-22"><a href="#cb70-22" aria-hidden="true" tabindex="-1"></a>        flip1 <span class="op">=</span> <span class="cn">true</span>, flip2 <span class="op">=</span> <span class="cn">true</span>)</span>
+<span id="cb70-23"><a href="#cb70-23" aria-hidden="true" tabindex="-1"></a>totalObservationVariance <span class="op">=</span> <span class="fu">var</span>(PCA_wholeGenome.model) </span>
+<span id="cb70-24"><a href="#cb70-24" aria-hidden="true" tabindex="-1"></a>PC1_variance, PC2_variance <span class="op">=</span> <span class="fu">principalvars</span>(PCA_wholeGenome.model)[<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>]</span>
+<span id="cb70-25"><a href="#cb70-25" aria-hidden="true" tabindex="-1"></a>PC1_prop_variance <span class="op">=</span> PC1_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb70-26"><a href="#cb70-26" aria-hidden="true" tabindex="-1"></a>PC2_prop_variance <span class="op">=</span> PC2_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb70-27"><a href="#cb70-27" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"PC1 explains "</span>, <span class="fl">100</span><span class="op">*</span>PC1_prop_variance, <span class="st">"% of the total variance.</span></span>
+<span id="cb70-28"><a href="#cb70-28" aria-hidden="true" tabindex="-1"></a>PC2 explains <span class="st">", 100*PC2_prop_variance, "</span><span class="op">%</span>.<span class="st">")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-43-output-1.png" class="img-fluid"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 11.98665% of the total variance.
+PC2 explains 6.385296%.</code></pre>
+</div>
+</div>
 </section>
 
 </main>

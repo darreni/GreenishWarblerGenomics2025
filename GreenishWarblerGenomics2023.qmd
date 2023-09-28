@@ -366,17 +366,17 @@ ind_with_metadata_indFiltered_wholeGenome.PC2 = GW_wholeGenome_PCA.PC2;
 Now, show individual genotypes for subsets of the dataset. Can choose individuals and genomic regions to plot, along with an Fst cutoff (only show SNPs with greater Fst than the cutoff).
 
 ```{julia}
-set = "67_inds_around_ring"  #"east_side_of_ring"    #"67_inds_around_ring"  # "west_side_of_ring"
+set = "59_inds_around_ring"  #"east_side_of_ring"    #"67_inds_around_ring"  # "west_side_of_ring"
 
-if set == "67_inds_around_ring"
+if set == "59_inds_around_ring"
     groups = ["vir","troch_LN","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
     plotGroups = ["vir","vir_S","lud_PK","lud_KS","lud_central","troch_LN","troch_EM","obs", "plumb_BJ","plumb"]
     plotGroupColors = ["blue","turquoise1","seagreen4","seagreen3","seagreen2","yellow","gold","orange", "pink","red"]
-    numIndsToPlot = [10, 5, 6, 2, 7, 15, 15, 15, 15, 15] # maximum number of individuals to plot from each group
+    numIndsToPlot = [10, 5, 2, 1, 8, 15, 1, 4, 3, 10] # maximum number of individuals to plot from each group
     group1 = "vir"   # these groups will determine the color used in the graph
     group2 = "plumb"
     groupsToCompare = "vir_plumb"   #"Fst_among"  #"vir_troch_LN"       #"vir_plumb"      #"troch_LN_plumb"      #"vir_troch_LN"
-    Fst_cutoff = 0.7
+    Fst_cutoff = 0.95
     missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 elseif set == "37_inds_around_ring_plusAllVirPlumb"
     groups = ["vir","troch_LN","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
@@ -447,12 +447,18 @@ println("Calculated Fst values")
 #### limit the individuals to include in plot
 
 ```{julia}
-genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing, ind_with_metadata_indFiltered);
+# For this figure only, filter out individuals with lots of missing genotypes
+numMissings_threshold = 800_000
+selection = ind_with_metadata_indFiltered.numMissings .< numMissings_threshold
+genosOnly_with_missing_selected = view(genosOnly_with_missing, selection, :)
+ind_with_metadata_indFiltered_selected = view(ind_with_metadata_indFiltered, selection, :)
+# now limit each group to specified numbers
+genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected);
 ```
 
 #### choose the scaffold and region to show
 ```{julia}
-chr = "gw26"
+chr = "gwZ"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=NaN) # this gets the maximum position for the chromosome
 ```
 
@@ -738,7 +744,9 @@ That is quite a clear difference. The cluster with the lower Z / autosome read d
 It is these SNPs with a W copy that I will now try to detect and remove. They should show high heterozygosity in females.
 
 ```{julia}
+ind_with_metadata_indFiltered_sex.sex .= "na" 
 females = ind_with_metadata_indFiltered_sex.depthRatio .< 0.8
+ind_with_metadata_indFiltered_sex.sex[females] .= "F"
 num_females = sum(females)
 females_genotypes_gwZ = view(genotypes_gwZ, females, :)
 numHetsPerSNP_females = vec(sum(females_genotypes_gwZ .== 1, dims=1))
@@ -748,6 +756,7 @@ CairoMakie.plot(female_heterozygosity)
 
 # compare with males:
 males = ind_with_metadata_indFiltered_sex.depthRatio .> 0.9
+ind_with_metadata_indFiltered_sex.sex[males] .= "M"
 num_males = sum(males)
 males_genotypes_gwZ = view(genotypes_gwZ, males, :)
 numHetsPerSNP_males = vec(sum(males_genotypes_gwZ .== 1, dims=1))
@@ -828,7 +837,7 @@ regionText = "chrgwZ_cleaned"
 filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
 # to do the imputing, do this by setting to true:
 cd("/Users/darrenirwin/Dropbox/Darren's current work/")
-do_imputing = false
+do_imputing = true
 if do_imputing
     @time imputed_genos = Impute.svd(genotypes_gwZ_SNPfiltered_with_missing)
     # took 102 sec
@@ -855,13 +864,13 @@ Looks Great!! Now have a Z chromosome PCA with both males and females, based on 
 #### Genotype-by-individual plots for Z chromosome
 
 ```{julia}
-set = "67_inds_around_ring"  #"east_side_of_ring"    #"67_inds_around_ring"  # "west_side_of_ring"
+set = "54_inds_around_ring"  #"east_side_of_ring"    #"67_inds_around_ring"  # "west_side_of_ring"
 
-if set == "67_inds_around_ring"
+if set == "54_inds_around_ring"
     groups = ["vir","troch_LN","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
     plotGroups = ["vir","vir_S","lud_PK","lud_KS","lud_central","troch_LN","troch_EM","obs", "plumb_BJ","plumb"]
     plotGroupColors = ["blue","turquoise1","seagreen4","seagreen3","seagreen2","yellow","gold","orange", "pink","red"]
-    numIndsToPlot = [10, 5, 6, 2, 7, 15, 15, 15, 15, 15] # maximum number of individuals to plot from each group
+    numIndsToPlot = [10, 5, 2, 1, 8, 10, 1, 4, 3, 10] # maximum number of individuals to plot from each group
     group1 = "vir"   # these groups will determine the color used in the graph
     group2 = "plumb"
     groupsToCompare = "vir_plumb"   #"Fst_among"  #"vir_troch_LN"       #"vir_plumb"      #"troch_LN_plumb"      #"vir_troch_LN"
@@ -926,7 +935,14 @@ println("Calculated population allele frequencies and sample sizes")
 Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
 println("Calculated Fst values")
 
-genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned);
+# For this Z-chromosome genotype-by-individual plot, include only males (so 2 Z chromosomes) and filter out individuals with lots of missing genotypes
+numMissings_threshold = 800_000
+selection = (ind_with_metadata_indFiltered_sex_chrZcleaned.numMissings .< numMissings_threshold) .&& (ind_with_metadata_indFiltered_sex_chrZcleaned.sex .== "M") 
+genotypes_gwZ_SNPfiltered_with_missing_selected = view(genotypes_gwZ_SNPfiltered_with_missing, selection, :)
+ind_with_metadata_indFiltered_sex_chrZcleaned_selected = view(ind_with_metadata_indFiltered_sex_chrZcleaned, selection, :)
+
+# now limit each group to specified numbers
+genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genotypes_gwZ_SNPfiltered_with_missing_selected, ind_with_metadata_indFiltered_sex_chrZcleaned_selected);
 
 chr = "gwZ"
 regionInfo = chooseChrRegion(pos_SNP_filtered_chZcleaned, chr; positionMin=1, positionMax=NaN) # this gets the maximum position for the chromosome

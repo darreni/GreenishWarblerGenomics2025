@@ -200,7 +200,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>loci_count <span class="op">=</span> <span class="fu">size</span>(geno, <span class="fl">2</span>) <span class="op">-</span> <span class="fl">1</span>   <span class="co"># because the first column is not a SNP (just a count from zero)</span></span>
 <span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">string</span>(<span class="st">"Read in genotypic data at "</span>, loci_count,<span class="st">" loci for "</span>, indNum, <span class="st">" individuals. </span><span class="sc">\n</span><span class="st">"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> 56.174248 seconds (3.94 M allocations: 15.994 GiB, 0.30% gc time, 1.08% compilation time)
+<pre><code> 50.367694 seconds (3.61 M allocations: 9.585 GiB, 0.18% gc time, 0.70% compilation time)
 Read in genotypic data at 2431709 loci for 310 individuals. </code></pre>
 </div>
 </div>
@@ -1019,7 +1019,7 @@ and no loci missing in more than 5% of individuals.</code></pre>
 <h4 class="anchored" data-anchor-id="impute-and-save-genotypes-for-each-scaffold">Impute and save genotypes for each scaffold</h4>
 <p>PCA requires imputation of missing genotypes. I did imputation for each scaffold above a certain size threshold. Those scaffolds (many of which correspond to whole chromosomes) are listed here:</p>
 <div class="cell" data-execution_count="14">
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>chromosomes_to_process <span class="op">=</span> [<span class="st">"gw2"</span>,</span>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>chromosomes_to_process <span class="op">=</span> <span class="fu">vec</span>([<span class="st">"gw2"</span>,</span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw1"</span>,</span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gw3"</span>,</span>
 <span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gwZ"</span>,</span>
@@ -1061,7 +1061,7 @@ and no loci missing in more than 5% of individuals.</code></pre>
 <span id="cb26-40"><a href="#cb26-40" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws108"</span>,</span>
 <span id="cb26-41"><a href="#cb26-41" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws109"</span>,</span>
 <span id="cb26-42"><a href="#cb26-42" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws110"</span>,</span>
-<span id="cb26-43"><a href="#cb26-43" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws112"</span>];</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb26-43"><a href="#cb26-43" aria-hidden="true" tabindex="-1"></a>                            <span class="st">"gws112"</span>]);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Imputation can take several minutes per scaffold, so I ran this imputation step separately from this Quarto notebook (otherwise render would take long) and saved the genotype data for each scaffold for loading in the next step. This is the code I used for imputing:</p>
 <div class="sourceCode" id="cb27"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="fu">eachindex</span>(chromosomes_to_process)</span>
@@ -1350,7 +1350,7 @@ wholeGenome: 1017581 SNPs from 257 individuals</code></pre>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>        ind_with_metadata_indFiltered_wholeGenome, </span>
 <span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>        groups_to_plot_PCA, group_colors_PCA;</span>
 <span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>        sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
-<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>        flip1 <span class="op">=</span> <span class="cn">true</span>, flip2 <span class="op">=</span> <span class="cn">true</span>)</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>        flip1 <span class="op">=</span> <span class="cn">true</span>, flip2 <span class="op">=</span> <span class="cn">false</span>)</span>
 <span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_wholeGenome.PC1 <span class="op">=</span> GW_wholeGenome_PCA.PC1</span>
 <span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_wholeGenome.PC2 <span class="op">=</span> GW_wholeGenome_PCA.PC2;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
@@ -1735,7 +1735,7 @@ wholeGenome: 1017581 SNPs from 257 individuals</code></pre>
   13 │ SR                       -1530.28
   14 │ PA                       -1508.06
   15 │ SU                       -1483.0
-  16 │ NG                       -1474.58
+  16 │ NG                       -1474.59
   17 │ ML                       -1452.26
   18 │ MN                       -1424.96
   19 │ SP                       -1420.66
@@ -1744,7 +1744,7 @@ wholeGenome: 1017581 SNPs from 257 individuals</code></pre>
   22 │ XN                        1914.05
   23 │ BJ                        2846.22
   24 │ BK                        4390.92
-  25 │ AN                        4498.45
+  25 │ AN                        4498.46
   26 │ IL                        4817.46
   27 │ TA                        5039.28
   28 │ ST                        5276.86
@@ -2005,7 +2005,7 @@ chrgwZ_cleaned: 51505 SNPs from 257 individuals</code></pre>
 <p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-41-output-2.png" class="img-fluid"></p>
 </div>
 <div class="cell-output cell-output-display" data-execution_count="41">
-<pre><code>(model = PCA(indim = 51505, outdim = 3, principalratio = 0.28502297), values = Float32[26.585491 -27.490622 … 2.1198847 -1.8255953; -15.928137 -12.104014 … 16.679821 18.990711; 12.129704 0.41056082 … 2.7433512 1.17988], PC1 = Float32[-26.585491, 27.490622, 25.138126, 26.22403, 26.451881, 24.59582, 26.7515, 9.388118, 27.135931, 25.610964  …  0.15019822, -9.692323, -3.9216084, 1.3752123, -0.9614751, 1.8705837, -19.863216, 1.5226417, -2.1198847, 1.8255953], PC2 = Float32[15.928137, 12.104014, 11.9377365, 11.827559, 10.8803425, 11.779139, 11.210504, 13.135842, 11.022703, 11.508832  …  -19.438747, -7.5519676, -14.954897, -19.304186, -20.682032, -19.056465, 6.973544, -22.193075, -16.679821, -18.990711])</code></pre>
+<pre><code>(model = PCA(indim = 51505, outdim = 3, principalratio = 0.2850419), values = Float32[26.586346 -27.491753 … 2.1201112 -1.825483; -15.928966 -12.104293 … 16.680393 18.991385; 12.130127 0.41054514 … 2.7434328 1.1799697], PC1 = Float32[-26.586346, 27.491753, 25.139362, 26.225342, 26.453066, 24.596933, 26.752695, 9.388602, 27.137085, 25.612055  …  0.15003084, -9.692715, -3.921878, 1.375079, -0.9616872, 1.8704697, -19.863842, 1.5224984, -2.1201112, 1.825483], PC2 = Float32[15.928966, 12.104293, 11.938237, 11.828079, 10.880699, 11.779581, 11.210873, 13.136343, 11.023029, 11.509175  …  -19.43936, -7.552233, -14.955378, -19.304897, -20.682728, -19.05712, 6.973762, -22.19381, -16.680393, -18.991385])</code></pre>
 </div>
 </div>
 <p>Looks Great!! Now have a Z chromosome PCA with both males and females, based on only Z-chromosome markers.</p>
@@ -2138,8 +2138,8 @@ Calculated Fst values</code></pre>
 <p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-43-output-1.png" class="img-fluid"></p>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>PC1 explains 11.98665% of the total variance.
-PC2 explains 6.385296%.</code></pre>
+<pre><code>PC1 explains 12.006107% of the total variance.
+PC2 explains 6.395478%.</code></pre>
 </div>
 </div>
 </section>

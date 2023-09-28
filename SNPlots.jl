@@ -246,17 +246,35 @@ function plotPCA(genotypes, indMetadata, groups_to_plot_PCA, group_colors_PCA;
         PC2 = PCA_values[2,:]
     end
 
-    f = CairoMakie.Figure()
-    ax = Axis(f[1, 1],
-        title = plotTitle,
-        xlabel = "PC1",
-        ylabel = "PC2"
-    )
-    for i in eachindex(groups_to_plot_PCA) 
-        selection = indMetadata.Fst_group .== groups_to_plot_PCA[i]
-        CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
-    end
-    display(f)
+    try
+        f = CairoMakie.Figure()
+        ax = Axis(f[1, 1],
+            title = plotTitle,
+            xlabel = "PC1",
+            ylabel = "PC2",
+            autolimitaspect = 1
+        )
+        for i in eachindex(groups_to_plot_PCA) 
+            selection = indMetadata.Fst_group .== groups_to_plot_PCA[i]
+            CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
+        end
+        display(f)
+    catch # Makie sometimes has an error due to the "autolimitaspect = 1" above, so adding this "try-catch" structure to keep program going:
+        println("Did not success in drawing PCA with 1:1 axes for ", regionText,
+                ", so drawing with non-proportional axes.")
+        f = CairoMakie.Figure()
+        ax = Axis(f[1, 1],
+            title = plotTitle,
+            xlabel = "PC1",
+            ylabel = "PC2",
+        )
+        for i in eachindex(groups_to_plot_PCA) 
+            selection = indMetadata.Fst_group .== groups_to_plot_PCA[i]
+            CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
+        end
+        display(f) 
+    end    
+
     return (model = PCA_indGenos, values = PCA_values, PC1 = PC1, PC2 = PC2)
 end
 

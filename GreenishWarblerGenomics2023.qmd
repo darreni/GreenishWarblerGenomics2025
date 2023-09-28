@@ -236,7 +236,7 @@ genosOnly_with_missing[genosOnly_with_missing .== -1] .= missing;
 PCA requires imputation of missing genotypes. I did imputation for each scaffold above a certain size threshold. Those scaffolds (many of which correspond to whole chromosomes) are listed here:
 
 ```{julia}
-chromosomes_to_process = ["gw2",
+chromosomes_to_process = vec(["gw2",
                             "gw1",
                             "gw3",
                             "gwZ",
@@ -278,7 +278,7 @@ chromosomes_to_process = ["gw2",
                             "gws108",
                             "gws109",
                             "gws110",
-                            "gws112"];
+                            "gws112"]);
 ```
 
 Imputation can take several minutes per scaffold, so I ran this imputation step separately from this Quarto notebook (otherwise render would take long) and saved the genotype data for each scaffold for loading in the next step. This is the code I used for imputing:
@@ -356,7 +356,7 @@ GW_wholeGenome_PCA = plotPCA(imputed_genosOnly_wholeGenome,
         ind_with_metadata_indFiltered_wholeGenome, 
         groups_to_plot_PCA, group_colors_PCA;
         sampleSet = "greenish warblers", regionText=regionText,
-        flip1 = true, flip2 = true)
+        flip1 = true, flip2 = false)
 ind_with_metadata_indFiltered_wholeGenome.PC1 = GW_wholeGenome_PCA.PC1
 ind_with_metadata_indFiltered_wholeGenome.PC2 = GW_wholeGenome_PCA.PC2;
 ```

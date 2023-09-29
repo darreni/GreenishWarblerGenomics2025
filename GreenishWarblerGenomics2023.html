@@ -200,7 +200,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>loci_count <span class="op">=</span> <span class="fu">size</span>(geno, <span class="fl">2</span>) <span class="op">-</span> <span class="fl">1</span>   <span class="co"># because the first column is not a SNP (just a count from zero)</span></span>
 <span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">string</span>(<span class="st">"Read in genotypic data at "</span>, loci_count,<span class="st">" loci for "</span>, indNum, <span class="st">" individuals. </span><span class="sc">\n</span><span class="st">"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> 53.124761 seconds (3.61 M allocations: 9.585 GiB, 0.18% gc time, 0.72% compilation time)
+<pre><code> 73.045799 seconds (3.94 M allocations: 15.994 GiB, 0.29% gc time, 1.09% compilation time)
 Read in genotypic data at 2431709 loci for 310 individuals. </code></pre>
 </div>
 </div>
@@ -1363,7 +1363,7 @@ wholeGenome: 1017581 SNPs from 257 individuals</code></pre>
 <h2 class="anchored" data-anchor-id="genotype-by-individual-plots">Genotype-by-individual plots</h2>
 <p>Now, show individual genotypes for subsets of the dataset. Can choose individuals and genomic regions to plot, along with an Fst cutoff (only show SNPs with greater Fst than the cutoff).</p>
 <div class="cell" data-execution_count="19">
-<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>set <span class="op">=</span> <span class="st">"59_inds_around_ring"</span>  <span class="co">#"east_side_of_ring"    #"67_inds_around_ring"  # "west_side_of_ring"</span></span>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>set <span class="op">=</span> <span class="st">"vir_plumb"</span>    <span class="co">#"59_inds_around_ring"  #"east_side_of_ring"    #"67_inds_around_ring"  # "west_side_of_ring"</span></span>
 <span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> set <span class="op">==</span> <span class="st">"59_inds_around_ring"</span></span>
 <span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>    groups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"troch_LN"</span>,<span class="st">"plumb"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   </span></span>
@@ -1423,7 +1423,7 @@ wholeGenome: 1017581 SNPs from 257 individuals</code></pre>
 <span id="cb34-58"><a href="#cb34-58" aria-hidden="true" tabindex="-1"></a>    group1 <span class="op">=</span> <span class="st">"vir"</span>   <span class="co"># these groups will determine the color used in the graph</span></span>
 <span id="cb34-59"><a href="#cb34-59" aria-hidden="true" tabindex="-1"></a>    group2 <span class="op">=</span> <span class="st">"plumb"</span></span>
 <span id="cb34-60"><a href="#cb34-60" aria-hidden="true" tabindex="-1"></a>    groupsToCompare <span class="op">=</span> <span class="st">"vir_plumb"</span></span>
-<span id="cb34-61"><a href="#cb34-61" aria-hidden="true" tabindex="-1"></a>    Fst_cutoff <span class="op">=</span>  <span class="fl">0.7</span></span>
+<span id="cb34-61"><a href="#cb34-61" aria-hidden="true" tabindex="-1"></a>    Fst_cutoff <span class="op">=</span>  <span class="fl">0.8</span></span>
 <span id="cb34-62"><a href="#cb34-62" aria-hidden="true" tabindex="-1"></a>    missingFractionAllowed <span class="op">=</span> <span class="fl">0.2</span>  <span class="co"># only show SNPs with less than this fraction of missing data among individuals</span></span>
 <span id="cb34-63"><a href="#cb34-63" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="20">
@@ -1465,10 +1465,10 @@ wholeGenome: 1017581 SNPs from 257 individuals</code></pre>
 <section id="choose-the-scaffold-and-region-to-show" class="level4">
 <h4 class="anchored" data-anchor-id="choose-the-scaffold-and-region-to-show">choose the scaffold and region to show</h4>
 <div class="cell" data-execution_count="23">
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>chr <span class="op">=</span> <span class="st">"gwZ"</span></span>
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>chr <span class="op">=</span> <span class="st">"gw24"</span></span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>regionInfo <span class="op">=</span> <span class="fu">chooseChrRegion</span>(pos_SNP_filtered, chr; positionMin<span class="op">=</span><span class="fl">1</span>, positionMax<span class="op">=</span><span class="cn">NaN</span>) <span class="co"># this gets the maximum position for the chromosome</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="24">
-<pre><code>("gwZ", 1, 89574838, "gwZ_whole")</code></pre>
+<pre><code>("gw24", 1, 7566559, "gw24_whole")</code></pre>
 </div>
 </div>
 <p>NOTE FOR LATER: SHOULD REALLY GET CHROMOSOME LENGTH FOR positionMax</p>
@@ -1741,7 +1741,7 @@ wholeGenome: 1017581 SNPs from 257 individuals</code></pre>
   13 │ SR                       -1530.28
   14 │ PA                       -1508.06
   15 │ SU                       -1483.0
-  16 │ NG                       -1474.59
+  16 │ NG                       -1474.58
   17 │ ML                       -1452.26
   18 │ MN                       -1424.96
   19 │ SP                       -1420.66
@@ -1750,7 +1750,7 @@ wholeGenome: 1017581 SNPs from 257 individuals</code></pre>
   22 │ XN                        1914.05
   23 │ BJ                        2846.22
   24 │ BK                        4390.92
-  25 │ AN                        4498.46
+  25 │ AN                        4498.45
   26 │ IL                        4817.46
   27 │ TA                        5039.28
   28 │ ST                        5276.86
@@ -2007,14 +2007,14 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 <span id="cb65-26"><a href="#cb65-26" aria-hidden="true" tabindex="-1"></a>            sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
 <span id="cb65-27"><a href="#cb65-27" aria-hidden="true" tabindex="-1"></a>            flip1 <span class="op">=</span> <span class="cn">true</span>, flip2 <span class="op">=</span> <span class="cn">true</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>147.465464 seconds (5.05 M allocations: 37.132 GiB, 3.08% gc time, 0.91% compilation time)
+<pre><code>227.994425 seconds (5.06 M allocations: 37.133 GiB, 2.89% gc time, 1.19% compilation time)
 Saved matrix of real and imputed Z chromosome genotypes. </code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-41-output-2.png" class="img-fluid"></p>
 </div>
 <div class="cell-output cell-output-display" data-execution_count="41">
-<pre><code>(model = PCA(indim = 51505, outdim = 3, principalratio = 0.28504014), values = Float32[26.58628 -27.491823 … 2.1201336 -1.8254645; -15.929025 -12.104332 … 16.680357 18.991316; 12.130266 0.41056278 … 2.7434528 1.179964], PC1 = Float32[-26.58628, 27.491823, 25.139404, 26.225342, 26.453094, 24.596962, 26.752718, 9.38868, 27.137115, 25.612091  …  0.15002145, -9.692724, -3.9218972, 1.3748395, -0.96171176, 1.8704368, -19.863874, 1.5224856, -2.1201336, 1.8254645], PC2 = Float32[15.929025, 12.104332, 11.938251, 11.828077, 10.880682, 11.779579, 11.210873, 13.13638, 11.023026, 11.509181  …  -19.439335, -7.552173, -14.955318, -19.30563, -20.682676, -19.057089, 6.9737444, -22.193766, -16.680357, -18.991316])</code></pre>
+<pre><code>(model = PCA(indim = 51505, outdim = 3, principalratio = 0.28502297), values = Float32[26.585491 -27.490622 … 2.1198847 -1.8255953; -15.928137 -12.104014 … 16.679821 18.990711; 12.129704 0.41056082 … 2.7433512 1.17988], PC1 = Float32[-26.585491, 27.490622, 25.138126, 26.22403, 26.451881, 24.59582, 26.7515, 9.388118, 27.135931, 25.610964  …  0.15019822, -9.692323, -3.9216084, 1.3752123, -0.9614751, 1.8705837, -19.863216, 1.5226417, -2.1198847, 1.8255953], PC2 = Float32[15.928137, 12.104014, 11.9377365, 11.827559, 10.8803425, 11.779139, 11.210504, 13.135842, 11.022703, 11.508832  …  -19.438747, -7.5519676, -14.954897, -19.304186, -20.682032, -19.056465, 6.973544, -22.193075, -16.679821, -18.990711])</code></pre>
 </div>
 </div>
 <p>Looks Great!! Now have a Z chromosome PCA with both males and females, based on only Z-chromosome markers.</p>
@@ -2154,8 +2154,8 @@ Calculated Fst values</code></pre>
 <p><img src="GreenishWarblerGenomics2023_files/figure-html/cell-43-output-1.png" class="img-fluid"></p>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>PC1 explains 12.006097% of the total variance.
-PC2 explains 6.395474%.</code></pre>
+<pre><code>PC1 explains 11.98665% of the total variance.
+PC2 explains 6.385296%.</code></pre>
 </div>
 </div>
 </section>

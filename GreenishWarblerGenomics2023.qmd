@@ -366,7 +366,7 @@ ind_with_metadata_indFiltered_wholeGenome.PC2 = GW_wholeGenome_PCA.PC2;
 Now, show individual genotypes for subsets of the dataset. Can choose individuals and genomic regions to plot, along with an Fst cutoff (only show SNPs with greater Fst than the cutoff).
 
 ```{julia}
-set = "59_inds_around_ring"  #"east_side_of_ring"    #"67_inds_around_ring"  # "west_side_of_ring"
+set = "vir_plumb"    #"59_inds_around_ring"  #"east_side_of_ring"    #"67_inds_around_ring"  # "west_side_of_ring"
 
 if set == "59_inds_around_ring"
     groups = ["vir","troch_LN","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
@@ -426,7 +426,7 @@ elseif set == "vir_plumb"
     group1 = "vir"   # these groups will determine the color used in the graph
     group2 = "plumb"
     groupsToCompare = "vir_plumb"
-    Fst_cutoff =  0.7
+    Fst_cutoff =  0.8
     missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 end
 ```
@@ -458,7 +458,7 @@ genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, num
 
 #### choose the scaffold and region to show
 ```{julia}
-chr = "gwZ"
+chr = "gw24"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=NaN) # this gets the maximum position for the chromosome
 ```
 

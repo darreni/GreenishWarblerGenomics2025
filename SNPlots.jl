@@ -212,7 +212,9 @@ function plotPCA(genotypes, indMetadata, groups_to_plot_PCA, group_colors_PCA;
                     sampleSet = "", regionText="",
                     flip1 = false, flip2 = false)
     
-    matrixForPCA = Matrix{Float32}(transpose(genotypes))
+    selection = map(in(groups_to_plot_PCA), indMetadata.Fst_group)
+    matrixForPCA = Matrix{Float32}(transpose(genotypes[selection, :]))
+    indMetadata_groupSelected = indMetadata[selection, :]
 
     if sampleSet == "" && regionText == ""
         plotTitle = "PCA"
@@ -228,11 +230,11 @@ function plotPCA(genotypes, indMetadata, groups_to_plot_PCA, group_colors_PCA;
     PCA_indGenos = fit(PCA, matrixForPCA; method = :svd, maxoutdim=3); # good to suppress output of this--otherwise many lines
     PCA_values = predict(PCA_indGenos, matrixForPCA)
 
-    eigvecs(PCA_indGenos)
-    loadings(PCA_indGenos)
-    eigvals(PCA_indGenos)
-    projection(PCA_indGenos)
-    tvar(PCA_indGenos)
+    # eigvecs(PCA_indGenos)
+    # loadings(PCA_indGenos)
+    # eigvals(PCA_indGenos)
+    # projection(PCA_indGenos)
+    # tvar(PCA_indGenos)
 
     # if chosen to, flip axes:
     if flip1
@@ -255,7 +257,7 @@ function plotPCA(genotypes, indMetadata, groups_to_plot_PCA, group_colors_PCA;
             autolimitaspect = 1
         )
         for i in eachindex(groups_to_plot_PCA) 
-            selection = indMetadata.Fst_group .== groups_to_plot_PCA[i]
+            selection = indMetadata_groupSelected.Fst_group .== groups_to_plot_PCA[i]
             CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
         end
         display(f)
@@ -269,7 +271,7 @@ function plotPCA(genotypes, indMetadata, groups_to_plot_PCA, group_colors_PCA;
             ylabel = "PC2",
         )
         for i in eachindex(groups_to_plot_PCA) 
-            selection = indMetadata.Fst_group .== groups_to_plot_PCA[i]
+            selection = indMetadata_groupSelected.Fst_group .== groups_to_plot_PCA[i]
             CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
         end
         display(f) 

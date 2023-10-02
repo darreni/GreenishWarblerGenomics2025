@@ -344,7 +344,9 @@ Under the default setting, alleles are colored (dark purple vs. light purple) ac
 - `plotGroups`: Vector of group names to include in plot.
 - `plotGroupColors`: Vector of plotting colors corresponding to the groups.
 - `colorAllelesByGroup`: Optional; set to `false` to color alleles according to reference and alternate.
-- `group1`: Optional (default is `plotGroups[1]`); when `colorAllelesByGroup` is `true`, this is the group that determine which allele is dark purple.  
+- `group1`: Optional (default is `plotGroups[1]`); when `colorAllelesByGroup` is `true`, this is the group that determine which allele is dark purple. 
+- `indFontSize`: Optional; the font size of the individual ID labels.
+- `figureSize`: Optional; the size of the figure; default is `(1200, 1200)`.  
 
 
 # Notes
@@ -357,7 +359,8 @@ Returns a tuple containing:
 function plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
                             regionInfo, pos, Fst, pairwiseNamesFst,
                             genoData, indMetadata, freqs, plotGroups, plotGroupColors;
-                            colorAllelesByGroup=true, group1=plotGroups[1])   
+                            colorAllelesByGroup=true, group1=plotGroups[1],
+                            indFontSize=10, figureSize=(1200, 1200))   
     chr, positionMin, positionMax, regionText = regionInfo
     # if the genoData has missing values, then convert to -1:
     genoData[ismissing.(genoData)] .= -1
@@ -382,7 +385,7 @@ function plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAl
         SNP_genotypes_subset[:, altAlleleHiInGroup1] = 2 .- SNP_genotypes_subset[:, altAlleleHiInGroup1]
         SNP_genotypes_subset[SNP_genotypes_subset.==3] .= -1
     end
-    # Choose sorting order (by group defined above, or by plot_order column in input metadata file)
+    # Choose sorting order by plot_order column in input metadata file
     #sorted.SNP.genotypes.subset = SNP.genotypes.subset[order(SNP.genotypes.subset$group, SNP.genotypes.subset$ID),]
     sorted_SNP_genotypes_subset = SNP_genotypes_subset[sortperm(indMetadata.plot_order, rev=false), :]
     numInds = size(sorted_SNP_genotypes_subset, 1) # fast way to get number of rows
@@ -397,7 +400,7 @@ function plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAl
     num_SNPs_to_plot = length(SNP_positions_subset2)
 
     # Set up the plot window:
-    f = CairoMakie.Figure(resolution=(1200, 1200))
+    f = CairoMakie.Figure(resolution=figureSize)
     ax = Axis(f[1, 1],
         title=string(regionText, ": genotypes Fst>", Fst_cutoff, " loci between ", groupsToCompare),
         # xlabel = "location",
@@ -426,11 +429,11 @@ function plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAl
 
     for i in 1:numInds
         y = numInds + 1 - i  # y is location for plotting; this reverses order of plot top-bottom
-        labelText = last(split(indMetadata.ID[i], "_"))  # this gets the last part of the sample ID (usually the main ID part)
+        labelText = last(split(sorted_indMetadata_subset.ID[i], "_"))  # this gets the last part of the sample ID (usually the main ID part)
         # put sample label on left side:
-        CairoMakie.text!(label_x_left, y; text=labelText, align=(:right, :center), fontsize=10)
+        CairoMakie.text!(label_x_left, y; text=labelText, align=(:right, :center), fontsize=indFontSize)
         # put sample label on left side:
-        CairoMakie.text!(label_x_right, y; text=labelText, align=(:left, :center), fontsize=10)
+        CairoMakie.text!(label_x_right, y; text=labelText, align=(:left, :center), fontsize=indFontSize)
         boxColor = plotGroupColors[findfirst(plotGroups .== sorted_indMetadata_subset.Fst_group[i])]
         CairoMakie.poly!(Point2f.(groupColorBox_x_left, (y .+ groupColorBox_y)), color=boxColor)
         CairoMakie.poly!(Point2f.(groupColorBox_x_right, (y .+ groupColorBox_y)), color=boxColor)

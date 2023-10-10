@@ -227,7 +227,7 @@ genosOnly = geno_ind_SNP_ind_filtered[:, Not(1)]
 For missing genotypes, change our code of `-1` to `missing`:
 
 ```{julia}
-genosOnly_with_missing = Matrix{Union{Missing, Int32}}(genosOnly)
+genosOnly_with_missing = Matrix{Union{Missing, Int16}}(genosOnly)
 genosOnly_with_missing[genosOnly_with_missing .== -1] .= missing;
 ```
 
@@ -304,9 +304,9 @@ groups_to_plot_PCA = ["vir","vir_misID","vir_S","nit", "lud_PK", "lud_KS", "lud_
 group_colors_PCA = ["blue","blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
 ```
 
-Now we'll actually do the PCA and make the plot for each scaffold:
+Now we'll actually do the PCA and make the plot for each scaffold. The code block below is what I initially used, based on the SVD method of imputing. I've now decided that KNN is better (see further below).
 
-```{julia}
+```julia
 for i in eachindex(chromosomes_to_process)
     chrom = chromosomes_to_process[i]
     regionText = string("chr", chrom)
@@ -314,12 +314,74 @@ for i in eachindex(chromosomes_to_process)
     imputed_genos = load(filename, "imputed_genos")
     ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
     pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
+    println(string("Loaded ", filename))
+    println(string(regionText, ": ", size(imputed_genos, 2), " SNPs from ", size(imputed_genos, 1), " individuals"))
+    flipPC1 = true
+    flipPC2 = true
+    PCAmodel = plotPCA(imputed_genos, ind_with_metadata_indFiltered,
+        groups_to_plot_PCA, group_colors_PCA;
+        sampleSet="greenish warblers", regionText=regionText,
+        flip1=flipPC1, flip2=flipPC2,
+        showPlot=false)
+    # add position of reference genome
+    refGenomePCAposition = predict(PCAmodel.model, zeros(size(imputed_genos, 2)))
+    flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
+    flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
+    CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker=:diamond, color="black", markersize=15, strokewidth=0.5)
+    try
+        display(PCAmodel.PCAfig)
+    catch
+        println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
+    end
+end
+```
+
+#### Imputation using KNN
+
+Troyanskaya _et al._ (2001) recommend imputation using K-nearest neighbors approach as being better than SVD, both of which are better than other methods for DNA genotyping. They also recommend using Euclidian distance. So I will try KNN with Euclidian distance, which like SVD is provided by Impute.jl. I am going with the default of setting `dims` to `:rows`, as that seems to run much faster and produces PCAs that make a lot of sense. I've already run this next code cell, which does the imputing and saves the imputed data matrix for each scaffold:
+
+```julia
+for i in eachindex(chromosomes_to_process)
+    chrom = chromosomes_to_process[i]
+    regionText = string("chr", chrom)
+    loci_selection = (pos_SNP_filtered.chrom .== chrom)
+    pos_SNP_filtered_region = pos_SNP_filtered[loci_selection,:]
+    genosOnly_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing[:,loci_selection])
+    @time imputed_genos = Impute.knn(genosOnly_region_for_imputing; k=1, dims=:rows)
+    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+    jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_region)
+    println(string("Chromosome ", chrom, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_region, 1)," SNPs and ", size(genosOnly_region_for_imputing, 1)," filtered individuals."))
+end
+```
+Now do the KNN PCA:
+
+```{julia}
+for i in eachindex(chromosomes_to_process)
+    chrom = chromosomes_to_process[i]
+    regionText = string("chr", chrom)
+    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+    imputed_genos = load(filename, "imputed_genos")
+    ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
+    pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
     println(string("Loaded ",filename))
     println(string(regionText, ": ", size(imputed_genos,2), " SNPs from ", size(imputed_genos,1), " individuals"))
-    plotPCA(imputed_genos, ind_with_metadata_indFiltered, 
+    flipPC1 = true
+    flipPC2 = true
+    PCAmodel = plotPCA(imputed_genos, ind_with_metadata_indFiltered, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText=regionText,
-            flip1 = true, flip2 = true)
+            flip1 = true, flip2 = true,
+            showPlot = false)
+    # add position of reference genome
+    refGenomePCAposition = predict(PCAmodel.model, zeros(size(imputed_genos, 2)))
+    flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
+    flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
+    CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker = :diamond, color="black", markersize=15, strokewidth=0.5)
+    try
+        display(PCAmodel.PCAfig)
+    catch
+        println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
+    end
 end
 ```
 
@@ -330,12 +392,12 @@ In addition to making PCA plots for each scaffold, we can do one for the whole g
 ```{julia}
 genosOnly_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing)
 regionText = "wholeGenome"
-filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
-# to do the imputing, do this by setting to true, but TAKES A LONG TIME:
+filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+# to do the imputing, do this by setting to true, but TAKES A LONG TIME (e.g. took 8 hours on laptop with KNN method by rows):
 do_imputing = false
 if do_imputing
-    @time imputed_genosOnly = Impute.svd(genosOnly_for_imputing)
-    # took almost 2 hours!
+    # @time imputed_genosOnly = Impute.svd(genosOnly_for_imputing) # old method; knn should work better
+    @time imputed_genosOnly = Impute.knn(genosOnly_for_imputing; k=1, dims=:rows)
     jldsave(filename; imputed_genosOnly, ind_with_metadata_indFiltered, pos_SNP_filtered)
     imputed_genosOnly_wholeGenome = imputed_genosOnly
     ind_with_metadata_indFiltered_wholeGenome = ind_with_metadata_indFiltered
@@ -571,7 +633,7 @@ eastern_groups_to_plot_PCA = ["troch_LN","troch_EM","obs","plumb_BJ","plumb"]
 eastern_group_colors_PCA = ["yellow","gold","orange","pink","red"];
 chrom = "gw28"
 regionText = string("chr", chrom)
-filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
+filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
 imputed_genos = load(filename, "imputed_genos")
 ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
 pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
@@ -938,19 +1000,19 @@ CairoMakie.scatter!(ax, x_plot_values, y_plot_values, marker = :diamond, color="
 display(f);
 ```
 
-Looks good. Now impute and do the PCA:
+Looks good. Now impute and do the PCA. I did the imputing previously (to do it again, set `do_imputing = true` below).
 
 ```{julia}
 genotypes_gwZ_SNPfiltered_with_missing = Matrix{Union{Missing, Float32}}(genotypes_gwZ_SNPfiltered)
 # change "-1" to "missing":
 genotypes_gwZ_SNPfiltered_with_missing[genotypes_gwZ_SNPfiltered_with_missing .== -1] .= missing;
 regionText = "chrgwZ_cleaned"
-filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
+filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
 # to do the imputing, do this by setting to true:
 cd("/Users/darrenirwin/Dropbox/Darren's current work/")
 do_imputing = false
 if do_imputing
-    @time imputed_genos = Impute.svd(genotypes_gwZ_SNPfiltered_with_missing)
+    @time imputed_genos = Impute.knn(genotypes_gwZ_SNPfiltered_with_missing; k=1, dims=:rows)
     # took 102 sec
     jldsave(filename; imputed_genos, ind_with_metadata_indFiltered = ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region = pos_SNP_filtered_gwZ_SNPfiltered)
     imputed_genos_chrZcleaned = imputed_genos
@@ -1079,7 +1141,7 @@ pos_SNP_loaded = DataFrame(chrom = String[], position = Int64[])
 for i in eachindex(chromosomes_to_process)
     chrom = chromosomes_to_process[i]
     regionText = string("chr", chrom)
-    filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
+    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
     imputed_genos_one_chr = load(filename, "imputed_genos")
     genos_imputed_loaded = hcat(genos_imputed_loaded, imputed_genos_one_chr)
     if ind_with_metadata_indFiltered.ind != load(filename, "ind_with_metadata_indFiltered")[:, :ind]

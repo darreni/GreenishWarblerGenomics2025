@@ -199,6 +199,7 @@ Do a principal components analysis based on genotypes of individuals (colored by
 - `regionText`: Optional, for specifying a name of the genomic region to appear in the plot title.
 - `flip1`: Optional, set to `true` if wanting to flip PC1 (i.e., multiply by -1).
 - `flip2`: Same but for PC2.
+- `showPlot`: Set to `false` if not wanting the function to draw display
 
 # Notes
 
@@ -210,7 +211,8 @@ Returns a tuple containing:
 """
 function plotPCA(genotypes, indMetadata, groups_to_plot_PCA, group_colors_PCA; 
                     sampleSet = "", regionText="",
-                    flip1 = false, flip2 = false)
+                    flip1 = false, flip2 = false,
+                    showPlot = true)
     
     selection = map(in(groups_to_plot_PCA), indMetadata.Fst_group)
     matrixForPCA = Matrix{Float32}(transpose(genotypes[selection, :]))
@@ -249,8 +251,8 @@ function plotPCA(genotypes, indMetadata, groups_to_plot_PCA, group_colors_PCA;
     end
 
     try
-        f = CairoMakie.Figure()
-        ax = Axis(f[1, 1],
+        global f = CairoMakie.Figure()
+        global ax = Axis(f[1, 1],
             title = plotTitle,
             xlabel = "PC1",
             ylabel = "PC2",
@@ -260,12 +262,12 @@ function plotPCA(genotypes, indMetadata, groups_to_plot_PCA, group_colors_PCA;
             selection = indMetadata_groupSelected.Fst_group .== groups_to_plot_PCA[i]
             CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
         end
-        display(f)
+        showPlot && display(f)
     catch # Makie sometimes has an error due to the "autolimitaspect = 1" above, so adding this "try-catch" structure to keep program going:
         println("Did not success in drawing PCA with 1:1 axes for ", regionText,
                 ", so drawing with non-proportional axes.")
-        f = CairoMakie.Figure()
-        ax = Axis(f[1, 1],
+        global f = CairoMakie.Figure()
+        global ax = Axis(f[1, 1],
             title = plotTitle,
             xlabel = "PC1",
             ylabel = "PC2",
@@ -274,10 +276,10 @@ function plotPCA(genotypes, indMetadata, groups_to_plot_PCA, group_colors_PCA;
             selection = indMetadata_groupSelected.Fst_group .== groups_to_plot_PCA[i]
             CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
         end
-        display(f) 
+        showPlot && display(f) 
     end    
 
-    return (model = PCA_indGenos, values = PCA_values, PC1 = PC1, PC2 = PC2)
+    return (model = PCA_indGenos, values = PCA_values, PC1 = PC1, PC2 = PC2, PCAfig = f)
 end
 
 

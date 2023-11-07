@@ -1348,11 +1348,11 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff,
     indFontSize=4, figureSize=(1200,1600));
 ```
 
+# Make a table of locations and groups of individuals included after filtering
 
----------
-
-<!-- pos = pos_SNP_filtered_chZcleaned
-genoData = genotypes_gwZ_SNPfiltered_with_missing
-indMetadata = ind_with_metadata_indFiltered_sex_chrZcleaned -->
-
+```{julia}
+gdf = groupby(ind_with_metadata_indFiltered, [:location, :Fst_group])
+sample_origin_summary = combine(gdf, nrow)
+print(sample_origin_summary)
+```
  

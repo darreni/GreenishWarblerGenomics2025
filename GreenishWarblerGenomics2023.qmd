@@ -72,7 +72,8 @@ Choose working directory:
 
 ```{julia}
 repoDirectory = pwd() # this gets the starting working directory, for later use
-cd("/Users/darrenirwin/Dropbox/Darren's current work/")
+dataDirectory = "/Users/darrenirwin/Dropbox/Darren's current work/"
+cd(dataDirectory)
 ```
 
 ## _OK, let's load the genomic data!_
@@ -531,13 +532,21 @@ ind_with_metadata_indFiltered_selected = view(ind_with_metadata_indFiltered, sel
 genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected);
 ```
 
-#### choose the scaffold and region to show
+#### Enter the chromosome (scaffold) lengths
+The code below will load a fasta index file for the reference genome, and then make a dictionary (a look-up table) where the key is the scaffold name and value is the chromosome length. This will be used in the genotype-by-individual figures.
 ```{julia}
-chr = "gw28"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=NaN) # this gets the maximum position for the chromosome
-```
+cd(repoDirectory)
+scaffold_info_filepath = "metadata/GW2022ref.fa.fai" # a fasta index file for the reference genome
+scaffold_info = DataFrame(CSV.File(scaffold_info_filepath; header=["name", "length", "offset", "linebases", "linewidth"], types=[String, Int, Int, Int, Int]))
+scaffold_lengths = Dict(scaffold_info.name .=> scaffold_info.length)
+cd(dataDirectory)
+``` 
 
-NOTE FOR LATER: SHOULD REALLY GET CHROMOSOME LENGTH FOR positionMax
+#### Choose the scaffold and region to show
+```{julia}
+chr = "gw23"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+```
 
 #### Now actually make the plot
 
@@ -550,8 +559,8 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFraction
   
 #### choose another chromosome, and plot similarly to above
 ```{julia}
-chr = "gw28"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=NaN) # this gets the maximum position for the chromosome
+chr = "gw26"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst,
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
@@ -589,7 +598,7 @@ genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, num
 
 # choose the scaffold and region to show
 chr = "gw26"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=NaN) # this gets the maximum position for the chromosome
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) 
 
 #### Now actually make the plot
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
@@ -633,7 +642,7 @@ selection = Not(ind_with_metadata_included.ind .== "GW_Armando_plate1_JF09G01")
 
 # choose the scaffold and region to show
 chr = "gw28"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=NaN) # this gets the maximum position for the chromosome
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 
 # need to remove two plumbeitarsus individuals that have introgression from viridanus, as that would otherwise be misleading in this figure since viridanus are not shown
 selection = Not(ind_with_metadata_included.ind .∈ Ref(["GW_Armando_plate1_JF09G01", "GW_Armando_plate1_JF24G02"]))
@@ -1030,7 +1039,7 @@ genotypes_gwZ_SNPfiltered_with_missing[genotypes_gwZ_SNPfiltered_with_missing .=
 regionText = "chrgwZ_cleaned"
 filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
 # to do the imputing, do this by setting to true:
-cd("/Users/darrenirwin/Dropbox/Darren's current work/")
+cd(dataDirectory)
 do_imputing = false
 if do_imputing
     @time imputed_genos = Impute.knn(genotypes_gwZ_SNPfiltered_with_missing; k=1, dims=:rows)
@@ -1139,7 +1148,7 @@ ind_with_metadata_indFiltered_sex_chrZcleaned_selected = view(ind_with_metadata_
 genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genotypes_gwZ_SNPfiltered_with_missing_selected, ind_with_metadata_indFiltered_sex_chrZcleaned_selected);
 
 chr = "gwZ"
-regionInfo = chooseChrRegion(pos_SNP_filtered_chZcleaned, chr; positionMin=1, positionMax=NaN) # this gets the maximum position for the chromosome
+regionInfo = chooseChrRegion(pos_SNP_filtered_chZcleaned, chr; positionMin=1, positionMax=scaffold_lengths[chr])
 
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
@@ -1268,7 +1277,7 @@ Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes,
 println("Calculated Fst values")
 
 chr = "gwZ"
-regionInfo = chooseChrRegion(pos_SNP_filtered_gwZ_SNPfiltered, chr; positionMin=1, positionMax=NaN) # this gets the maximum position for the chromosome
+regionInfo = chooseChrRegion(pos_SNP_filtered_gwZ_SNPfiltered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff,
     missingFractionAllowed, regionInfo, 
@@ -1298,7 +1307,7 @@ Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes,
 println("Calculated Fst values")
 
 chr = "gw26"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=NaN) # this gets the maximum position for the chromosome
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
     missingFractionAllowed, regionInfo,
@@ -1313,7 +1322,7 @@ For chr 28:
 
 ```{julia}
 chr = "gw28"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=NaN)
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr])
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
     missingFractionAllowed, regionInfo,
     pos_SNP_filtered, Fst, pairwiseNamesFst, 
@@ -1326,7 +1335,7 @@ For chr 23:
 
 ```{julia}
 chr = "gw23"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=NaN)
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr])
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
     missingFractionAllowed, regionInfo,
     pos_SNP_filtered, Fst, pairwiseNamesFst, 
@@ -1339,7 +1348,7 @@ For chr 25:
 
 ```{julia}
 chr = "gw25"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=NaN)
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr])
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
     missingFractionAllowed, regionInfo,
     pos_SNP_filtered, Fst, pairwiseNamesFst, 

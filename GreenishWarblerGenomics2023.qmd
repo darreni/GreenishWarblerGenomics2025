@@ -372,7 +372,7 @@ for i in eachindex(chromosomes_to_process)
     PCAmodel = plotPCA(imputed_genos, ind_with_metadata_indFiltered, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText=regionText,
-            flip1 = true, flip2 = true,
+            flip1 = flipPC1, flip2 = flipPC2,
             showPlot = false)
     # add position of reference genome
     refGenomePCAposition = predict(PCAmodel.model, zeros(size(imputed_genos, 2)))

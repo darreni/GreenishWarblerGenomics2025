@@ -34,6 +34,7 @@ Pkg.add("Impute")
 Pkg.add("JLD2")
 Pkg.add("CairoMakie")
 Pkg.add("PrettyTables") # for printing nice tables to REPL
+Pkg.add(path="/Users/darrenirwin/.julia/dev/SNPlots")
 ```
 
 Now actually load those packages into the Julia session:
@@ -54,8 +55,8 @@ CairoMakie.activate!()  # this makes CairoMakie the main package for figures (in
 Load my custom package `SNPlots`:
 
 ```{julia}
-include("SNPlots.jl") # load file containing custom-built functions
-using .SNPlots # actually make SNPlots module available with SNPlots.functionName(),
+# include("SNPlots.jl") # load file containing custom-built functions
+using SNPlots # actually make SNPlots module available with SNPlots.functionName(),
 # or if functions are exported from SNPlots then they are available.
 ```
 

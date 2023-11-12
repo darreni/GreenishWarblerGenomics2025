@@ -34,7 +34,7 @@ Pkg.add("Impute")
 Pkg.add("JLD2")
 Pkg.add("CairoMakie")
 Pkg.add("PrettyTables") # for printing nice tables to REPL
-Pkg.add(path="/Users/darrenirwin/.julia/dev/SNPlots")
+Pkg.add(path="/Users/darrenirwin/.julia/dev/SNPlots.jl")
 ```
 
 Now actually load those packages into the Julia session:
@@ -109,7 +109,7 @@ pos_whole_genome = DataFrame(CSV.File(position_file_name; header=["chrom", "posi
 column_names = ["null"; string.("c.", pos_whole_genome.chrom, ".", pos_whole_genome.position)]    
 genotype_file_name = string(baseName, filenameTextMiddle, missingGenotypeThreshold, filenameTextEnd, ".012minus1") 
 @time if 1 <= indNum <= 127   
-    geno = readdlm(genotype_file_name, '\t', Int8, '\n'); # this has been sped up dramatically, by first coverting "NA" to -1
+    geno = readdlm(genotype_file_name, '\t', Int8, '\n'); # this has been sped up dramatically, by first converting "NA" to -1
 elseif 128 <= indNum <= 32767
     geno = readdlm(genotype_file_name, '\t', Int16, '\n'); # this needed for first column, which is number of individual; Int16 not much slower on import than Int8
 else

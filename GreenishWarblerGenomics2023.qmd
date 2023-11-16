@@ -608,6 +608,20 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFraction
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 ```
 
+Show another chromosome along west side of ring:
+
+```{julia}
+# choose the scaffold and region to show
+chr = "gw28"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) 
+
+#### Now actually make the plot
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
+```
+
+
 #### Make a GBI plot to illustrate variation along east side of ring
 
 ```{julia}

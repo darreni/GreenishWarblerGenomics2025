@@ -239,7 +239,52 @@ Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes,
 println("Calculated Fst values")
 ```
 
-
+#### specific scaffolds for windowed Fst
+```{julia}
+scaffolds_for_Fst = vec(["gw2",
+                            "gw1",
+                            "gw3",
+                            "gwZ",
+                            "gw1A",
+                            "gw4",
+                            "gw5",
+                            "gw7",
+                            "gw6",
+                            "gw8",
+                            "gw9",
+                            "gw11",
+                            "gw12",
+                            "gw10",
+                            "gw13",
+                            "gw14",
+                            "gw18",
+                            "gw20",
+                            "gw15",
+                            "gw1B",
+                            "gws100",
+                            "gw17",
+                            "gw19",
+                            "gws101",
+                            "gw4A",
+                            "gw21",
+                            "gw26",
+                            "gws102",
+                            "gw23",
+                            "gw25",
+                            "gws103",
+                            "gw22",
+                            "gws104",
+                            "gw28",
+                            "gw27",
+                            "gw24",
+                            "gws105",
+                            "gws106",
+                            "gws107",
+                            "gws108",
+                            "gws109",
+                            "gws110",
+                            "gws112"]);
+```
 
 #### calculate windowed Fst
 
@@ -249,7 +294,7 @@ This is calculated according to Weir&Cockerham1984 (with sample size and pop num
 
 function rollingMean(inputVector, windowSize)
     numWindows = length(inputVector) ÷ windowSize  # this is the quotient (rounds to integer)
-    rollingMeans = Vector{Float64}(undef, numWindows) # set up place to store data
+    rollingMeans = Vector{Float32}(undef, numWindows) # set up place to store data
     for i in 1:numWindows
         start = 1 + (i-1)*windowSize
         windowValues = inputVector[start : (start + windowSize - 1)]  # this ignores the NaN values
@@ -265,7 +310,7 @@ end
 
 function getWindowedFst(FstNumerator, FstDenominator, pos, windowSize)
     rollingMeanPos = rollingMean(pos.position, windowSize) # get per-window mean SNP position along scaffold
-    rollingMeanFst = Array{Float64,2}(undef, size(FstNumerator, 1), length(rollingMeanPos))
+    rollingMeanFst = Array{Float32, 2}(undef, size(FstNumerator, 1), length(rollingMeanPos))
     for i in 1:size(FstNumerator, 1)
         rollingMeanFstNumerator = rollingMean(FstNumerator[i,:], windowSize)
         rollingMeanFstDenominator = rollingMean(FstDenominator[i,:], windowSize)
@@ -284,11 +329,33 @@ pos_region = pos_SNP_filtered[loci_selection, :]
 FstNumerator_region = FstNumerator[:, loci_selection]
 FstDenominator_region = FstDenominator[:, loci_selection]
 
-windowSize = 5
+windowSize = 1000
 
 windowedPos, windowedFst = getWindowedFst(FstNumerator_region, FstDenominator_region, pos_region, windowSize)
 
 plot(windowedPos, windowedFst[1,:])
+
+windowSize = 1000
+
+# calculate windowed Fst across all scaffolds:
+
+windowed_pos_all = DataFrame(chrom = String[], mean_position = Float64[])
+windowed_Fst_all = Array{Float32, 2}(undef, size(FstNumerator, 1), 0)
+
+for chrom in scaffolds_for_Fst
+    regionText = string("chr", chrom)
+    loci_selection = (pos_SNP_filtered.chrom .== chrom)
+    pos_region = pos_SNP_filtered[loci_selection, :]
+    FstNumerator_region = FstNumerator[:, loci_selection]
+    FstDenominator_region = FstDenominator[:, loci_selection]
+    windowedPos, windowedFst = getWindowedFst(FstNumerator_region, FstDenominator_region, pos_region, windowSize)
+    windowed_pos_chrom = DataFrame(chrom = repeat([chrom], length(windowedPos)), mean_position = windowedPos)
+    windowed_pos_all = vcat(windowed_pos_all, windowed_pos_chrom)
+    windowed_Fst_all = hcat(windowed_Fst_all, windowedFst)
+end
+
+plot(windowed_pos_all.mean_position, windowed_Fst_all[1,:])
+
 ```
 
 

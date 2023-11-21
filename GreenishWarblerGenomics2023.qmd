@@ -217,6 +217,86 @@ with no individuals missing more than ", SNPmissing_percent_allowed_per_ind_roun
 and no loci missing in more than ", missing_genotypes_percent_allowed_per_site, "% of individuals.")
 ```
 
+Remove the first column of the genotype matrix (which was an initial row number):
+```{julia}
+genosOnly_ind_SNP_ind_filtered = geno_ind_SNP_ind_filtered[:, Not(1)]
+```
+
+## Produce Fst plot across genome
+
+Adding this on Nov. 20th--requiring writing new Julia code in SNPlots.jl.
+
+#### Calculate allele freqs and sample sizes (use column Fst_group)
+```{julia}
+groups = ["vir","troch_LN","plumb"]
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_ind_SNP_ind_filtered, ind_with_metadata_indFiltered.Fst_group, groups)
+println("Calculated population allele frequencies and sample sizes")
+```
+
+#### calculate Fst for each SNP
+```{julia}
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+println("Calculated Fst values")
+```
+
+#### calculate windowed Fst
+
+This is calculated according to Weir&Cockerham1984 (with sample size and pop number correction), calculated as windowed numerator over windowed denominator, in whole windows starting on left side of chromosome.
+
+```{julia}
+
+function rollingMean(inputVector, windowSize)
+    numWindows = length(inputVector) ÷ windowSize  # this is the quotient (rounds to integer)
+    rollingMeans = Vector{Float64}(undef, numWindows) # set up place to store data
+    for i in 1:numWindows
+        start = 1 + (i-1)*windowSize
+        values = inputVector[start : (start + windowSize - 1)]
+        rollingMeans[i] = sum(values) / length(values)
+    end
+    return rollingMeans
+end
+
+
+demoVector = collect(1:2:10000)
+rollingMean(demoVector, 1000)
+
+selection = (pos.chrom .== chr)
+
+pos = pos_SNP_filtered
+
+function getWindowedFst(FstNumerator, FstDenominator, pos, windowSize; stepSize = windowSize)
+    rollingMeanPos = rollingMean(pos)
+
+
+end
+
+
+```
+
+#RCODE:
+# calculate windowed Fst according to according to Weir&Cockerham1984 (with sample size and pop number correction),
+# calculated as windowed numerator over windowed denominator,
+# in whole windows starting on left side of chromosome
+getWindowedWC84_Fst <- function(WC84_Fst_numerator, WC84_Fst_denominator, pos, window_size, step_size){
+  rolling.mean.pos.WC84_Fst <- rollapply(pos$position, width=window_size, FUN=mean, by=step_size, align="left")   # if want partial window on right, add: partial=window_size/2
+  rolling.mean.WC84_Fst <- matrix(nrow = length(WC84_Fst_numerator[,1]), ncol = length(rolling.mean.pos.WC84_Fst), dimnames = list(rownames(WC84_Fst_numerator), round(rolling.mean.pos.WC84_Fst)))
+  for (i in 1:length(WC84_Fst_numerator[,1])) {
+    rolling.mean.WC84_Fst_numerator <- rollapply(WC84_Fst_numerator[i,], width=window_size, FUN=mean, na.rm = TRUE, by=step_size, align="left")
+    rolling.mean.WC84_Fst_denominator <- rollapply(WC84_Fst_denominator[i,], width=window_size, FUN=mean, na.rm = TRUE, by=step_size, align="left")
+    rolling.mean.WC84_Fst[i,] <- rolling.mean.WC84_Fst_numerator / rolling.mean.WC84_Fst_denominator
+  }
+  return(list(rolling.mean.pos.WC84_Fst=rolling.mean.pos.WC84_Fst, rolling.mean.WC84_Fst=rolling.mean.WC84_Fst))
+}
+
+
+
+
+
+############
+
+
+
+
 ## Estimate relationships of individuals using PCA
 
 Our goal is to produce plots showing individuals in genotype space, using Principal Components Analysis. First we need to do a couple changes to our data matrix:

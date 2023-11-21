@@ -228,7 +228,7 @@ Adding this on Nov. 20th--requiring writing new Julia code in SNPlots.jl.
 
 #### Calculate allele freqs and sample sizes (use column Fst_group)
 ```{julia}
-groups = ["vir","troch_LN","plumb"]
+groups = ["vir","troch_LN","plumb","plumb_vir"]
 freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_ind_SNP_ind_filtered, ind_with_metadata_indFiltered.Fst_group, groups)
 println("Calculated population allele frequencies and sample sizes")
 ```
@@ -238,6 +238,8 @@ println("Calculated population allele frequencies and sample sizes")
 Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
 println("Calculated Fst values")
 ```
+
+
 
 #### calculate windowed Fst
 
@@ -250,49 +252,44 @@ function rollingMean(inputVector, windowSize)
     rollingMeans = Vector{Float64}(undef, numWindows) # set up place to store data
     for i in 1:numWindows
         start = 1 + (i-1)*windowSize
-        values = inputVector[start : (start + windowSize - 1)]
-        rollingMeans[i] = sum(values) / length(values)
+        windowValues = inputVector[start : (start + windowSize - 1)]  # this ignores the NaN values
+        windowValues_real = windowValues[.!isnan.(windowValues)]
+        if length(windowValues_real) > 0
+            rollingMeans[i] = sum(windowValues_real) / length(windowValues_real)
+        else
+            rollingMeans[i] = NaN # if there are no non-NaN values in the inputVector
+        end
     end
     return rollingMeans
 end
 
-
-demoVector = collect(1:2:10000)
-rollingMean(demoVector, 1000)
-
-selection = (pos.chrom .== chr)
-
-pos = pos_SNP_filtered
-
-function getWindowedFst(FstNumerator, FstDenominator, pos, windowSize; stepSize = windowSize)
-    rollingMeanPos = rollingMean(pos)
-
-
+function getWindowedFst(FstNumerator, FstDenominator, pos, windowSize)
+    rollingMeanPos = rollingMean(pos.position, windowSize) # get per-window mean SNP position along scaffold
+    rollingMeanFst = Array{Float64,2}(undef, size(FstNumerator, 1), length(rollingMeanPos))
+    for i in 1:size(FstNumerator, 1)
+        rollingMeanFstNumerator = rollingMean(FstNumerator[i,:], windowSize)
+        rollingMeanFstDenominator = rollingMean(FstDenominator[i,:], windowSize)
+        rollingMeanFst[i,:] = rollingMeanFstNumerator ./ rollingMeanFstDenominator
+    end
+    return rollingMeanPos, rollingMeanFst
+    # note regarding NaN values: I checked and confirmed that wherever FstNumerator has NaN values,
+    # so does FstDenominator.
+    # My rollingMean function is designed to ignore NaN values, or return NaN if there are no real values.
 end
 
+chrom = "gw26"
+regionText = string("chr", chrom)
+loci_selection = (pos_SNP_filtered.chrom .== chrom)
+pos_region = pos_SNP_filtered[loci_selection, :]
+FstNumerator_region = FstNumerator[:, loci_selection]
+FstDenominator_region = FstDenominator[:, loci_selection]
 
+windowSize = 5
+
+windowedPos, windowedFst = getWindowedFst(FstNumerator_region, FstDenominator_region, pos_region, windowSize)
+
+plot(windowedPos, windowedFst[1,:])
 ```
-
-#RCODE:
-# calculate windowed Fst according to according to Weir&Cockerham1984 (with sample size and pop number correction),
-# calculated as windowed numerator over windowed denominator,
-# in whole windows starting on left side of chromosome
-getWindowedWC84_Fst <- function(WC84_Fst_numerator, WC84_Fst_denominator, pos, window_size, step_size){
-  rolling.mean.pos.WC84_Fst <- rollapply(pos$position, width=window_size, FUN=mean, by=step_size, align="left")   # if want partial window on right, add: partial=window_size/2
-  rolling.mean.WC84_Fst <- matrix(nrow = length(WC84_Fst_numerator[,1]), ncol = length(rolling.mean.pos.WC84_Fst), dimnames = list(rownames(WC84_Fst_numerator), round(rolling.mean.pos.WC84_Fst)))
-  for (i in 1:length(WC84_Fst_numerator[,1])) {
-    rolling.mean.WC84_Fst_numerator <- rollapply(WC84_Fst_numerator[i,], width=window_size, FUN=mean, na.rm = TRUE, by=step_size, align="left")
-    rolling.mean.WC84_Fst_denominator <- rollapply(WC84_Fst_denominator[i,], width=window_size, FUN=mean, na.rm = TRUE, by=step_size, align="left")
-    rolling.mean.WC84_Fst[i,] <- rolling.mean.WC84_Fst_numerator / rolling.mean.WC84_Fst_denominator
-  }
-  return(list(rolling.mean.pos.WC84_Fst=rolling.mean.pos.WC84_Fst, rolling.mean.WC84_Fst=rolling.mean.WC84_Fst))
-}
-
-
-
-
-
-############
 
 
 

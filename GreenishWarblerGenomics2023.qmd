@@ -286,6 +286,16 @@ scaffolds_for_Fst = vec(["gw2",
                             "gws112"]);
 ```
 
+#### Enter the chromosome (scaffold) lengths
+The code below will load a fasta index file for the reference genome, and then make a dictionary (a look-up table) where the key is the scaffold name and value is the chromosome length. This will be used in the genotype-by-individual figures.
+```{julia}
+cd(repoDirectory)
+scaffold_info_filepath = "metadata/GW2022ref.fa.fai" # a fasta index file for the reference genome
+scaffold_info = DataFrame(CSV.File(scaffold_info_filepath; header=["name", "length", "offset", "linebases", "linewidth"], types=[String, Int, Int, Int, Int]))
+scaffold_lengths = Dict(scaffold_info.name .=> scaffold_info.length)
+cd(dataDirectory)
+``` 
+
 #### calculate windowed Fst
 
 This is calculated according to Weir&Cockerham1984 (with sample size and pop number correction), calculated as windowed numerator over windowed denominator, in whole windows starting on left side of chromosome.
@@ -333,7 +343,7 @@ end
 
 # windowedPos, windowedFst = getWindowedFst(FstNumerator_region, FstDenominator_region, pos_region, windowSize)
 
-windowSize = 1000
+windowSize = 500
 
 # calculate windowed Fst across all scaffolds:
 
@@ -371,7 +381,7 @@ function plotGenomeFst(scaffolds_to_plot,
                         groupsToPlotFst,
                         groupColorsFst;
                         lineTransparency = 0.8,
-                        fillTransparency = 0.2
+                        fillTransparency = 0.2,
                         figureSize=(1200, 1200))
     
     # get sizes of chromosomes (note this actually isn't the true length, just the mean position of the rightmost window):
@@ -396,7 +406,7 @@ function plotGenomeFst(scaffolds_to_plot,
     row = 1
 
     while sum(scaffoldPlottedAlready .== false) > 0  # repeat until all chr have a row to be plotted in
-        bpStart = 1
+        bpStart = 0
         remainingRowLength = bpPerRow
         push!(scaffoldInRow, []) # initialize an empty vector for the next row
         push!(scaffoldBpStartInRow, []) # initialize an empty vector for the next row
@@ -423,245 +433,49 @@ function plotGenomeFst(scaffolds_to_plot,
     f = CairoMakie.Figure(backgroundcolor = RGBf(0.5, 0.5, 0.5),resolution=figureSize)
     numRows = length(scaffoldInRow)
     # make one axis object per row:
-    axs = [Axis(f[i, 1]) for i in 1:numRows]
-    for i in 1:numRows
-        hidedecorations!(axs[i]) #hide background lattice and axis labels
-        hidespines!(axs[i]) # hide box around plot
-    end
+    axs = [Axis(f[i, 1], limits=(0, bpPerRow,
+            0, 1)) for i in 1:numRows]
+    # for i in 1:numRows
+    #     hidedecorations!(axs[i]) #hide background lattice and axis labels
+    #     hidespines!(axs[i]) # hide box around plot
+    # end
     display(f)
 
     for rowNum in 1:numRows
         numScaffoldsInRow = length(scaffoldInRow[rowNum])
+        nextPlotShiftBP = 0
         for orderNum in 1:numScaffoldsInRow 
             scaffoldName = scaffoldInRow[rowNum][orderNum]
-            plotBpLength = scaffold_lengths[scaffolds_to_plot .== scaffoldName]
+            plotBpLength = scaffold_lengths[findfirst(scaffolds_to_plot .== scaffoldName)]
             # select one scaffold from the whole genome:
             selection = windowed_pos_all.chrom .== scaffoldName 
             windowed_pos_selected = view(windowed_pos_all.mean_position, selection)
             windowed_Fst_selected = view(windowed_Fst_all, :, selection)
-
-            #CairoMakie.poly!(axs[1], Point2f.([0, 0, 1, 1], [0, 1, 1,0]), color=:red)         
-            for j in 1:length(groupsToPlotFst) 
-                xx = vcat(first(windowed_pos_selected), windowed_pos_selected, last(windowed_pos_selected))
-                FstRow = findfirst(pairwiseNamesFst .== groupsToPlotFst[j])
-                yy = vcat(0, windowed_Fst_selected[FstRow, :], 0)
-                poly!(axs[rowNum], Point2f.(xx, yy), color = groupColorsFst[j])
+            if length(windowed_pos_selected) > 0  # only plot if there is data for that scaffold        
+                for j in 1:length(groupsToPlotFst) 
+                    xx = vcat(first(windowed_pos_selected), windowed_pos_selected, last(windowed_pos_selected)) .+ scaffoldBpStartInRow[rowNum][orderNum]
+                    FstRow = findfirst(pairwiseNamesFst .== groupsToPlotFst[j]) 
+                    yy = vcat(0, windowed_Fst_selected[FstRow, :], 0)
+                    poly!(axs[rowNum], Point2f.(xx, yy), color = (groupColorsFst[j], 0.2), strokecolor = (groupColorsFst[j], 0.5), strokewidth = 1)
+                end
             end
         end
     end
     display(f)
- 
-
-#########
-
-plot(x=NULL, y=NULL, xlim=c(0, plot.bp.length), ylim=c(0, 1.2), yaxp=c(0, 1, n=1), ylab=expression(italic('F')[ST]*"  "), xlab=NA, xaxt='n', bty='n', las=1, xaxs="i", tcl=-0.25, xpd=NA, cex=1, cex.lab=1.55, cex.axis=0.75)
-            text(-2000000, 1.4, chr.in.row[row.num,order.num], pos=4, cex=2, xpd=NA)
-
-
-
-
-    # Set up the plot window:
-    f = CairoMakie.Figure(resolution=figureSize)
-    ax = Axis(f[1, 1],
-        title=string(regionText, ": genotypes Fst>", Fst_cutoff, " loci between ", groupsToCompare),
-        # xlabel = "location",
-        # ylabel = "individual",
-        titlesize=30,
-        limits=(0.5 - 0.09 * (num_SNPs_to_plot + 0.5), 1.09 * (num_SNPs_to_plot + 0.5),
-            0.5 - 0.3 * numInds, numInds + 1)
-    )
-    hidedecorations!(ax) # hide background lattice and axis labels
-    hidespines!(ax) # hide box around plot
-
-  #######
-
-  quartz(title="WC84_Fst, Dxy, and pi for all chromosomes", width=window.width, height=window.height)  # width and height in inches
-  # plot(x=NULL, y=NULL, xlim=c(0,1), ylim=c(0,1), xaxt='n', yaxt='n', xlab=NULL, ylab= NULL, bty='n', las=1)
-  Sys.sleep(0.1)  # this is to prevent a bug
-  num.rows <- sum(!is.na(chr.in.row[,1]))
-  new.fig.parameter <- FALSE
-  for (row.num in 1:num.rows) {
-    num.chr.in.row <- sum(!is.na(chr.in.row[row.num,]))
-    for (order.num in 1:num.chr.in.row) {
-      chr.text <- paste0("Chr",chr.in.row[row.num,order.num], "_whole", sep="")
-      #load(paste0("~/Dropbox/Darren's current work/genomics training 2014/GW_genomics_Darren/GW_SNP_summary_stats_by_chromosome_from_R/GW_SNP_RollingMean_stats_",load.text,"_from_R.R"))
-      load(paste0(base.name,tag.name,chr.text,"_window",window_size,"_WindowStats_from_R.R"))
-      print(paste0("Loaded saved rolling mean stats for Chr ", chr.in.row[row.num,order.num], sep=""))
-      plot.bp.length <- chr.length[chromosomes.to.plot==chr.in.row[row.num,order.num]]
-      # plot WC84_Fst:
-      fig.left.loc <- left.margin + (chr.bp.start.in.row[row.num,order.num]/bp.per.row)*(inch.per.row/window.width)   
-      fig.right.loc <- fig.left.loc + (plot.bp.length/bp.per.row)*(inch.per.row/window.width)
-      par(fig=c(fig.left.loc, fig.right.loc, 1-(top.margin+plot.height+(row.num-1)*(row.height+row.space)), 1-(top.margin+(row.num-1)*(row.height+row.space))), new = new.fig.parameter, mai=c(0,0,0,0), cex=0.5)  # mai sets the margins of the plot to zero, matching
-      new.fig.parameter <- TRUE
-      #upper.xlim <- bp.per.inch*(window.width-(left.margin+right.margin)*window.width)
-      plot(x=NULL, y=NULL, xlim=c(0, plot.bp.length), ylim=c(0, 1.2), yaxp=c(0, 1, n=1), ylab=expression(italic('F')[ST]*"  "), xlab=NA, xaxt='n', bty='n', las=1, xaxs="i", tcl=-0.25, xpd=NA, cex=1, cex.lab=1.55, cex.axis=0.75)
-      text(-2000000, 1.4, chr.in.row[row.num,order.num], pos=4, cex=2, xpd=NA)
-      for (j in 1:length(groups.to.plot.WC84_Fst)) {
-        color.rgb <- col2rgb(group.colors.WC84_Fst[j]) /255   # divide to convert color scales to 0-1
-        lines(rolling.mean.pos.WC84_Fst, rolling.mean.WC84_Fst[rownames(rolling.mean.WC84_Fst)==groups.to.plot.WC84_Fst[j],],
-              col=rgb(color.rgb[1], color.rgb[2], color.rgb[3], alpha=line_transparency))
-        xx <- c(rolling.mean.pos.WC84_Fst[1], rolling.mean.pos.WC84_Fst, rolling.mean.pos.WC84_Fst[length(rolling.mean.pos.WC84_Fst)])
-        yy <- c(0, rolling.mean.WC84_Fst[rownames(rolling.mean.WC84_Fst)==groups.to.plot.WC84_Fst[j],], 0)
-        polygon(xx, yy, col=rgb(color.rgb[1], color.rgb[2], color.rgb[3], alpha=transparency_Fst_Dxy), border=NA)
-      }
-      # plot Dxy:
-      y_label <- expression(pi[B]*"    ")                     # y_label <- expression(italic('D')[xy]*"    ")
-      par(fig=c(fig.left.loc, fig.right.loc, 1-(top.margin+2*plot.height+(row.num-1)*(row.height+row.space)), 1-(top.margin+plot.height+(row.num-1)*(row.height+row.space))), new = TRUE, mai=c(0,0,0,0))  # mai sets the margins of the plot to zero, matching
-      plot(x=NULL, y=NULL, xlim=c(0, plot.bp.length), ylim=c(0, max_Dxy_axis), yaxp=c(0, max_Dxy_axis*5/8, n=1), ylab=y_label, xlab=NA, xaxt='n', bty='n', las=1, xaxs="i", tcl=-0.25, xpd=NA, cex.lab=1.5, cex.axis=0.75)  # 
-      for (j in 1:length(groups.to.plot.Dxy)) {
-        color.rgb <- col2rgb(group.colors.Dxy[j]) /255   # divide to convert color scales to 0-1
-        lines(rolling.mean.pos.Dxy, rolling.mean.Dxy[rownames(rolling.mean.Dxy)==groups.to.plot.Dxy[j],], 
-              col=rgb(color.rgb[1], color.rgb[2], color.rgb[3], alpha=line_transparency))
-        xx <- c(rolling.mean.pos.Dxy[1], rolling.mean.pos.Dxy, rolling.mean.pos.Dxy[length(rolling.mean.pos.Dxy)])
-        yy <- c(0, rolling.mean.Dxy[rownames(rolling.mean.Dxy)==groups.to.plot.Dxy[j],], 0)
-        polygon(xx, yy, col=rgb(color.rgb[1], color.rgb[2], color.rgb[3], alpha=transparency_Fst_Dxy), border=NA)
-      }
-      # plot pi: 
-      par(fig=c(fig.left.loc, fig.right.loc, 1-(top.margin+3*plot.height+(row.num-1)*(row.height+row.space)), 1-(top.margin+2*plot.height+(row.num-1)*(row.height+row.space))), new = TRUE, mai=c(0,0,0,0))  # mai sets the margins of the plot to zero, matching
-      plot(x=NULL, y=NULL, xlim=c(0, plot.bp.length), ylim=c(0, max_pi_axis), yaxp=c(0, max_pi_axis*5/8, n=1), ylab=expression(pi[W]*"    "), xlab=NA, xaxt='n', bty='n', las=1, xaxs="i", tcl=-0.25, xpd=NA, cex.lab=1.5, cex.axis=0.75)
-      title(xlab="Location", outer=TRUE)
-      for (j in 1:length(groups.to.plot.pi)) {
-        color.rgb <- col2rgb(group.colors.pi[j]) /255   # divide to convert color scales to 0-1
-        lines(rolling.mean.pos.pi, rolling.mean.pi[rownames(rolling.mean.pi)==groups.to.plot.pi[j],], 
-              col=rgb(color.rgb[1], color.rgb[2], color.rgb[3], alpha=line_transparency))
-        xx <- c(rolling.mean.pos.pi[1], rolling.mean.pos.pi, rolling.mean.pos.pi[length(rolling.mean.pos.pi)])
-        yy <- c(0, rolling.mean.pi[rownames(rolling.mean.pi)==groups.to.plot.pi[j],], 0)
-        polygon(xx, yy, col=rgb(color.rgb[1], color.rgb[2], color.rgb[3], alpha=transparency_pi), border=NA)
-      }
-    }
-  }
-
 end
-
+ 
+ plotGenomeFst(scaffolds_to_plot, 
+                windowed_Fst_all,
+                pairwiseNamesFst,
+                windowed_pos_all,
+                groupsToPlotFst,
+                groupColorsFst;
+                lineTransparency = 0.8,
+                fillTransparency = 0.2,
+                figureSize=(1200, 1200))
 
 
 ```
-
-#########
-RCODE:
-# plot Genome-wide plot of windowed Fst
-# read files for each chromosome, and plot Fst, Dxy, and pi for each chromosome in a single window
-plotGenomeFstDxyPi <- function(base.name, tag.name, window_size, chromosomes.to.plot, 
-                               max_Dxy_axis, max_pi_axis, transparency_Fst_Dxy, transparency_pi, line_transparency,
-                               groups.to.plot.WC84_Fst, group.colors.WC84_Fst,
-                               groups.to.plot.Dxy, group.colors.Dxy,
-                               groups.to.plot.pi, group.colors.pi) {
-  #plot all chromosomes in one quartz window
-  # plot dimensions in inches:
-  window.width <- 12
-  window.height <- 12
-  # numbers below are in inches:
-  left.margin <- 1 / window.width  # the left outer margin of the figure (number is inches)
-  right.margin <- 1 / window.width
-  top.margin <- 0.5 / window.height
-  bottom.margin <- 0.5 / window.height
-  row.height <- 1 / window.height  # height of each row of the figure (row contains Fst, Dxy, and pi plot)
-  plot.height <- row.height / 3
-  row.space <- 0.25 / window.height  # gap between rows 
-  bp.per.inch <- 20000000  # number of bp of sequence per inch
-  gap.between.chr <- 0.6 # gap in inches between chromosomes plots
-  gap.between.chr.bp <- gap.between.chr*bp.per.inch
-  
-  # get sizes of chromosomes (note this actually isn't the true length, just the mean position of the rightmost window):
-  chr.length <- NULL	
-  for (i in 1:length(chromosomes.to.plot)) {
-    chr.text <- paste0("Chr",chromosomes.to.plot[i], "_whole", sep="")
-    #load(paste0("~/Dropbox/Darren's current work/genomics training 2014/GW_genomics_Darren/GW_SNP_summary_stats_by_chromosome_from_R/GW_SNP_RollingMean_stats_GW_Lane5_plus_Liz.45samples.troch_vir_plumb.",load.text,"_from_R.R"))
-    load(paste0(base.name,tag.name,chr.text,"_window",window_size,"_WindowStats_from_R.R"))
-    #chr.length[i] <- rolling.mean.pos.Fst[length(rolling.mean.pos.Fst)]
-    chr.length[i] <- rolling.mean.pos.WC84_Fst[length(rolling.mean.pos.WC84_Fst)]
-  }
-  
-  chr.plotted.already <- rep(FALSE, length(chromosomes.to.plot))
-  
-  # make plot order by row
-  inch.per.row <- (window.width-(left.margin+right.margin)*window.width)
-  bp.per.row <- bp.per.inch * inch.per.row
-  row <- 1
-  chr.in.row <- matrix(NA, 20, 20)
-  chr.bp.start.in.row <- matrix(NA, 20, 20)
-  bp.start <- 0
-  remaining.row.length <- bp.per.row
-  while (sum(chr.plotted.already==FALSE) > 0) {  # repeat until all chr have a row to be plotted in
-    place.in.row <- 1
-    # look through chromosomes
-    for (i in 1:length(chromosomes.to.plot)) {
-      # if not plotted and short enough, add to row:
-      if (chr.plotted.already[i]==FALSE && chr.length[i]<=remaining.row.length) {
-        chr.in.row[row, place.in.row] <- chromosomes.to.plot[i]
-        chr.bp.start.in.row[row, place.in.row] <- bp.start
-        remaining.row.length <- remaining.row.length - chr.length[i] - gap.between.chr.bp
-        chr.plotted.already[i] <- TRUE
-        place.in.row <- place.in.row+1
-        bp.start <- bp.start + chr.length[i] + gap.between.chr.bp
-      }		
-    }
-    row <- row+1
-    bp.start <- 0
-    remaining.row.length <- bp.per.row
-  }
-  
-  # Plot in the order defined above
-  
-  quartz(title="WC84_Fst, Dxy, and pi for all chromosomes", width=window.width, height=window.height)  # width and height in inches
-  # plot(x=NULL, y=NULL, xlim=c(0,1), ylim=c(0,1), xaxt='n', yaxt='n', xlab=NULL, ylab= NULL, bty='n', las=1)
-  Sys.sleep(0.1)  # this is to prevent a bug
-  num.rows <- sum(!is.na(chr.in.row[,1]))
-  new.fig.parameter <- FALSE
-  for (row.num in 1:num.rows) {
-    num.chr.in.row <- sum(!is.na(chr.in.row[row.num,]))
-    for (order.num in 1:num.chr.in.row) {
-      chr.text <- paste0("Chr",chr.in.row[row.num,order.num], "_whole", sep="")
-      #load(paste0("~/Dropbox/Darren's current work/genomics training 2014/GW_genomics_Darren/GW_SNP_summary_stats_by_chromosome_from_R/GW_SNP_RollingMean_stats_",load.text,"_from_R.R"))
-      load(paste0(base.name,tag.name,chr.text,"_window",window_size,"_WindowStats_from_R.R"))
-      print(paste0("Loaded saved rolling mean stats for Chr ", chr.in.row[row.num,order.num], sep=""))
-      plot.bp.length <- chr.length[chromosomes.to.plot==chr.in.row[row.num,order.num]]
-      # plot WC84_Fst:
-      fig.left.loc <- left.margin + (chr.bp.start.in.row[row.num,order.num]/bp.per.row)*(inch.per.row/window.width)   
-      fig.right.loc <- fig.left.loc + (plot.bp.length/bp.per.row)*(inch.per.row/window.width)
-      par(fig=c(fig.left.loc, fig.right.loc, 1-(top.margin+plot.height+(row.num-1)*(row.height+row.space)), 1-(top.margin+(row.num-1)*(row.height+row.space))), new = new.fig.parameter, mai=c(0,0,0,0), cex=0.5)  # mai sets the margins of the plot to zero, matching
-      new.fig.parameter <- TRUE
-      #upper.xlim <- bp.per.inch*(window.width-(left.margin+right.margin)*window.width)
-      plot(x=NULL, y=NULL, xlim=c(0, plot.bp.length), ylim=c(0, 1.2), yaxp=c(0, 1, n=1), ylab=expression(italic('F')[ST]*"  "), xlab=NA, xaxt='n', bty='n', las=1, xaxs="i", tcl=-0.25, xpd=NA, cex=1, cex.lab=1.55, cex.axis=0.75)
-      text(-2000000, 1.4, chr.in.row[row.num,order.num], pos=4, cex=2, xpd=NA)
-      for (j in 1:length(groups.to.plot.WC84_Fst)) {
-        color.rgb <- col2rgb(group.colors.WC84_Fst[j]) /255   # divide to convert color scales to 0-1
-        lines(rolling.mean.pos.WC84_Fst, rolling.mean.WC84_Fst[rownames(rolling.mean.WC84_Fst)==groups.to.plot.WC84_Fst[j],],
-              col=rgb(color.rgb[1], color.rgb[2], color.rgb[3], alpha=line_transparency))
-        xx <- c(rolling.mean.pos.WC84_Fst[1], rolling.mean.pos.WC84_Fst, rolling.mean.pos.WC84_Fst[length(rolling.mean.pos.WC84_Fst)])
-        yy <- c(0, rolling.mean.WC84_Fst[rownames(rolling.mean.WC84_Fst)==groups.to.plot.WC84_Fst[j],], 0)
-        polygon(xx, yy, col=rgb(color.rgb[1], color.rgb[2], color.rgb[3], alpha=transparency_Fst_Dxy), border=NA)
-      }
-      # plot Dxy:
-      y_label <- expression(pi[B]*"    ")                     # y_label <- expression(italic('D')[xy]*"    ")
-      par(fig=c(fig.left.loc, fig.right.loc, 1-(top.margin+2*plot.height+(row.num-1)*(row.height+row.space)), 1-(top.margin+plot.height+(row.num-1)*(row.height+row.space))), new = TRUE, mai=c(0,0,0,0))  # mai sets the margins of the plot to zero, matching
-      plot(x=NULL, y=NULL, xlim=c(0, plot.bp.length), ylim=c(0, max_Dxy_axis), yaxp=c(0, max_Dxy_axis*5/8, n=1), ylab=y_label, xlab=NA, xaxt='n', bty='n', las=1, xaxs="i", tcl=-0.25, xpd=NA, cex.lab=1.5, cex.axis=0.75)  # 
-      for (j in 1:length(groups.to.plot.Dxy)) {
-        color.rgb <- col2rgb(group.colors.Dxy[j]) /255   # divide to convert color scales to 0-1
-        lines(rolling.mean.pos.Dxy, rolling.mean.Dxy[rownames(rolling.mean.Dxy)==groups.to.plot.Dxy[j],], 
-              col=rgb(color.rgb[1], color.rgb[2], color.rgb[3], alpha=line_transparency))
-        xx <- c(rolling.mean.pos.Dxy[1], rolling.mean.pos.Dxy, rolling.mean.pos.Dxy[length(rolling.mean.pos.Dxy)])
-        yy <- c(0, rolling.mean.Dxy[rownames(rolling.mean.Dxy)==groups.to.plot.Dxy[j],], 0)
-        polygon(xx, yy, col=rgb(color.rgb[1], color.rgb[2], color.rgb[3], alpha=transparency_Fst_Dxy), border=NA)
-      }
-      # plot pi: 
-      par(fig=c(fig.left.loc, fig.right.loc, 1-(top.margin+3*plot.height+(row.num-1)*(row.height+row.space)), 1-(top.margin+2*plot.height+(row.num-1)*(row.height+row.space))), new = TRUE, mai=c(0,0,0,0))  # mai sets the margins of the plot to zero, matching
-      plot(x=NULL, y=NULL, xlim=c(0, plot.bp.length), ylim=c(0, max_pi_axis), yaxp=c(0, max_pi_axis*5/8, n=1), ylab=expression(pi[W]*"    "), xlab=NA, xaxt='n', bty='n', las=1, xaxs="i", tcl=-0.25, xpd=NA, cex.lab=1.5, cex.axis=0.75)
-      title(xlab="Location", outer=TRUE)
-      for (j in 1:length(groups.to.plot.pi)) {
-        color.rgb <- col2rgb(group.colors.pi[j]) /255   # divide to convert color scales to 0-1
-        lines(rolling.mean.pos.pi, rolling.mean.pi[rownames(rolling.mean.pi)==groups.to.plot.pi[j],], 
-              col=rgb(color.rgb[1], color.rgb[2], color.rgb[3], alpha=line_transparency))
-        xx <- c(rolling.mean.pos.pi[1], rolling.mean.pos.pi, rolling.mean.pos.pi[length(rolling.mean.pos.pi)])
-        yy <- c(0, rolling.mean.pi[rownames(rolling.mean.pi)==groups.to.plot.pi[j],], 0)
-        polygon(xx, yy, col=rgb(color.rgb[1], color.rgb[2], color.rgb[3], alpha=transparency_pi), border=NA)
-      }
-    }
-  }
-}                
-
-
-#########
 
 ## Estimate relationships of individuals using PCA
 
@@ -978,16 +792,6 @@ ind_with_metadata_indFiltered_selected = view(ind_with_metadata_indFiltered, sel
 # now limit each group to specified numbers
 genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected);
 ```
-
-#### Enter the chromosome (scaffold) lengths
-The code below will load a fasta index file for the reference genome, and then make a dictionary (a look-up table) where the key is the scaffold name and value is the chromosome length. This will be used in the genotype-by-individual figures.
-```{julia}
-cd(repoDirectory)
-scaffold_info_filepath = "metadata/GW2022ref.fa.fai" # a fasta index file for the reference genome
-scaffold_info = DataFrame(CSV.File(scaffold_info_filepath; header=["name", "length", "offset", "linebases", "linewidth"], types=[String, Int, Int, Int, Int]))
-scaffold_lengths = Dict(scaffold_info.name .=> scaffold_info.length)
-cd(dataDirectory)
-``` 
 
 #### Choose the scaffold and region to show
 ```{julia}
@@ -1816,6 +1620,85 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff,
     genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
     plotGroups, plotGroupColors;
     indFontSize=4, figureSize=(1200,1600));
+```
+
+# Make GBI plots showing just west individuals:
+
+```{julia}
+groups = ["vir","lud_PK","troch_LN"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
+plotGroups = ["vir", "vir_misID", "vir_S", "nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML", "troch_west", "troch_LN"] # west GW individuals
+plotGroupColors = ["blue", "blue", "turquoise1", "grey", "seagreen4", "seagreen3", "seagreen2", "olivedrab3", "olivedrab2", "olivedrab1", "yellow"]
+group1 = "vir"   # these groups will determine the color used in the graph
+group2 = "troch_LN"
+groupsToCompare = "Fst_among" #"vir_plumb" 
+Fst_cutoff = 0.5
+missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+
+# Calculate allele freqs and sample sizes (use column Fst_group)
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+println("Calculated population allele frequencies and sample sizes")
+
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+println("Calculated Fst values")
+
+scaffolds_to_plot = ["gw26",
+                    "gw27"]
+# make a plot for every scaffold
+for i in 1:length(scaffolds_to_plot)
+    chr = scaffolds_to_plot[i]
+    regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+    plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+        missingFractionAllowed, regionInfo,
+        pos_SNP_filtered, Fst, pairwiseNamesFst, 
+        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+        plotGroups, plotGroupColors;
+        indFontSize=4, figureSize=(1200,1600))
+    println("Completed the figure for ", chr, ".")
+end
+
+#for chr in scaffolds_to_plot
+#    println(chr)
+#end
+# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
+```
+
+# Make GBI plots showing just east individuals:
+
+```{julia}
+groups = ["troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
+plotGroups = ["troch_LN", "troch_EM", "obs", "plumb_BJ", "plumb"] # east GW individuals
+plotGroupColors = ["yellow", "gold", "orange", "pink", "red"]
+group1 = "troch_LN"   # these groups will determine the color used in the graph
+group2 = "plumb"
+groupsToCompare = "Fst_among" #"vir_plumb" 
+Fst_cutoff = 0.6
+missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+
+# Calculate allele freqs and sample sizes (use column Fst_group)
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+println("Calculated population allele frequencies and sample sizes")
+
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+println("Calculated Fst values")
+
+# scaffolds_to_plot = ["gw1",
+#                     "gw2",
+#                     "gw3",
+#                     "gw4"]
+# make a plot for every scaffold
+scaffolds_to_plot = ["gw27"]
+for i in 1:length(scaffolds_to_plot)
+    chr = scaffolds_to_plot[i]
+    regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+    plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+        missingFractionAllowed, regionInfo,
+        pos_SNP_filtered, Fst, pairwiseNamesFst, 
+        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+        plotGroups, plotGroupColors;
+        indFontSize=4, figureSize=(1200,1600))
+    println("Completed the figure for ", chr, ".")
+end
+# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 ```
 
 # Make a table of locations and groups of individuals included after filtering

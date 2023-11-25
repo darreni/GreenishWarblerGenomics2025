@@ -1631,7 +1631,7 @@ plotGroupColors = ["blue", "blue", "turquoise1", "grey", "seagreen4", "seagreen3
 group1 = "vir"   # these groups will determine the color used in the graph
 group2 = "troch_LN"
 groupsToCompare = "Fst_among" #"vir_plumb" 
-Fst_cutoff = 0.5
+Fst_cutoff = 0.6
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
 # Calculate allele freqs and sample sizes (use column Fst_group)
@@ -1641,8 +1641,50 @@ println("Calculated population allele frequencies and sample sizes")
 Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
 println("Calculated Fst values")
 
-scaffolds_to_plot = ["gw26",
-                    "gw27"]
+scaffolds_to_plot = ["gw7", "gw8", "gw9"]
+
+# scaffolds_to_plot = ["gw24",
+                    # "gw25",
+                    # "gw10"]
+
+# scaffolds_to_plot = ["gw26",
+#                     "gw27"]
+# scaffolds_to_plot = ["gw2",
+#                             "gw1",
+#                             "gw3",
+#                             "gwZ",
+#                             "gw1A",
+#                             "gw4",
+#                             "gw5",
+#                             "gw7",
+#                             "gw6",
+#                             "gw8",
+#                             "gw9",
+#                             "gw11",
+#                             "gw12",
+#                             "gw10",
+#                             "gw13",
+#                             "gw14",
+#                             "gw18",
+#                             "gw20",
+#                             "gw15",
+#                             "gw1B",
+#                             "gws100",
+#                             "gw17",
+#                             "gw19",
+#                             "gws101",
+#                             "gw4A",
+#                             "gw21",
+#                             "gw26",
+#                             "gws102",
+#                             "gw23",
+#                             "gw25",
+#                             "gws103",
+#                             "gw22",
+#                             "gws104",
+#                             "gw28",
+#                             "gw27",
+#                             "gw24"]
 # make a plot for every scaffold
 for i in 1:length(scaffolds_to_plot)
     chr = scaffolds_to_plot[i]
@@ -1686,7 +1728,7 @@ println("Calculated Fst values")
 #                     "gw3",
 #                     "gw4"]
 # make a plot for every scaffold
-scaffolds_to_plot = ["gw27"]
+#scaffolds_to_plot = ["gw27"]
 for i in 1:length(scaffolds_to_plot)
     chr = scaffolds_to_plot[i]
     regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome

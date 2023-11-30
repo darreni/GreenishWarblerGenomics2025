@@ -562,7 +562,7 @@ genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, num
 
 #### Choose the scaffold and region to show
 ```{julia}
-chr = "gw23"
+chr = "gw18"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 ```
 
@@ -717,7 +717,7 @@ println("Calculated population allele frequencies and sample sizes")
 Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
 println("Calculated Fst values")
 
-chr = "gw11"
+chr = "gw15"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 

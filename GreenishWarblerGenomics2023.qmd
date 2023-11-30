@@ -239,9 +239,9 @@ Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes,
 println("Calculated Fst values")
 ```
 
-#### specific scaffolds for windowed Fst
+#### specific scaffolds to consider in analyses (based on length cutoff)
 ```{julia}
-scaffolds_for_Fst = vec(["gw2",
+scaffolds_to_consider = vec(["gw2",
                             "gw1",
                             "gw3",
                             "gwZ",
@@ -285,6 +285,14 @@ scaffolds_for_Fst = vec(["gw2",
                             "gws110",
                             "gws112"]);
 ```
+
+# Make list of main scaffolds to include in Fst plot across genome:
+
+```{julia}
+scaffolds_for_Fst = "gw" .* string.(vcat(1, "1A", 2:4, "4A", 5:15, 17:28, "Z"))
+```
+
+vcat(1, "1A", 2:4, "4A", 5:15, 17:28)
 
 #### Enter the chromosome (scaffold) lengths
 The code below will load a fasta index file for the reference genome, and then make a dictionary (a look-up table) where the key is the scaffold name and value is the chromosome length. This will be used in the genotype-by-individual figures.
@@ -430,15 +438,15 @@ function plotGenomeFst(scaffolds_to_plot,
     # the above works. I have the scaffolds arranged for plotting.
 
     # Plot in the order defined above
-    f = CairoMakie.Figure(backgroundcolor = RGBf(0.5, 0.5, 0.5),resolution=figureSize)
+    f = CairoMakie.Figure(resolution=figureSize)
     numRows = length(scaffoldInRow)
     # make one axis object per row:
     axs = [Axis(f[i, 1], limits=(0, bpPerRow,
-            0, 1)) for i in 1:numRows]
-    # for i in 1:numRows
-    #     hidedecorations!(axs[i]) #hide background lattice and axis labels
-    #     hidespines!(axs[i]) # hide box around plot
-    # end
+            0, 1.15), ylabel = "Fst") for i in 1:numRows]
+    for i in 1:numRows
+        hidexdecorations!(axs[i]) #hide background lattice and axis labels
+        hidespines!(axs[i], :t, :r, :b) # hide box around plot
+    end
     display(f)
 
     for rowNum in 1:numRows
@@ -452,11 +460,12 @@ function plotGenomeFst(scaffolds_to_plot,
             windowed_pos_selected = view(windowed_pos_all.mean_position, selection)
             windowed_Fst_selected = view(windowed_Fst_all, :, selection)
             if length(windowed_pos_selected) > 0  # only plot if there is data for that scaffold        
+                text!(axs[rowNum], scaffoldBpStartInRow[rowNum][orderNum] + 0.005bpPerRow, 1.05; text=scaffoldName, align=(:left, :center), fontsize=20)
                 for j in 1:length(groupsToPlotFst) 
                     xx = vcat(first(windowed_pos_selected), windowed_pos_selected, last(windowed_pos_selected)) .+ scaffoldBpStartInRow[rowNum][orderNum]
                     FstRow = findfirst(pairwiseNamesFst .== groupsToPlotFst[j]) 
                     yy = vcat(0, windowed_Fst_selected[FstRow, :], 0)
-                    poly!(axs[rowNum], Point2f.(xx, yy), color = (groupColorsFst[j], 0.2), strokecolor = (groupColorsFst[j], 0.5), strokewidth = 1)
+                    poly!(axs[rowNum], Point2f.(xx, yy), color = (groupColorsFst[j], fillTransparency), strokecolor = (groupColorsFst[j], lineTransparency), strokewidth = 1)
                 end
             end
         end
@@ -477,6 +486,21 @@ end
 
 ```
 
+Now do one with just the vir_plumb connection
+```{julia}
+groupsToPlotFst = ["vir_plumb"]
+groupColorsFst = ["purple"]
+
+plotGenomeFst(scaffolds_to_plot, 
+                windowed_Fst_all,
+                pairwiseNamesFst,
+                windowed_pos_all,
+                groupsToPlotFst,
+                groupColorsFst;
+                lineTransparency = 0.8,
+                fillTransparency = 0.2,
+                figureSize=(1200, 800))
+```
 
 
 
@@ -693,7 +717,7 @@ println("Calculated population allele frequencies and sample sizes")
 Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
 println("Calculated Fst values")
 
-chr = "gw26"
+chr = "gw11"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
@@ -705,13 +729,16 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff,
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 ```
 
-# for all scaffolds:
+# Make list of scaffolds to plot:
 
 ```{julia}
 scaffolds_to_plot = "gw" .* string.(vcat(1:15, 17:28))
+push!(scaffolds_to_plot, "gw1A", "gw4A")  # add two other scaffolds
 ```
 
-```{julia}
+Making this inactive because takes long:
+
+```julia
 for i in 1:length(scaffolds_to_plot)
     chr = scaffolds_to_plot[i]
     regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
@@ -724,14 +751,18 @@ for i in 1:length(scaffolds_to_plot)
     println("Completed the figure for ", chr, ".")
 end
 ```
-<!-- genoData = genosOnly_with_missing
-pos = pos_SNP_filtered
-indMetadata = ind_with_metadata_indFiltered
-plotGroups =  -->
 
-
-############################
-
+```{julia}
+chr = "gw6"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+    missingFractionAllowed, regionInfo,
+    pos_SNP_filtered, Fst, pairwiseNamesFst, 
+    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+    plotGroups, plotGroupColors;
+    indFontSize=4, figureSize=(1200,1600))
+println("Completed the figure for ", chr, ".")
+```
 
 For chr 28:
 
@@ -794,49 +825,6 @@ println("Calculated Fst values")
 
 scaffolds_to_plot = ["gw1", "gw2", "gw3"]
 
-# scaffolds_to_plot = ["gw24",
-                    # "gw25",
-                    # "gw10"]
-
-# scaffolds_to_plot = ["gw26",
-#                    "gw27"]
-# scaffolds_to_plot = ["gw2",
-#                             "gw1",
-#                             "gw3",
-#                             "gwZ",
-#                             "gw1A",
-#                             "gw4",
-#                             "gw5",
-#                             "gw7",
-#                             "gw6",
-#                             "gw8",
-#                             "gw9",
-#                             "gw11",
-#                             "gw12",
-#                             "gw10",
-#                             "gw13",
-#                             "gw14",
-#                             "gw18",
-#                             "gw20",
-#                             "gw15",
-#                             "gw1B",
-#                             "gws100",
-#                             "gw17",
-#                             "gw19",
-#                             "gws101",
-#                             "gw4A",
-#                             "gw21",
-#                             "gw26",
-#                             "gws102",
-#                             "gw23",
-#                             "gw25",
-#                             "gws103",
-#                             "gw22",
-#                             "gws104",
-#                             "gw28",
-#                             "gw27",
-#                             "gw24"]
-# make a plot for every scaffold
 for i in 1:length(scaffolds_to_plot)
     chr = scaffolds_to_plot[i]
     regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
@@ -895,12 +883,9 @@ end
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 ```
 
-
-
 ## Estimate relationships of individuals using PCA
 
 Our goal is to produce plots showing individuals in genotype space, using Principal Components Analysis. First we need to do a couple changes to our data matrix:
-
 
 #### Impute and save genotypes for each scaffold
 
@@ -1378,6 +1363,8 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 The plan is to load these read depth files into Julia and determine sex of individuals from the ratio of read depth on chromosome Z to chromosome 2:
 
 ```{julia}
+cd(repoDirectory)
+
 filename_gwZ = "metadata/GW2022_all4plates.genotypes.SNPs_only.chrgwZ.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf.idepth"
 readDepthZ = DataFrame(CSV.File(filename_gwZ))
 

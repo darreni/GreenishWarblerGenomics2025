@@ -310,7 +310,7 @@ This is calculated according to Weir&Cockerham1984 (with sample size and pop num
 
 ```{julia}
 
-function rollingMean(inputVector, windowSize)
+function getRollingMean(inputVector, windowSize)
     numWindows = length(inputVector) ÷ windowSize  # this is the quotient (rounds to integer)
     rollingMeans = Vector{Float64}(undef, numWindows) # set up place to store data
     for i in 1:numWindows
@@ -327,11 +327,11 @@ function rollingMean(inputVector, windowSize)
 end
 
 function getWindowedFst(FstNumerator, FstDenominator, pos, windowSize)
-    rollingMeanPos = rollingMean(pos.position, windowSize) # get per-window mean SNP position along scaffold
+    rollingMeanPos = getRollingMean(pos.position, windowSize) # get per-window mean SNP position along scaffold
     rollingMeanFst = Array{Float64, 2}(undef, size(FstNumerator, 1), length(rollingMeanPos))
     for i in 1:size(FstNumerator, 1)
-        rollingMeanFstNumerator = rollingMean(FstNumerator[i,:], windowSize)
-        rollingMeanFstDenominator = rollingMean(FstDenominator[i,:], windowSize)
+        rollingMeanFstNumerator = getRollingMean(FstNumerator[i,:], windowSize)
+        rollingMeanFstDenominator = getRollingMean(FstDenominator[i,:], windowSize)
         rollingMeanFst[i,:] = rollingMeanFstNumerator ./ rollingMeanFstDenominator
     end
     return rollingMeanPos, rollingMeanFst
@@ -473,7 +473,7 @@ function plotGenomeFst(scaffolds_to_plot,
     display(f)
 end
  
- plotGenomeFst(scaffolds_to_plot, 
+plotGenomeFst(scaffolds_to_plot, 
                 windowed_Fst_all,
                 pairwiseNamesFst,
                 windowed_pos_all,
@@ -562,7 +562,7 @@ genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, num
 
 #### Choose the scaffold and region to show
 ```{julia}
-chr = "gw18"
+chr = "gw23"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 ```
 
@@ -648,8 +648,8 @@ plotGroupColors = ["yellow","gold","orange","pink","red"]
 numIndsToPlot = [15, 15, 15, 15, 17] # maximum number of individuals to plot from each group
 group1 = "troch_LN"   # these groups will determine the color used in the graph
 group2 = "plumb"
-groupsToCompare = "troch_LN_plumb"
-Fst_cutoff = 0.9
+groupsToCompare = "Fst_among" #"Fst_among"
+Fst_cutoff = 0.6
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
 # Calculate allele freqs and sample sizes (use column Fst_group)
@@ -670,8 +670,6 @@ ind_with_metadata_indFiltered_selected = view(ind_with_metadata_indFiltered, sel
 # now limit each group to specified numbers
 genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected);
 
-selection = Not(ind_with_metadata_included.ind .== "GW_Armando_plate1_JF09G01")
-
 # choose the scaffold and region to show
 chr = "gw28"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
@@ -688,9 +686,75 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFraction
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 ```
 
+###############
+
+## Show windowed heterozygosity for individuals
+
+```{julia}
+
+
+function getWindowedIndHet(genotypes, pos, windowSize)
+    rollingMeanPos = getRollingMean(pos.position, windowSize) # get per-window mean SNP position along scaffold
+    # convert both homozygotes to value zero, leaving heterozgyotes value one;
+    # also covert missing and -1 values to NaN, which getRollingMean function deals with
+    heterozygotes = replace(genotypes, 2 => 0, missing => NaN, -1 => NaN)
+
+    rollingMeanHet = Array{Float64, 2}(undef, size(heterozygotes, 1), length(rollingMeanPos))
+    # cycle through individuals
+    for i in 1:size(heterozygotes, 1)
+        rollingMeanHet[i,:] = getRollingMean(heterozygotes[i,:], windowSize)
+    end
+    return rollingMeanPos, rollingMeanHet
+end
+
+chr = "gw2"
+windowSize = 1000
+loci_selection = (pos_SNP_filtered.chrom .== chr)
+pos_region = pos_SNP_filtered[loci_selection, :]
+#genotypes_region = genosOnly_included[:, loci_selection]
+genotypes_region = genosOnly_with_missing[:, loci_selection]
+
+# temp defs for stepping into function
+# genotypes = genotypes_region
+# pos = pos_region
+
+windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
+
+f = CairoMakie.Figure()
+Axis(f[1, 1])
+lines!(windowedPos, windowedIndHet[1,:])
+for i in 2:size(windowedIndHet, 1)
+    lines!(windowedPos, windowedIndHet[i,:])
+end
+#lines!(windowedPos, windowedIndHet[21,:], linewidth = 10, color = :red)
+display(f)
+
+# Now standardize the heterozygosity in each window by diving by the average:
+
+meanPerWindow_windowedIndHet = sum(windowedIndHet, dims=1) ./ size(windowedIndHet, 1)
+windowedIndHet_standardized = Array{Float64, 2}(undef, size(windowedIndHet, 1), size(windowedIndHet, 2))
+for row in 1:size(windowedIndHet,1)
+    windowedIndHet_standardized[row, :] = windowedIndHet[row, :] ./ vec(meanPerWindow_windowedIndHet)
+end
+
+
+f = CairoMakie.Figure()
+Axis(f[1, 1])
+for i in 1:size(windowedIndHet_standardized, 1)
+    lines!(windowedPos, windowedIndHet_standardized[i,:])
+end
+#lines!(windowedPos, windowedIndHet[21,:], linewidth = 10, color = :red)
+display(f)
+
+
+
+
+```
+
+
 ######################
 
-# Make GBI plots showing all individuals in the study
+## Make GBI plots showing all individuals in the study
 
 ```{julia}
 groups_to_plot_all = ["vir","vir_misID","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
@@ -717,7 +781,7 @@ println("Calculated population allele frequencies and sample sizes")
 Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
 println("Calculated Fst values")
 
-chr = "gw15"
+chr = "gw26"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 

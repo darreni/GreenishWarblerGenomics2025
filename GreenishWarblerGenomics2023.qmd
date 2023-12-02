@@ -692,7 +692,6 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFraction
 
 ```{julia}
 
-
 function getWindowedIndHet(genotypes, pos, windowSize)
     rollingMeanPos = getRollingMean(pos.position, windowSize) # get per-window mean SNP position along scaffold
     # convert both homozygotes to value zero, leaving heterozgyotes value one;
@@ -707,8 +706,8 @@ function getWindowedIndHet(genotypes, pos, windowSize)
     return rollingMeanPos, rollingMeanHet
 end
 
-chr = "gw2"
-windowSize = 1000
+chr = "gw17"
+windowSize = 500
 loci_selection = (pos_SNP_filtered.chrom .== chr)
 pos_region = pos_SNP_filtered[loci_selection, :]
 #genotypes_region = genosOnly_included[:, loci_selection]
@@ -726,7 +725,8 @@ lines!(windowedPos, windowedIndHet[1,:])
 for i in 2:size(windowedIndHet, 1)
     lines!(windowedPos, windowedIndHet[i,:])
 end
-#lines!(windowedPos, windowedIndHet[21,:], linewidth = 10, color = :red)
+meanPerWindow_windowedIndHet = sum(windowedIndHet, dims=1) ./ size(windowedIndHet, 1)
+lines!(windowedPos, vec(meanPerWindow_windowedIndHet), linewidth = 10, color = :red)
 display(f)
 
 # Now standardize the heterozygosity in each window by diving by the average:
@@ -737,7 +737,6 @@ for row in 1:size(windowedIndHet,1)
     windowedIndHet_standardized[row, :] = windowedIndHet[row, :] ./ vec(meanPerWindow_windowedIndHet)
 end
 
-
 f = CairoMakie.Figure()
 Axis(f[1, 1])
 for i in 1:size(windowedIndHet_standardized, 1)
@@ -746,7 +745,11 @@ end
 #lines!(windowedPos, windowedIndHet[21,:], linewidth = 10, color = :red)
 display(f)
 
+# Now graph the variance in standardized heterozygosity
 
+variancePerWindow_windowedIndHet = var(windowedIndHet_standardized; dims=1)
+
+lines(windowedPos, vec(variancePerWindow_windowedIndHet))
 
 
 ```

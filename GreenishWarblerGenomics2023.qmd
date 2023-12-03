@@ -706,12 +706,12 @@ function getWindowedIndHet(genotypes, pos, windowSize)
     return rollingMeanPos, rollingMeanHet
 end
 
-chr = "gw17"
+chr = "gw26"
 windowSize = 500
 loci_selection = (pos_SNP_filtered.chrom .== chr)
 pos_region = pos_SNP_filtered[loci_selection, :]
-#genotypes_region = genosOnly_included[:, loci_selection]
-genotypes_region = genosOnly_with_missing[:, loci_selection]
+genotypes_region = genosOnly_included[:, loci_selection]
+#genotypes_region = genosOnly_with_missing[:, loci_selection]
 
 # temp defs for stepping into function
 # genotypes = genotypes_region

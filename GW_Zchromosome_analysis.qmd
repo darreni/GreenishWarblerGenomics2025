@@ -18,6 +18,7 @@ jupyter: julia-1.9
 This dataset was produced through filtering in GreenishWarblerGenomics2023.qmd
 
 ```{julia}
+filename = string(baseName, tagName, ".ind_SNP_ind_filtered.jld2")
 genosOnly = load(filename, "genosOnly_ind_SNP_ind_filtered")
 ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
 pos_SNP_filtered = load(filename, "pos_SNP_filtered")
@@ -115,8 +116,12 @@ cd(repoDirectory)
 filename_gwZ = "metadata/GW2022_all4plates.genotypes.SNPs_only.chrgwZ.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf.idepth"
 readDepthZ = DataFrame(CSV.File(filename_gwZ))
 
+readDepthZ.INDV = correctNames(readDepthZ.INDV)
+
 filename_gw2 = "metadata/GW2022_all4plates.genotypes.SNPs_only.chrgw2.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf.idepth"
 readDepth2 = DataFrame(CSV.File(filename_gw2))
+
+readDepth2.INDV = correctNames(readDepth2.INDV)
 
 readDepthRatioZto2 = innerjoin(readDepthZ, readDepth2, on = :INDV, renamecols = "_gwZ" => "_gw2")
 
@@ -253,71 +258,6 @@ Looks Great!! Now have a Z chromosome PCA with both males and females, based on 
 
 #### Genotype-by-individual plots for Z chromosome
 
-
-set = "55_inds_around_ring"  #"east_side_of_ring"    #"67_inds_around_ring"  # "west_side_of_ring"
-
-if set == "55_inds_around_ring"
-    groups = ["vir","troch_LN","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
-    plotGroups = ["vir","vir_S","lud_PK","lud_KS","lud_central","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
-    plotGroupColors = ["blue","turquoise1","seagreen4","seagreen3","seagreen2","yellow","gold","orange", "pink","red","purple"]
-    numIndsToPlot = [10, 5, 2, 1, 8, 10, 1, 4, 3, 10, 1] # maximum number of individuals to plot from each group
-    group1 = "vir"   # these groups will determine the color used in the graph
-    group2 = "plumb"
-    groupsToCompare = "vir_plumb"   #"Fst_among"  #"vir_troch_LN"       #"vir_plumb"      #"troch_LN_plumb"      #"vir_troch_LN"
-    Fst_cutoff = 0.95
-    missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
-elseif set == "37_inds_around_ring_plusAllVirPlumb"
-    groups = ["vir","troch_LN","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
-    plotGroups = ["vir","lud","troch_LN","troch_EM","obs", "plumb_BJ","plumb"]
-    plotGroupColors = ["blue","seagreen4","yellow","gold","orange", "pink","red"]
-    numIndsToPlot = [100, 15, 15, 15, 15, 15, 100] # maximum number of individuals to plot from each group
-    group1 = "vir"   # these groups will determine the color used in the graph
-    group2 = "plumb"
-    groupsToCompare = "Fst_among"
-    Fst_cutoff = 0.7
-    missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
-elseif set == "west_side_of_ring"
-    groups = ["vir","troch_LN"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
-    plotGroups = ["vir","vir_misID","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
-    plotGroupColors = ["blue","blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow"]
-    numIndsToPlot = [15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15] # maximum number of individuals to plot from each group
-    group1 = "vir"   # these groups will determine the color used in the graph
-    group2 = "troch_LN"
-    groupsToCompare = "vir_troch_LN" # "Fst_among"
-    Fst_cutoff = 0.6
-    missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
-elseif set == "all_ludlowi_plus_a_few_other"
-    groups = ["vir","troch_LN","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
-    plotGroups = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","plumb"]
-    plotGroupColors = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","red"]
-    numIndsToPlot = [4, 4, 4, 1000, 1000, 1000, 1000, 1000, 1000, 4, 4] # maximum number of individuals to plot from each group
-    group1 = "vir"   # these groups will determine the color used in the graph
-    group2 = "troch_LN"
-    groupsToCompare = "vir_troch_LN" # "Fst_among"
-    Fst_cutoff = 0.6
-    missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
-elseif set == "east_side_of_ring"
-    groups = ["troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
-    plotGroups = ["troch_LN","troch_EM","obs","plumb_BJ","plumb"]
-    plotGroupColors = ["yellow","gold","orange","pink","red"]
-    numIndsToPlot = [15, 15, 15, 15, 15] # maximum number of individuals to plot from each group
-    group1 = "troch_LN"   # these groups will determine the color used in the graph
-    group2 = "plumb"
-    groupsToCompare = "troch_LN_plumb"
-    Fst_cutoff = 0.7
-    missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
-elseif set == "vir_plumb"
-    groups = ["vir","plumb"]
-    plotGroups = ["vir","plumb_vir","plumb"]
-    plotGroupColors = ["blue","purple","red"]
-    numIndsToPlot = [100,100,100] # maximum number of individuals to plot from each group
-    group1 = "vir"   # these groups will determine the color used in the graph
-    group2 = "plumb"
-    groupsToCompare = "vir_plumb"
-    Fst_cutoff =  0.7
-    missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
-end
-
 ```{julia}
 groups = ["vir","lud_PK","troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)    
 plotGroups = ["vir","vir_S","lud_PK","lud_KS","lud_central","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
@@ -352,6 +292,14 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFraction
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
+
+# Now plot without title:
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;
+    plotTitle = "");
+save("Figure3_from_Julia.svg", plotInfo[1])
+
 ```
 
 ## Just west side
@@ -386,9 +334,36 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFraction
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
+
+# Now plot without title:
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;
+    plotTitle = "");
+save("Figure_suppWestZ_from_Julia.svg", plotInfo[1])
 ```
 
+PCA for west side:
+
+```{julia}
+groups_to_plot_PCA = ["vir", "vir_misID", "vir_S", "nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML", "troch_west", "troch_LN"]
+group_colors_PCA = ["blue", "blue", "turquoise1", "grey", "seagreen4", "seagreen3", "seagreen2", "olivedrab3", "olivedrab2", "olivedrab1", "yellow"]
+PCA_Zchrom_west = plotPCA(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText=regionText,
+            flip1 = true, flip2 = true)
+totalObservationVariance = var(PCA_Zchrom_west.model) 
+PC1_variance, PC2_variance = principalvars(PCA_Zchrom_west.model)[1:2]
+PC1_prop_variance = PC1_variance / totalObservationVariance
+PC2_prop_variance = PC2_variance / totalObservationVariance
+println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
+PC2 explains ", 100*PC2_prop_variance, "%.")
+```
+
+
 ## Just east side:
+
+One of obscuratus is female, so also showing both males and females here:
 
 ```{julia}
 groups = ["troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
@@ -398,7 +373,7 @@ numIndsToPlot = [15, 15, 15, 15, 17] # maximum number of individuals to plot fro
 group1 = "troch_LN"   # these groups will determine the color used in the graph
 group2 = "plumb"
 groupsToCompare = "troch_LN_plumb" #"Fst_among"
-Fst_cutoff = 0.9
+Fst_cutoff = 0.95
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
 # Calculate allele freqs and sample sizes (use column Fst_group)
@@ -418,4 +393,28 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFraction
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
+
+# Now plot without title:
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;
+    plotTitle = "");
+save("Figure_suppEastZ_from_Julia.svg", plotInfo[1])
+```
+
+### Do Z-chromosome PCA on east side
+
+```{julia}
+groups_to_plot_PCA = ["troch_LN","troch_EM","obs","plumb_BJ","plumb"]
+group_colors_PCA = ["yellow","gold","orange","pink","red"]
+PCA_Zchrom_east = plotPCA(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText=regionText,
+            flip1 = true, flip2 = true)
+totalObservationVariance = var(PCA_Zchrom_east.model) 
+PC1_variance, PC2_variance = principalvars(PCA_Zchrom_east.model)[1:2]
+PC1_prop_variance = PC1_variance / totalObservationVariance
+PC2_prop_variance = PC2_variance / totalObservationVariance
+println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
+PC2 explains ", 100*PC2_prop_variance, "%.")
 ```

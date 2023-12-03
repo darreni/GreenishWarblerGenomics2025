@@ -88,9 +88,7 @@ scaffold_lengths = Dict(scaffold_info.name .=> scaffold_info.length)
 cd(dataDirectory)
 ``` 
 
-### The above should be run before any of the other Quarto pages are run
-
-## _OK, let's load the genomic data!_
+### Set up file directories and names
 
 ```{julia}
 # choose path and filename for the 012NA files
@@ -104,6 +102,17 @@ tagName = ".Sept2023."   # choose a tag name for this analysis
 # indicate name of metadata file, a text file with these column headings:
 # ID	location	group	Fst_group	plot_order
 metadataFile = "GW_genomics_2022_with_new_genome/GW_all4plates.Fst_groups.txt"
+```
+
+
+### The above should be run before any of the other Quarto pages are run
+
+###########
+
+## _OK, let's load the genomic data!_
+
+
+```{julia}
 # load metadata
 metadata = DataFrame(CSV.File(metadataFile)) # the CSV.File function interprets the correct delimiter
 num_metadata_cols = ncol(metadata)
@@ -234,6 +243,40 @@ Remove the first column of the genotype matrix (which was an initial row number)
 ```{julia}
 genosOnly_ind_SNP_ind_filtered = geno_ind_SNP_ind_filtered[:, Not(1)]
 ```
+
+### Polish a few individual names (for more readable graphs):
+
+```{julia}
+
+function correctNames(metadataColumn)
+    metadataColumn_corrected = replace(metadataColumn, 
+                        "GW_Armando_plate1_TTGW05_rep2" => "GW_Armando_plate1_TTGW05r2",
+                        "GW_Lane5_NA3-3ul" => "GW_Lane5_NA3",
+                        "GW_Armando_plate1_TTGW_15_05" => "GW_Armando_plate1_TTGW-15-05",
+                        "GW_Armando_plate1_TTGW_15_07" => "GW_Armando_plate1_TTGW-15-07",
+                        "GW_Armando_plate1_TTGW_15_08" => "GW_Armando_plate1_TTGW-15-08",
+                        "GW_Armando_plate1_TTGW_15_09" => "GW_Armando_plate1_TTGW-15-09",
+                        "GW_Armando_plate1_TTGW_15_01" => "GW_Armando_plate1_TTGW-15-01",
+                        "GW_Armando_plate1_TTGW_15_02" => "GW_Armando_plate1_TTGW-15-02",	
+                        "GW_Armando_plate1_TTGW_15_03" => "GW_Armando_plate1_TTGW-15-03",
+                        "GW_Armando_plate1_TTGW_15_04" => "GW_Armando_plate1_TTGW-15-04",
+                        "GW_Armando_plate1_TTGW_15_06" => "GW_Armando_plate1_TTGW-15-06",
+                        "GW_Armando_plate1_TTGW_15_10" => "GW_Armando_plate1_TTGW-15-10",
+                        "GW_Armando_plate2_TTGW_15_01" => "GW_Armando_plate2_TTGW-15-01",
+                        "GW_Armando_plate2_TTGW_15_02" => "GW_Armando_plate2_TTGW-15-02",
+                        "GW_Armando_plate2_TTGW_15_03" => "GW_Armando_plate2_TTGW-15-03",
+                        "GW_Armando_plate2_TTGW_15_04" => "GW_Armando_plate2_TTGW-15-04",
+                        "GW_Armando_plate2_TTGW_15_06" => "GW_Armando_plate2_TTGW-15-06",
+                        "GW_Armando_plate2_TTGW_15_10" => "GW_Armando_plate2_TTGW-15-10") 
+end
+
+ind_with_metadata_indFiltered.ind = correctNames(ind_with_metadata_indFiltered.ind)
+
+ind_with_metadata_indFiltered.ID = correctNames(ind_with_metadata_indFiltered.ID)
+
+```
+
+
 
 ## Save the filtered dataset
 ```{julia}
@@ -1200,6 +1243,17 @@ plotPCA(imputed_genos, ind_with_metadata_indFiltered,
         eastern_groups_to_plot_PCA, eastern_group_colors_PCA; 
         sampleSet = "greenish warblers", regionText=regionText,
         flip1 = false, flip2 = true)
+
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+        title = "Title",
+        xlabel = "PC1",
+        ylabel = "PC2"
+    )
+    
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+lines!(1:10, 3:12)
+   display(f)
 
 ```
 

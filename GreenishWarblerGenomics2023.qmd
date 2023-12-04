@@ -104,10 +104,64 @@ tagName = ".Sept2023."   # choose a tag name for this analysis
 metadataFile = "GW_genomics_2022_with_new_genome/GW_all4plates.Fst_groups.txt"
 ```
 
+### List the scaffolds to be imputed and included in PCA
+
+```{julia}
+chromosomes_to_process = vec(["gw2",
+                            "gw1",
+                            "gw3",
+                            "gwZ",
+                            "gw1A",
+                            "gw4",
+                            "gw5",
+                            "gw7",
+                            "gw6",
+                            "gw8",
+                            "gw9",
+                            "gw11",
+                            "gw12",
+                            "gw10",
+                            "gw13",
+                            "gw14",
+                            "gw18",
+                            "gw20",
+                            "gw15",
+                            "gw1B",
+                            "gws100",
+                            "gw17",
+                            "gw19",
+                            "gws101",
+                            "gw4A",
+                            "gw21",
+                            "gw26",
+                            "gws102",
+                            "gw23",
+                            "gw25",
+                            "gws103",
+                            "gw22",
+                            "gws104",
+                            "gw28",
+                            "gw27",
+                            "gw24",
+                            "gws105",
+                            "gws106",
+                            "gws107",
+                            "gws108",
+                            "gws109",
+                            "gws110",
+                            "gws112"]);
+```
+
+
 
 ### The above should be run before any of the other Quarto pages are run
 
-###########
+
+
+
+
+##############
+##############
 
 ## _OK, let's load the genomic data!_
 
@@ -276,6 +330,150 @@ ind_with_metadata_indFiltered.ID = correctNames(ind_with_metadata_indFiltered.ID
 
 ```
 
+---------------------
+
+# Calculate distances around ring
+
+The locations around the ring (assuming barrier in North) can be graphed against genomic PC1 (or other variables).
+
+#### Load lat/long data
+
+```{julia}
+cd(repoDirectory)
+latlong_filepath = "metadata/GW_locations_LatLong_2023.txt"
+latlongs = DataFrame(CSV.File(latlong_filepath))
+print(latlongs)
+```
+
+#### Make a quick plot to inspect latlong data:
+
+```{julia}
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "Research locations",
+    xlabel = "longitude (E)",
+    ylabel = "latitude (N)"
+)
+scatter!(latlongs.long_E, latlongs.lat_N)
+f
+```
+
+#### remove "Green warbler" _nitidus_
+
+_Phylloscopus [t.] nitidus_ is outside of the main ring, so remove these samples from this analysis: 
+
+```{julia}
+latlongs2 = latlongs[Not(latlongs.subspecies .== "nitidus"), :];
+print(latlongs2)
+```
+
+#### Make a matrix of great circle distances 
+
+These are Haversine distances, assuming spherical Earth which is really close:
+
+```{julia}
+geoPoints = GeoLocation.(latlongs2.long_E, latlongs2.lat_N)
+# this next line is so neat--uses list comprehension to make a matrix of pairwise calculations
+distances = [(HaversineDistance(geoPoints[i], geoPoints[j])/1000) for i in eachindex(geoPoints), j in eachindex(geoPoints)]
+```
+
+#### Now adjust distances to assume no gene flow through centre of ring.
+
+```{julia}
+# get some key distances
+function getIndex(name, nameVector = latlongs2.Location_name)
+    findfirst(isequal(name), nameVector)
+end
+
+index_AA = getIndex("Ala_Archa")
+index_PK = getIndex("Naran_Pakistan")
+index_LN = getIndex("Langtang")
+index_EM = getIndex("Emeishan")
+index_XN = getIndex("Xining")
+index_BJ = getIndex("Beijing")
+index_last = nrow(latlongs2)
+
+dist_PK_to_LN = distances[index_PK, index_LN]
+dist_LN_to_EM = distances[index_LN, index_EM]
+dist_EM_to_BJ = distances[index_EM, index_BJ]
+
+# This next part will assume locations in the input file are arranged in order around ring:
+distsAroundRing = Matrix{Float32}(undef, size(distances)[1], size(distances)[2])
+# accept all distances within viridanus:
+
+# function for accepting straight-line great circle dists as distances between sets of sites
+acceptDists = function(straightGreatCircleDists, start, finish, distsAroundRing)
+    distsAroundRing[start:finish, start:finish] = straightGreatCircleDists[start:finish, start:finish]
+    return(distsAroundRing)
+end
+
+# accept all distances within viridanus:
+distsAroundRing = acceptDists(distances, 1, index_AA, distsAroundRing)
+
+# accept dist from AA to PK:
+distsAroundRing = acceptDists(distances, index_AA, index_PK, distsAroundRing)
+
+# accept all distances from PK to LN:
+distsAroundRing = acceptDists(distances, index_PK, index_LN, distsAroundRing)
+
+# accept dist from LN to EM:
+distsAroundRing = acceptDists(distances, index_LN, index_EM, distsAroundRing)
+
+# accept dists between EM, XN, BJ:
+distsAroundRing = acceptDists(distances, index_EM, index_BJ, distsAroundRing)
+
+# accept all distances within plumbeitarsus:
+distsAroundRing = acceptDists(distances, index_BJ, index_last, distsAroundRing)
+
+# function for adding up distances measured through certain sites:
+addDists = function(set1start, set1end, set2start, set2end, distsAroundRing)
+    firstDists = repeat(distsAroundRing[set1start:(set1end-1), set1end], 1, set2end-set2start+1)
+    secondDists = repeat(transpose(distsAroundRing[set1end, set2start:set2end]), set1end-set1start, 1)
+    totalDists = firstDists + secondDists
+    distsAroundRing[set1start:(set1end-1), set2start:set2end] = totalDists
+    distsAroundRing[set2start:set2end, set1start:(set1end-1)] = transpose(totalDists)
+    return(distsAroundRing)
+end
+
+# dists from viridanus to PK are sum of dists to AA plus AA to PK:
+distsAroundRing = addDists(1, index_AA, index_PK, index_PK, distsAroundRing)
+
+# dists from "northwest of PK" to Himalayas are sum of ringdists to PK plus PK to locations up to LN:
+distsAroundRing = addDists(1, index_PK, index_PK+1, index_LN, distsAroundRing)
+
+# dists from "west / northwest of LN" to EM are sum of dists to LN plus LN to EM:
+distsAroundRing = addDists(1, index_LN, index_EM, index_EM, distsAroundRing)
+
+# dists from "west / northwest of EM" to China are sum of dists to EM plus EM to (XN, BJ):
+distsAroundRing = addDists(1, index_EM, index_XN, index_BJ, distsAroundRing)
+
+# dists from "west of BJ" to east Siberia are sum of dists to BJ plus BJ to other plumbeitarsus:
+distsAroundRing = addDists(1, index_BJ, index_BJ+1, index_last, distsAroundRing);
+```
+
+#### Do Principal Coordinates Analysis on the distances around the ring
+
+This produces a single location axis around ring, going from west Siberia south, then east, then north to east Siberia.
+
+```{julia}
+PCO_around_ring = fit(MDS, distsAroundRing; distances=true, maxoutdim=1)
+# add this as a column to the data frame:
+latlongs2.LocationAroundRing = vec(-predict(PCO_around_ring))
+# another way: 
+# latlongs2[:, :LocationAroundRing] = vec(-predict(PCO_around_ring))
+latlongs2[:, [:location_short, :LocationAroundRing]]
+println(latlongs2[:, [:location_short, :LocationAroundRing]])
+```
+
+Add these ring locations to the metadata table:
+
+```{julia}
+ind_with_metadata_indFiltered.ring_km .= NaN  # pre-allocate the column
+for i in axes(latlongs2, 1)
+    match_indices = findall(ind_with_metadata_indFiltered.location .== latlongs2.location_short[i])
+    ind_with_metadata_indFiltered.ring_km[match_indices] .= latlongs2.LocationAroundRing[i];
+end
+```
 
 
 ## Save the filtered dataset
@@ -289,7 +487,7 @@ println("Saved the filtered data.")
 HERE WILL PASS THE DATA OFF TO OTHER QUARTO PAGES, TO LOAD DATA AS BELOW:
 
 ## Load the filtered dataset
-```{julia}
+```julia
 filename = string(baseName, tagName, ".ind_SNP_ind_filtered.jld2")
 genosOnly_ind_SNP_ind_filtered = load(filename, "genosOnly_ind_SNP_ind_filtered")
 ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
@@ -1015,59 +1213,13 @@ end
 
 ## Estimate relationships of individuals using PCA
 
-Our goal is to produce plots showing individuals in genotype space, using Principal Components Analysis. First we need to do a couple changes to our data matrix:
+Our goal is to produce plots showing individuals in genotype space, using Principal Components Analysis. 
 
 #### Impute and save genotypes for each scaffold
 
-PCA requires imputation of missing genotypes. I did imputation for each scaffold above a certain size threshold. Those scaffolds (many of which correspond to whole chromosomes) are listed here:
+PCA requires imputation of missing genotypes. I did imputation for each scaffold above a certain size threshold. These are listed in `chromosomes_to_process` .
 
-```{julia}
-chromosomes_to_process = vec(["gw2",
-                            "gw1",
-                            "gw3",
-                            "gwZ",
-                            "gw1A",
-                            "gw4",
-                            "gw5",
-                            "gw7",
-                            "gw6",
-                            "gw8",
-                            "gw9",
-                            "gw11",
-                            "gw12",
-                            "gw10",
-                            "gw13",
-                            "gw14",
-                            "gw18",
-                            "gw20",
-                            "gw15",
-                            "gw1B",
-                            "gws100",
-                            "gw17",
-                            "gw19",
-                            "gws101",
-                            "gw4A",
-                            "gw21",
-                            "gw26",
-                            "gws102",
-                            "gw23",
-                            "gw25",
-                            "gws103",
-                            "gw22",
-                            "gws104",
-                            "gw28",
-                            "gw27",
-                            "gw24",
-                            "gws105",
-                            "gws106",
-                            "gws107",
-                            "gws108",
-                            "gws109",
-                            "gws110",
-                            "gws112"]);
-```
-
-Imputation can take several minutes per scaffold, so I ran this imputation step separately from this Quarto notebook (otherwise render would take long) and saved the genotype data for each scaffold for loading in the next step. This is the code I used for imputing:
+Imputation can take several minutes per scaffold, so I ran this imputation step separately from this Quarto notebook (otherwise render would take long) and saved the genotype data for each scaffold for loading in the next step. Below is the code I initially used for imputing, BUT IT USES THE SVD ALGORITHM AND I LATER DECIDED THAT KNN IS BETTER:
 
 ```julia
 for i in eachindex(chromosomes_to_process)
@@ -1180,7 +1332,9 @@ end
 
 In addition to making PCA plots for each scaffold, we can do one for the whole genome. The imputing for the whole genome takes some time (almost 2 hours!) for this dataset because the earlier GBS plates had low read depth so more missing genotypes, so I did this in advance and saved a file. This is incorporated into the code below--to actually do the imputing, set `do_imputing = true`. Otherwise this code will load the previously-imputed data.
 
-```{julia}
+DON'T ACTUALLY USE THIS BLOCK BELOW TO MAKE A PCA, BECAUSE BASED ON IMPUTING THE WHOLE THING RATHER THAN CHROMOSOME BY CHROMOSOME:
+
+```julia
 genosOnly_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing)
 regionText = "wholeGenome"
 filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
@@ -1202,9 +1356,9 @@ else # load the already saved imputing
     println(string(regionText, ": ", size(imputed_genosOnly_wholeGenome, 2), " SNPs from ", size(imputed_genosOnly_wholeGenome, 1), " individuals"))
 end
 ```
-Now make the whole-genome PCA:
+Now make the whole-genome PCA (DON'T USE BECAUSE NOT PER-CHR IMPUTATION):
 
-```{julia}
+```julia
 flipPC1 = true
 flipPC2 = true
 GW_wholeGenome_PCA = plotPCA(imputed_genosOnly_wholeGenome,          
@@ -1229,7 +1383,7 @@ end
 save("Figure_1b_from_Julia.svg", GW_wholeGenome_PCA.PCAfig)
 ```
 
-#### PCA plot of the east side of the ring, for one chromosome
+#### PCA plot of the east side of the ring, for one chromosome (DON'T USE BECAUSE NOT PER-CHR IMPUTATION)
 
 ```{julia}
 eastern_groups_to_plot_PCA = ["troch_LN","troch_EM","obs","plumb_BJ","plumb"]
@@ -1260,273 +1414,11 @@ lines!(1:10, 3:12)
 
 ```
 
----------------------
-
-## Calculate distances around ring
-
-The locations around the ring (assuming barrier in North) can be graphed against genomic PC1 (or other variables).
-
-#### Load lat/long data
-
-```{julia}
-cd(repoDirectory)
-latlong_filepath = "metadata/GW_locations_LatLong_2023.txt"
-latlongs = DataFrame(CSV.File(latlong_filepath))
-print(latlongs)
-```
-
-#### Make a quick plot to inspect latlong data:
-
-```{julia}
-f = CairoMakie.Figure()
-ax = Axis(f[1, 1],
-    title = "Research locations",
-    xlabel = "longitude (E)",
-    ylabel = "latitude (N)"
-)
-scatter!(latlongs.long_E, latlongs.lat_N)
-f
-```
-
-#### remove "Green warbler" _nitidus_
-
-_Phylloscopus [t.] nitidus_ is outside of the main ring, so remove these samples from this analysis: 
-
-```{julia}
-latlongs2 = latlongs[Not(latlongs.subspecies .== "nitidus"), :];
-print(latlongs2)
-```
-
-#### Make a matrix of great circle distances 
-
-These are Haversine distances, assuming spherical Earth which is really close:
-
-```{julia}
-geoPoints = GeoLocation.(latlongs2.long_E, latlongs2.lat_N)
-# this next line is so neat--uses list comprehension to make a matrix of pairwise calculations
-distances = [(HaversineDistance(geoPoints[i], geoPoints[j])/1000) for i in eachindex(geoPoints), j in eachindex(geoPoints)]
-```
-
-#### Now adjust distances to assume no gene flow through centre of ring.
-
-```{julia}
-# get some key distances
-function getIndex(name, nameVector = latlongs2.Location_name)
-    findfirst(isequal(name), nameVector)
-end
-
-index_AA = getIndex("Ala_Archa")
-index_PK = getIndex("Naran_Pakistan")
-index_LN = getIndex("Langtang")
-index_EM = getIndex("Emeishan")
-index_XN = getIndex("Xining")
-index_BJ = getIndex("Beijing")
-index_last = nrow(latlongs2)
-
-dist_PK_to_LN = distances[index_PK, index_LN]
-dist_LN_to_EM = distances[index_LN, index_EM]
-dist_EM_to_BJ = distances[index_EM, index_BJ]
-
-# This next part will assume locations in the input file are arranged in order around ring:
-distsAroundRing = Matrix{Float32}(undef, size(distances)[1], size(distances)[2])
-# accept all distances within viridanus:
-
-# function for accepting straight-line great circle dists as distances between sets of sites
-acceptDists = function(straightGreatCircleDists, start, finish, distsAroundRing)
-    distsAroundRing[start:finish, start:finish] = straightGreatCircleDists[start:finish, start:finish]
-    return(distsAroundRing)
-end
-
-# accept all distances within viridanus:
-distsAroundRing = acceptDists(distances, 1, index_AA, distsAroundRing)
-
-# accept dist from AA to PK:
-distsAroundRing = acceptDists(distances, index_AA, index_PK, distsAroundRing)
-
-# accept all distances from PK to LN:
-distsAroundRing = acceptDists(distances, index_PK, index_LN, distsAroundRing)
-
-# accept dist from LN to EM:
-distsAroundRing = acceptDists(distances, index_LN, index_EM, distsAroundRing)
-
-# accept dists between EM, XN, BJ:
-distsAroundRing = acceptDists(distances, index_EM, index_BJ, distsAroundRing)
-
-# accept all distances within plumbeitarsus:
-distsAroundRing = acceptDists(distances, index_BJ, index_last, distsAroundRing)
-
-# function for adding up distances measured through certain sites:
-addDists = function(set1start, set1end, set2start, set2end, distsAroundRing)
-    firstDists = repeat(distsAroundRing[set1start:(set1end-1), set1end], 1, set2end-set2start+1)
-    secondDists = repeat(transpose(distsAroundRing[set1end, set2start:set2end]), set1end-set1start, 1)
-    totalDists = firstDists + secondDists
-    distsAroundRing[set1start:(set1end-1), set2start:set2end] = totalDists
-    distsAroundRing[set2start:set2end, set1start:(set1end-1)] = transpose(totalDists)
-    return(distsAroundRing)
-end
-
-# dists from viridanus to PK are sum of dists to AA plus AA to PK:
-distsAroundRing = addDists(1, index_AA, index_PK, index_PK, distsAroundRing)
-
-# dists from "northwest of PK" to Himalayas are sum of ringdists to PK plus PK to locations up to LN:
-distsAroundRing = addDists(1, index_PK, index_PK+1, index_LN, distsAroundRing)
-
-# dists from "west / northwest of LN" to EM are sum of dists to LN plus LN to EM:
-distsAroundRing = addDists(1, index_LN, index_EM, index_EM, distsAroundRing)
-
-# dists from "west / northwest of EM" to China are sum of dists to EM plus EM to (XN, BJ):
-distsAroundRing = addDists(1, index_EM, index_XN, index_BJ, distsAroundRing)
-
-# dists from "west of BJ" to east Siberia are sum of dists to BJ plus BJ to other plumbeitarsus:
-distsAroundRing = addDists(1, index_BJ, index_BJ+1, index_last, distsAroundRing);
-```
-
-#### Do Principal Coordinates Analysis on the distances around the ring
-
-This produces a single location axis around ring, going from west Siberia south, then east, then north to east Siberia.
-
-```{julia}
-PCO_around_ring = fit(MDS, distsAroundRing; distances=true, maxoutdim=1)
-# add this as a column to the data frame:
-latlongs2.LocationAroundRing = vec(-predict(PCO_around_ring))
-# another way: 
-# latlongs2[:, :LocationAroundRing] = vec(-predict(PCO_around_ring))
-latlongs2[:, [:location_short, :LocationAroundRing]]
-println(latlongs2[:, [:location_short, :LocationAroundRing]])
-```
-
-Add these ring locations to the metadata table:
-
-```{julia}
-ind_with_metadata_indFiltered_wholeGenome.ring_km .= NaN  # pre-allocate the column
-for i in axes(latlongs2, 1)
-    match_indices = findall(ind_with_metadata_indFiltered_wholeGenome.location .== latlongs2.location_short[i])
-    ind_with_metadata_indFiltered_wholeGenome.ring_km[match_indices] .= latlongs2.LocationAroundRing[i];
-end
-```
-
-#### Plot location around ring vs. PC1:
-
-```{julia}
-# plot(ind_with_metadata_indFiltered_wholeGenome.ring_km, ind_with_metadata_indFiltered_wholeGenome.PC1)
-f = CairoMakie.Figure()
-ax = Axis(f[1, 1],
-    title = "Genomic PC1 around ring",
-    xlabel = "Location around ring (km)",
-    ylabel = "Genomic PC1")
-hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
-jitterSize = 100   # in km
-x_plot_values = ind_with_metadata_indFiltered_wholeGenome.ring_km .+ jitterSize .* (rand(length(ind_with_metadata_indFiltered_wholeGenome.PC1)) .- 0.5)
-y_plot_values = ind_with_metadata_indFiltered_wholeGenome.PC1
-for i in eachindex(groups_to_plot_PCA) 
-    selection = ind_with_metadata_indFiltered_wholeGenome.Fst_group .== groups_to_plot_PCA[i]
-    CairoMakie.scatter!(ax, x_plot_values[selection], y_plot_values[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
-end
-display(f)
-
-save("Figure_1c_from_Julia.svg", f)
-```
 
 
 
-# Make final whole-genome PCA 
 
-Now that the Z-chromosome problem has been solved (by removing SNPs 
-that had a divergent W sequence mapped onto that Z location), we can construct
-a new whole-genome PCA. I will combine the saved imputed genotypes for 
-each chromosome into a large data matrix, and conduct PCA on that:
 
-```{julia}
-chromosomes_to_process[chromosomes_to_process .== "gwZ"] .= "gwZ_cleaned"
-# initialize data structures for gneotypes and positions
-genos_imputed_loaded = Matrix{Union{Missing, Float32}}(undef, nrow(ind_with_metadata_indFiltered), 0)
-pos_SNP_loaded = DataFrame(chrom = String[], position = Int64[])
-for i in eachindex(chromosomes_to_process)
-    chrom = chromosomes_to_process[i]
-    regionText = string("chr", chrom)
-    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
-    imputed_genos_one_chr = load(filename, "imputed_genos")
-    genos_imputed_loaded = hcat(genos_imputed_loaded, imputed_genos_one_chr)
-    if ind_with_metadata_indFiltered.ind != load(filename, "ind_with_metadata_indFiltered")[:, :ind]
-        println("""Warning: "ind" columns in loaded data and memory data don't match.""")
-    end
-    pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
-    pos_SNP_loaded = vcat(pos_SNP_loaded, pos_SNP_filtered_region)
-    # println(string("Loaded ",filename))
-    # println(string(regionText, ": ", size(imputed_genos_one_chr,2), " SNPs from ", size(imputed_genos_one_chr,1), " individuals"))
-end
-flipPC1 = true
-flipPC2 = true
-PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered, 
-        groups_to_plot_PCA, group_colors_PCA; 
-        sampleSet = "greenish warblers", regionText = "wholeGenome",
-        flip1 = flipPC1, flip2 = flipPC2)
-totalObservationVariance = var(PCA_wholeGenome.model) 
-PC1_variance, PC2_variance = principalvars(PCA_wholeGenome.model)[1:2]
-PC1_prop_variance = PC1_variance / totalObservationVariance
-PC2_prop_variance = PC2_variance / totalObservationVariance
-println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
-PC2 explains ", 100*PC2_prop_variance, "%.")
-
-# add position of reference genome
-refGenomePCAposition = predict(PCA_wholeGenome.model, zeros(size(genos_imputed_loaded, 2)))
-flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
-flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
-CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker = :diamond, color="black", markersize=15, strokewidth=0.5)
-try
-    display(PCA_wholeGenome.PCAfig)
-catch
-    println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
-end
-
-```
-
-#### Make a whole-genome PCA just for the eastern side of the ring
-
-```{julia}
-eastern_groups_to_plot_PCA = ["troch_LN","troch_EM","obs","plumb_BJ","plumb"]
-eastern_group_colors_PCA = ["yellow","gold","orange","pink","red"]
-flipPC1 = true
-flipPC2 = false
-PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered, 
-        eastern_groups_to_plot_PCA, eastern_group_colors_PCA; 
-        sampleSet = "greenish warblers", regionText = "wholeGenome",
-        flip1 = flipPC1, flip2 = flipPC2)
-totalObservationVariance = var(PCA_wholeGenome.model) 
-PC1_variance, PC2_variance = principalvars(PCA_wholeGenome.model)[1:2]
-PC1_prop_variance = PC1_variance / totalObservationVariance
-PC2_prop_variance = PC2_variance / totalObservationVariance
-println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
-PC2 explains ", 100*PC2_prop_variance, "%.")
-
-# add position of reference genome
-refGenomePCAposition = predict(PCA_wholeGenome.model, zeros(size(genos_imputed_loaded, 2)))
-flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
-flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
-CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker = :diamond, color="black", markersize=15, strokewidth=0.5)
-try
-    display(PCA_wholeGenome.PCAfig)
-catch
-    println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
-end
-```
-
-#### Make a whole-genome PCA just for the western side of the ring
-
-```{julia}
-western_groups_to_plot_PCA = ["vir", "vir_misID", "vir_S", "nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML", "troch_west", "troch_LN"]
-western_group_colors_PCA = ["blue", "blue", "turquoise1", "grey", "seagreen4", "seagreen3", "seagreen2", "olivedrab3", "olivedrab2", "olivedrab1", "yellow"]
-PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered,
-    western_groups_to_plot_PCA, western_group_colors_PCA;
-    sampleSet="greenish warblers", regionText="wholeGenome",
-    flip1=true, flip2=true)
-totalObservationVariance = var(PCA_wholeGenome.model)
-PC1_variance, PC2_variance = principalvars(PCA_wholeGenome.model)[1:2]
-PC1_prop_variance = PC1_variance / totalObservationVariance
-PC2_prop_variance = PC2_variance / totalObservationVariance
-println("PC1 explains ", 100 * PC1_prop_variance, "% of the total variance.
-  PC2 explains ", 100 * PC2_prop_variance, "%.")
-```
 
 # Make GBI plots showing all individuals
 

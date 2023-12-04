@@ -1,0 +1,170 @@
+---
+title: "Greenish Warbler Z-chromosome analysis"
+author: "Darren Irwin"
+date: "9/10/2023"
+execute:
+  echo: true
+format:
+  html:
+    code-fold: false
+  pdf:
+    keep-tex: false
+    monofont: "JuliaMono"
+jupyter: julia-1.9
+---
+
+This script depends on `GreenishWarblerGenomics2023.qmd` and `GW_Zchromosome_analysis.qmd`
+
+## Load the filtered dataset
+
+This dataset was produced through filtering in GreenishWarblerGenomics2023.qmd
+
+```{julia}
+filename = string(baseName, tagName, ".ind_SNP_ind_filtered.jld2")
+genosOnly = load(filename, "genosOnly_ind_SNP_ind_filtered")
+ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
+pos_SNP_filtered = load(filename, "pos_SNP_filtered")
+println("Loaded the filtered data.")
+```
+
+# Make final whole-genome PCA 
+
+Now that the Z-chromosome problem has been solved (by removing SNPs 
+that had a divergent W sequence mapped onto that Z location), we can construct
+a new whole-genome PCA. I will combine the saved imputed genotypes for 
+each chromosome into a large data matrix, and conduct PCA on that.
+
+We need to first specify some groups to include in the plot, and their colors:
+
+```{julia}
+groups_to_plot_PCA = ["vir","vir_misID","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
+group_colors_PCA = ["blue","blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
+```
+
+```{julia}
+chromosomes_to_process[chromosomes_to_process .== "gwZ"] .= "gwZ_cleaned"
+# initialize data structures for gneotypes and positions
+genos_imputed_loaded = Matrix{Union{Missing, Float32}}(undef, nrow(ind_with_metadata_indFiltered), 0)
+pos_SNP_loaded = DataFrame(chrom = String[], position = Int64[])
+for i in eachindex(chromosomes_to_process)
+    chrom = chromosomes_to_process[i]
+    regionText = string("chr", chrom)
+    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+    imputed_genos_one_chr = load(filename, "imputed_genos")
+    genos_imputed_loaded = hcat(genos_imputed_loaded, imputed_genos_one_chr)
+    if ind_with_metadata_indFiltered.ind != load(filename, "ind_with_metadata_indFiltered")[:, :ind]
+        println("""Warning: "ind" columns in loaded data and memory data don't match.""")
+    end
+    pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
+    pos_SNP_loaded = vcat(pos_SNP_loaded, pos_SNP_filtered_region)
+    # println(string("Loaded ",filename))
+    # println(string(regionText, ": ", size(imputed_genos_one_chr,2), " SNPs from ", size(imputed_genos_one_chr,1), " individuals"))
+end
+flipPC1 = true
+flipPC2 = true
+PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered, 
+        groups_to_plot_PCA, group_colors_PCA; 
+        sampleSet = "greenish warblers", regionText = "wholeGenome",
+        flip1 = flipPC1, flip2 = flipPC2)
+totalObservationVariance = var(PCA_wholeGenome.model) 
+PC1_variance, PC2_variance = principalvars(PCA_wholeGenome.model)[1:2]
+PC1_prop_variance = PC1_variance / totalObservationVariance
+PC2_prop_variance = PC2_variance / totalObservationVariance
+println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
+PC2 explains ", 100*PC2_prop_variance, "%.")
+
+ind_with_metadata_indFiltered.PC1 = PCA_wholeGenome.PC1
+ind_with_metadata_indFiltered.PC2 = PCA_wholeGenome.PC2
+
+# add position of reference genome
+refGenomePCAposition = predict(PCA_wholeGenome.model, zeros(size(genos_imputed_loaded, 2)))
+flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
+flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
+CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker = :diamond, color="black", markersize=15, strokewidth=0.5)
+try
+    display(PCA_wholeGenome.PCAfig)
+catch
+    println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
+end
+
+save("Figure_1b_from_Julia.svg", PCA_wholeGenome.PCAfig)
+```
+
+
+
+#### Plot location around ring vs. PC1:
+
+```{julia}
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "Genomic PC1 around ring",
+    xlabel = "Location around ring (km)",
+    ylabel = "Genomic PC1")
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+jitterSize = 100   # in km
+x_plot_values = ind_with_metadata_indFiltered.ring_km .+ jitterSize .* (rand(length(ind_with_metadata_indFiltered.PC1)) .- 0.5)
+y_plot_values = ind_with_metadata_indFiltered.PC1
+for i in eachindex(groups_to_plot_PCA) 
+    selection = ind_with_metadata_indFiltered.Fst_group .== groups_to_plot_PCA[i]
+    CairoMakie.scatter!(ax, x_plot_values[selection], y_plot_values[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
+end
+display(f)
+
+save("Figure_1c_from_Julia.svg", f)
+```
+
+
+NEED TO WORK ON THE BELOW--THROWN HERE FROM MAIN SCRIPT--NEED CHANGES IN METADATA OBJECT NAME
+
+
+
+#### Make a whole-genome PCA just for the eastern side of the ring
+
+```{julia}
+eastern_groups_to_plot_PCA = ["troch_LN","troch_EM","obs","plumb_BJ","plumb"]
+eastern_group_colors_PCA = ["yellow","gold","orange","pink","red"]
+flipPC1 = true
+flipPC2 = false
+PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered, 
+        eastern_groups_to_plot_PCA, eastern_group_colors_PCA; 
+        sampleSet = "greenish warblers", regionText = "wholeGenome",
+        flip1 = flipPC1, flip2 = flipPC2)
+totalObservationVariance = var(PCA_wholeGenome.model) 
+PC1_variance, PC2_variance = principalvars(PCA_wholeGenome.model)[1:2]
+PC1_prop_variance = PC1_variance / totalObservationVariance
+PC2_prop_variance = PC2_variance / totalObservationVariance
+println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
+PC2 explains ", 100*PC2_prop_variance, "%.")
+
+# add position of reference genome
+refGenomePCAposition = predict(PCA_wholeGenome.model, zeros(size(genos_imputed_loaded, 2)))
+flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
+flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
+CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker = :diamond, color="black", markersize=15, strokewidth=0.5)
+try
+    display(PCA_wholeGenome.PCAfig)
+catch
+    println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
+end
+```
+
+
+
+
+#### Make a whole-genome PCA just for the western side of the ring
+
+```{julia}
+western_groups_to_plot_PCA = ["vir", "vir_misID", "vir_S", "nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML", "troch_west", "troch_LN"]
+western_group_colors_PCA = ["blue", "blue", "turquoise1", "grey", "seagreen4", "seagreen3", "seagreen2", "olivedrab3", "olivedrab2", "olivedrab1", "yellow"]
+PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered,
+    western_groups_to_plot_PCA, western_group_colors_PCA;
+    sampleSet="greenish warblers", regionText="wholeGenome",
+    flip1=true, flip2=true)
+totalObservationVariance = var(PCA_wholeGenome.model)
+PC1_variance, PC2_variance = principalvars(PCA_wholeGenome.model)[1:2]
+PC1_prop_variance = PC1_variance / totalObservationVariance
+PC2_prop_variance = PC2_variance / totalObservationVariance
+println("PC1 explains ", 100 * PC1_prop_variance, "% of the total variance.
+  PC2 explains ", 100 * PC2_prop_variance, "%.")
+```
+

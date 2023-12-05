@@ -65,7 +65,9 @@ flipPC2 = true
 PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered, 
         groups_to_plot_PCA, group_colors_PCA; 
         sampleSet = "greenish warblers", regionText = "wholeGenome",
-        flip1 = flipPC1, flip2 = flipPC2)
+        flip1 = flipPC1, flip2 = flipPC2,
+        lineOpacity = 0.7, fillOpacity = 0.6,
+        symbolSize = 14, showTitle = false)
 totalObservationVariance = var(PCA_wholeGenome.model) 
 PC1_variance, PC2_variance = principalvars(PCA_wholeGenome.model)[1:2]
 PC1_prop_variance = PC1_variance / totalObservationVariance
@@ -87,7 +89,9 @@ catch
     println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
 end
 
-save("Figure_1b_from_Julia.svg", PCA_wholeGenome.PCAfig)
+if false  #set to true to save
+    save("Figure_1b_from_Julia.svg", PCA_wholeGenome.PCAfig)
+end
 ```
 
 
@@ -97,7 +101,7 @@ save("Figure_1b_from_Julia.svg", PCA_wholeGenome.PCAfig)
 ```{julia}
 f = CairoMakie.Figure()
 ax = Axis(f[1, 1],
-    title = "Genomic PC1 around ring",
+    title = "",    #"Genomic PC1 around ring"
     xlabel = "Location around ring (km)",
     ylabel = "Genomic PC1")
 hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
@@ -106,16 +110,38 @@ x_plot_values = ind_with_metadata_indFiltered.ring_km .+ jitterSize .* (rand(len
 y_plot_values = ind_with_metadata_indFiltered.PC1
 for i in eachindex(groups_to_plot_PCA) 
     selection = ind_with_metadata_indFiltered.Fst_group .== groups_to_plot_PCA[i]
-    CairoMakie.scatter!(ax, x_plot_values[selection], y_plot_values[selection], marker = :diamond, color=group_colors_PCA[i], markersize=10, strokewidth=0.5)
+    CairoMakie.scatter!(ax, x_plot_values[selection], y_plot_values[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize=14, strokewidth=0.5, strokecolor = ("black", 0.7))
 end
 display(f)
 
-save("Figure_1c_from_Julia.svg", f)
+if false  #set to true to save
+    save("Figure_1c_from_Julia.svg", f)
+end
 ```
 
 
-NEED TO WORK ON THE BELOW--THROWN HERE FROM MAIN SCRIPT--NEED CHANGES IN METADATA OBJECT NAME
+#### Make a whole-genome PCA just for the western side of the ring
 
+```{julia}
+western_groups_to_plot_PCA = ["vir", "vir_misID", "vir_S", "nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML", "troch_west", "troch_LN"]
+western_group_colors_PCA = ["blue", "blue", "turquoise1", "grey", "seagreen4", "seagreen3", "seagreen2", "olivedrab3", "olivedrab2", "olivedrab1", "yellow"]
+PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered,
+    western_groups_to_plot_PCA, western_group_colors_PCA;
+    sampleSet="greenish warblers", regionText="wholeGenome",
+    flip1=true, flip2=true,
+    lineOpacity = 0.7, fillOpacity = 0.6,
+    symbolSize = 14, showTitle = false)
+totalObservationVariance = var(PCA_wholeGenome.model)
+PC1_variance, PC2_variance = principalvars(PCA_wholeGenome.model)[1:2]
+PC1_prop_variance = PC1_variance / totalObservationVariance
+PC2_prop_variance = PC2_variance / totalObservationVariance
+println("PC1 explains ", 100 * PC1_prop_variance, "% of the total variance.
+    PC2 explains ", 100 * PC2_prop_variance, "%.")
+
+if false  #set to true to save
+    save("Figure_3a_from_Julia.svg", PCA_wholeGenome.PCAfig)
+end
+```
 
 
 #### Make a whole-genome PCA just for the eastern side of the ring
@@ -128,7 +154,9 @@ flipPC2 = false
 PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered, 
         eastern_groups_to_plot_PCA, eastern_group_colors_PCA; 
         sampleSet = "greenish warblers", regionText = "wholeGenome",
-        flip1 = flipPC1, flip2 = flipPC2)
+        flip1 = flipPC1, flip2 = flipPC2,
+        lineOpacity = 0.7, fillOpacity = 0.6,
+        symbolSize = 14, showTitle = false)
 totalObservationVariance = var(PCA_wholeGenome.model) 
 PC1_variance, PC2_variance = principalvars(PCA_wholeGenome.model)[1:2]
 PC1_prop_variance = PC1_variance / totalObservationVariance
@@ -136,35 +164,22 @@ PC2_prop_variance = PC2_variance / totalObservationVariance
 println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
 PC2 explains ", 100*PC2_prop_variance, "%.")
 
-# add position of reference genome
-refGenomePCAposition = predict(PCA_wholeGenome.model, zeros(size(genos_imputed_loaded, 2)))
-flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
-flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
-CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker = :diamond, color="black", markersize=15, strokewidth=0.5)
-try
-    display(PCA_wholeGenome.PCAfig)
-catch
-    println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
+if false  #set to true to save
+    save("Figure_3b_from_Julia.svg", PCA_wholeGenome.PCAfig)
 end
+
+# # add position of reference genome
+# refGenomePCAposition = predict(PCA_wholeGenome.model, zeros(size(genos_imputed_loaded, 2)))
+# flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
+# flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
+# CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker = :diamond, color="black", markersize=15, strokewidth=0.5)
+# try
+#     display(PCA_wholeGenome.PCAfig)
+# catch
+#     println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
+# end
 ```
 
 
 
-
-#### Make a whole-genome PCA just for the western side of the ring
-
-```{julia}
-western_groups_to_plot_PCA = ["vir", "vir_misID", "vir_S", "nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML", "troch_west", "troch_LN"]
-western_group_colors_PCA = ["blue", "blue", "turquoise1", "grey", "seagreen4", "seagreen3", "seagreen2", "olivedrab3", "olivedrab2", "olivedrab1", "yellow"]
-PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered,
-    western_groups_to_plot_PCA, western_group_colors_PCA;
-    sampleSet="greenish warblers", regionText="wholeGenome",
-    flip1=true, flip2=true)
-totalObservationVariance = var(PCA_wholeGenome.model)
-PC1_variance, PC2_variance = principalvars(PCA_wholeGenome.model)[1:2]
-PC1_prop_variance = PC1_variance / totalObservationVariance
-PC2_prop_variance = PC2_variance / totalObservationVariance
-println("PC1 explains ", 100 * PC1_prop_variance, "% of the total variance.
-  PC2 explains ", 100 * PC2_prop_variance, "%.")
-```
 

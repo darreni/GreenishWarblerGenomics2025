@@ -298,7 +298,7 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFraction
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;
     plotTitle = "");
-save("Figure3_from_Julia.svg", plotInfo[1])
+save("Figure2_from_Julia.svg", plotInfo[1])
 
 ```
 

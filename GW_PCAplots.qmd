@@ -137,7 +137,7 @@ println("PC1 explains ", 100 * PC1_prop_variance, "% of the total variance.
     PC2 explains ", 100 * PC2_prop_variance, "%.")
 
 if false  #set to true to save
-    save("Figure_3a_from_Julia.svg", PCA_wholeGenome.PCAfig)
+    save("Figure_3a_from_Julia.png", PCA_wholeGenome.PCAfig, px_per_unit = 2.0)
 end
 ```
 
@@ -163,7 +163,7 @@ println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
 PC2 explains ", 100*PC2_prop_variance, "%.")
 
 if false  #set to true to save
-    save("Figure_3b_from_Julia.svg", PCA_wholeGenome.PCAfig)
+    save("Figure_3b_from_Julia.png", PCA_wholeGenome.PCAfig, px_per_unit = 2.0)
 end
 
 # # add position of reference genome
@@ -179,5 +179,84 @@ end
 ```
 
 
+## Make PCA plots for individual scaffolds
+
+```{julia}
+function plotOneScaffoldPCA( groups_to_plot_PCA, group_colors_PCA,
+                        baseName, tagName, scaffold; 
+                        flipPC1, flipPC2, showTitle)
+
+    regionText = string("chr", scaffold)
+    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+    imputed_genos = load(filename, "imputed_genos")
+    ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
+    pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
+    println(string("Loaded ",filename))
+    println(string(regionText, ": ", size(imputed_genos,2), " SNPs from ", size(imputed_genos,1), " individuals"))
+    # flipPC1 = true
+    # flipPC2 = true
+    PCAmodel = plotPCA(imputed_genos, ind_with_metadata_indFiltered, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText=regionText,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = showTitle,
+            showPlot = false)
+
+    totalObservationVariance = var(PCAmodel.model) 
+    PC1_variance, PC2_variance = principalvars(PCAmodel.model)[1:2]
+    PC1_prop_variance = PC1_variance / totalObservationVariance
+    PC2_prop_variance = PC2_variance / totalObservationVariance
+    println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
+    PC2 explains ", 100*PC2_prop_variance, "%.")
+            
+    # add position of reference genome
+    refGenomePCAposition = predict(PCAmodel.model, zeros(size(imputed_genos, 2)))
+    flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
+    flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
+    CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker = :diamond, color="black", markersize=14, strokewidth=0.5)
+    try
+        display(PCAmodel.PCAfig)
+    catch
+        println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
+    end
+    return PCAmodel   
+end
+ 
+scaffold = "gw23"    
+PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
+                            baseName, tagName, scaffold;
+                            flipPC1=true, flipPC2=true, showTitle=false)
+if false  #set to true to save
+    save("Figure_4lowerleft_chrgw23_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
+end
+
+
+scaffold = "gw26"    
+PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
+                            baseName, tagName, scaffold;
+                            flipPC1=true, flipPC2=true, showTitle=false)
+if false  #set to true to save
+    save("Figure_4lowerright_chrgw26_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
+end
+
+
+scaffold = "gw28"    
+PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
+                            baseName, tagName, scaffold;
+                            flipPC1=true, flipPC2=true, showTitle=false)
+if false  #set to true to save
+    save("Figure_6lower_chrgw28_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
+end
+
+# To produce a bunch of PCAs for different scaffolds:
+
+for i in eachindex(chromosomes_to_process)
+    chrom = chromosomes_to_process[i]
+    PCAmodel = plotOneScaffoldPCA( groups_to_plot_PCA, group_colors_PCA,    
+                                baseName, tagName, chrom,
+                                flipPC1, flipPC2)
+end
+```
 
 

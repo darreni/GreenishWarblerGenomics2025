@@ -842,8 +842,12 @@ regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=s
 ```{julia}
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
+
+if false  # set to true to save plot
+    save("Figure4_upperleft_gw23GBIplot_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
+end 
 ```
   
 #### choose another chromosome, and plot similarly to above
@@ -852,7 +856,10 @@ chr = "gw26"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst,
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+if false  # set to true to save plot
+    save("Figure4_upperright_gw26GBIplot_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
+end 
 ```
 
 #### Make a GBI plot to illustrate variation along west side of ring
@@ -892,8 +899,10 @@ regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=s
 #### Now actually make the plot
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
-# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+if false  # set to true to save plot
+    save("Figure5_left_gw26GBIplotWest_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
+end 
 ```
 
 Show another chromosome along west side of ring:
@@ -906,7 +915,10 @@ regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=s
 #### Now actually make the plot
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+if false  # set to true to save plot
+    save("Figure5_right_gw28GBIplotWest_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
+end 
 ```
 
 
@@ -919,8 +931,8 @@ plotGroupColors = ["yellow","gold","orange","pink","red"]
 numIndsToPlot = [15, 15, 15, 15, 17] # maximum number of individuals to plot from each group
 group1 = "troch_LN"   # these groups will determine the color used in the graph
 group2 = "plumb"
-groupsToCompare = "Fst_among" #"Fst_among"
-Fst_cutoff = 0.6
+groupsToCompare = "troch_LN_plumb" #"Fst_among"
+Fst_cutoff = 0.9
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
 # Calculate allele freqs and sample sizes (use column Fst_group)
@@ -953,8 +965,10 @@ genosOnly_included = genosOnly_included[selection,:]
 #### Now actually make the plot
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
-# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+if false  # set to true to save plot
+    save("Figure6_top_gw28GBIplotEast_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
+end 
 ```
 
 ###############

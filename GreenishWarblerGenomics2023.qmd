@@ -718,7 +718,6 @@ function plotGenomeFst(scaffolds_to_plot,
         hidexdecorations!(axs[i]) #hide background lattice and axis labels
         hidespines!(axs[i], :t, :r, :b) # hide box around plot
     end
-    display(f)
 
     for rowNum in 1:numRows
         numScaffoldsInRow = length(scaffoldInRow[rowNum])
@@ -971,6 +970,128 @@ if false  # set to true to save plot
 end 
 ```
 
+######################
+
+## Make GBI plots showing all individuals in the study
+
+```{julia}
+groups_to_plot_all = ["vir","vir_misID","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
+group_colors_all = ["blue","blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
+```
+
+This will use Fst among multiple groups to determine SNPs to plot.
+For chr 26:
+
+```{julia}
+groups = ["vir","lud_PK","troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
+plotGroups = groups_to_plot_all 
+plotGroupColors = group_colors_all
+group1 = "vir"   # these groups will determine the color used in the graph
+group2 = "plumb"
+groupsToCompare = "Fst_among" #"vir_plumb" 
+Fst_cutoff = 0.8
+missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+
+# Calculate allele freqs and sample sizes (use column Fst_group)
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+println("Calculated population allele frequencies and sample sizes")
+
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+println("Calculated Fst values")
+
+chr = "gw26"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+    missingFractionAllowed, regionInfo,
+    pos_SNP_filtered, Fst, pairwiseNamesFst, 
+    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+    plotGroups, plotGroupColors;
+    indFontSize=4, figureSize=(1200,1600),
+    plotTitle = "");
+# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
+```
+
+# Make list of scaffolds to plot:
+
+```{julia}
+scaffolds_to_plot = "gw" .* string.(vcat(1:15, 17:28))
+push!(scaffolds_to_plot, "gw1A", "gw4A")  # add two other scaffolds
+```
+
+Loop through each scaffold and produce GBI plot. (Making inactive because already saved figs and takes long.)
+
+```julia
+for i in 1:length(scaffolds_to_plot)
+    chr = scaffolds_to_plot[i]
+    regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+    plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+        missingFractionAllowed, regionInfo,
+        pos_SNP_filtered, Fst, pairwiseNamesFst, 
+        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+        plotGroups, plotGroupColors;
+        indFontSize=4, figureSize=(1200,1600), plotTitle = "");
+    println("Completed the figure for ", chr, ".")
+    if true  # set to true to save plot
+        filename = string("Figure_", chr, "_GBI_allInds_from_Julia.png")
+        save(filename, plotInfo[1], px_per_unit = 2.0)
+        println("Saved ", filename)
+    end 
+end
+```
+
+```{julia}
+chr = "gw6"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+    missingFractionAllowed, regionInfo,
+    pos_SNP_filtered, Fst, pairwiseNamesFst, 
+    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+    plotGroups, plotGroupColors;
+    indFontSize=4, figureSize=(1200,1600))
+println("Completed the figure for ", chr, ".")
+```
+
+For chr 28:
+
+```{julia}
+chr = "gw28"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr])
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+    missingFractionAllowed, regionInfo,
+    pos_SNP_filtered, Fst, pairwiseNamesFst, 
+    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+    plotGroups, plotGroupColors;
+    indFontSize=4, figureSize=(1200,1600));
+```
+
+For chr 23:
+
+```{julia}
+chr = "gw23"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr])
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+    missingFractionAllowed, regionInfo,
+    pos_SNP_filtered, Fst, pairwiseNamesFst, 
+    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+    plotGroups, plotGroupColors;
+    indFontSize=4, figureSize=(1200,1600));
+```
+
+For chr 25:
+
+```{julia}
+chr = "gw25"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr])
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+    missingFractionAllowed, regionInfo,
+    pos_SNP_filtered, Fst, pairwiseNamesFst, 
+    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+    plotGroups, plotGroupColors;
+    indFontSize=4, figureSize=(1200,1600));
+```
+
+
 ###############
 
 ## Show windowed heterozygosity for individuals
@@ -1040,120 +1161,6 @@ lines(windowedPos, vec(variancePerWindow_windowedIndHet))
 ```
 
 
-######################
-
-## Make GBI plots showing all individuals in the study
-
-```{julia}
-groups_to_plot_all = ["vir","vir_misID","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
-group_colors_all = ["blue","blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
-```
-
-This will use Fst among multiple groups to determine SNPs to plot.
-For chr 26:
-
-```{julia}
-groups = ["vir","lud_PK","troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
-plotGroups = groups_to_plot_all 
-plotGroupColors = group_colors_all
-group1 = "vir"   # these groups will determine the color used in the graph
-group2 = "plumb"
-groupsToCompare = "Fst_among" #"vir_plumb" 
-Fst_cutoff = 0.8
-missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
-
-# Calculate allele freqs and sample sizes (use column Fst_group)
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
-println("Calculated population allele frequencies and sample sizes")
-
-Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
-println("Calculated Fst values")
-
-chr = "gw26"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
-    missingFractionAllowed, regionInfo,
-    pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-    plotGroups, plotGroupColors;
-    indFontSize=4, figureSize=(1200,1600));
-# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
-```
-
-# Make list of scaffolds to plot:
-
-```{julia}
-scaffolds_to_plot = "gw" .* string.(vcat(1:15, 17:28))
-push!(scaffolds_to_plot, "gw1A", "gw4A")  # add two other scaffolds
-```
-
-Making this inactive because takes long:
-
-```julia
-for i in 1:length(scaffolds_to_plot)
-    chr = scaffolds_to_plot[i]
-    regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-    plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
-        missingFractionAllowed, regionInfo,
-        pos_SNP_filtered, Fst, pairwiseNamesFst, 
-        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-        plotGroups, plotGroupColors;
-        indFontSize=4, figureSize=(1200,1600))
-    println("Completed the figure for ", chr, ".")
-end
-```
-
-```{julia}
-chr = "gw6"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
-    missingFractionAllowed, regionInfo,
-    pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-    plotGroups, plotGroupColors;
-    indFontSize=4, figureSize=(1200,1600))
-println("Completed the figure for ", chr, ".")
-```
-
-For chr 28:
-
-```{julia}
-chr = "gw28"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr])
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
-    missingFractionAllowed, regionInfo,
-    pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-    plotGroups, plotGroupColors;
-    indFontSize=4, figureSize=(1200,1600));
-```
-
-For chr 23:
-
-```{julia}
-chr = "gw23"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr])
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
-    missingFractionAllowed, regionInfo,
-    pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-    plotGroups, plotGroupColors;
-    indFontSize=4, figureSize=(1200,1600));
-```
-
-For chr 25:
-
-```{julia}
-chr = "gw25"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr])
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
-    missingFractionAllowed, regionInfo,
-    pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-    plotGroups, plotGroupColors;
-    indFontSize=4, figureSize=(1200,1600));
-```
 
 
 # Make GBI plots showing just west individuals:

@@ -90,11 +90,9 @@ catch
 end
 
 if false  #set to true to save
-    save("Figure_1b_from_Julia.svg", PCA_wholeGenome.PCAfig)
+    save("Figure_1b_from_Julia.png", PCA_wholeGenome.PCAfig, px_per_unit = 2.0)
 end
 ```
-
-
 
 #### Plot location around ring vs. PC1:
 
@@ -102,8 +100,8 @@ end
 f = CairoMakie.Figure()
 ax = Axis(f[1, 1],
     title = "",    #"Genomic PC1 around ring"
-    xlabel = "Location around ring (km)",
-    ylabel = "Genomic PC1")
+    xlabel = "Location around ring (km)", xlabelsize = 24,
+    ylabel = "Genomic PC1", ylabelsize = 24)
 hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
 jitterSize = 100   # in km
 x_plot_values = ind_with_metadata_indFiltered.ring_km .+ jitterSize .* (rand(length(ind_with_metadata_indFiltered.PC1)) .- 0.5)
@@ -115,7 +113,7 @@ end
 display(f)
 
 if false  #set to true to save
-    save("Figure_1c_from_Julia.svg", f)
+    save("Figure_1c_from_Julia.png", f, px_per_unit = 2.0)
 end
 ```
 

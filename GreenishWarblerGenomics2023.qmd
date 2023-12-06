@@ -152,6 +152,31 @@ chromosomes_to_process = vec(["gw2",
                             "gws112"]);
 ```
 
+### Set up function to correct the names of GBS runs:
+
+```{julia}
+function correctNames(metadataColumn)
+    metadataColumn_corrected = replace(metadataColumn, 
+                        "GW_Armando_plate1_TTGW05_rep2" => "GW_Armando_plate1_TTGW05r2",
+                        "GW_Lane5_NA3-3ul" => "GW_Lane5_NA3",
+                        "GW_Armando_plate1_TTGW_15_05" => "GW_Armando_plate1_TTGW-15-05",
+                        "GW_Armando_plate1_TTGW_15_07" => "GW_Armando_plate1_TTGW-15-07",
+                        "GW_Armando_plate1_TTGW_15_08" => "GW_Armando_plate1_TTGW-15-08",
+                        "GW_Armando_plate1_TTGW_15_09" => "GW_Armando_plate1_TTGW-15-09",
+                        "GW_Armando_plate1_TTGW_15_01" => "GW_Armando_plate1_TTGW-15-01",
+                        "GW_Armando_plate1_TTGW_15_02" => "GW_Armando_plate1_TTGW-15-02",	
+                        "GW_Armando_plate1_TTGW_15_03" => "GW_Armando_plate1_TTGW-15-03",
+                        "GW_Armando_plate1_TTGW_15_04" => "GW_Armando_plate1_TTGW-15-04",
+                        "GW_Armando_plate1_TTGW_15_06" => "GW_Armando_plate1_TTGW-15-06",
+                        "GW_Armando_plate1_TTGW_15_10" => "GW_Armando_plate1_TTGW-15-10",
+                        "GW_Armando_plate2_TTGW_15_01" => "GW_Armando_plate2_TTGW-15-01",
+                        "GW_Armando_plate2_TTGW_15_02" => "GW_Armando_plate2_TTGW-15-02",
+                        "GW_Armando_plate2_TTGW_15_03" => "GW_Armando_plate2_TTGW-15-03",
+                        "GW_Armando_plate2_TTGW_15_04" => "GW_Armando_plate2_TTGW-15-04",
+                        "GW_Armando_plate2_TTGW_15_06" => "GW_Armando_plate2_TTGW-15-06",
+                        "GW_Armando_plate2_TTGW_15_10" => "GW_Armando_plate2_TTGW-15-10") 
+end
+```
 
 
 ### The above should be run before any of the other Quarto pages are run
@@ -301,28 +326,6 @@ genosOnly_ind_SNP_ind_filtered = geno_ind_SNP_ind_filtered[:, Not(1)]
 ### Polish a few individual names (for more readable graphs):
 
 ```{julia}
-
-function correctNames(metadataColumn)
-    metadataColumn_corrected = replace(metadataColumn, 
-                        "GW_Armando_plate1_TTGW05_rep2" => "GW_Armando_plate1_TTGW05r2",
-                        "GW_Lane5_NA3-3ul" => "GW_Lane5_NA3",
-                        "GW_Armando_plate1_TTGW_15_05" => "GW_Armando_plate1_TTGW-15-05",
-                        "GW_Armando_plate1_TTGW_15_07" => "GW_Armando_plate1_TTGW-15-07",
-                        "GW_Armando_plate1_TTGW_15_08" => "GW_Armando_plate1_TTGW-15-08",
-                        "GW_Armando_plate1_TTGW_15_09" => "GW_Armando_plate1_TTGW-15-09",
-                        "GW_Armando_plate1_TTGW_15_01" => "GW_Armando_plate1_TTGW-15-01",
-                        "GW_Armando_plate1_TTGW_15_02" => "GW_Armando_plate1_TTGW-15-02",	
-                        "GW_Armando_plate1_TTGW_15_03" => "GW_Armando_plate1_TTGW-15-03",
-                        "GW_Armando_plate1_TTGW_15_04" => "GW_Armando_plate1_TTGW-15-04",
-                        "GW_Armando_plate1_TTGW_15_06" => "GW_Armando_plate1_TTGW-15-06",
-                        "GW_Armando_plate1_TTGW_15_10" => "GW_Armando_plate1_TTGW-15-10",
-                        "GW_Armando_plate2_TTGW_15_01" => "GW_Armando_plate2_TTGW-15-01",
-                        "GW_Armando_plate2_TTGW_15_02" => "GW_Armando_plate2_TTGW-15-02",
-                        "GW_Armando_plate2_TTGW_15_03" => "GW_Armando_plate2_TTGW-15-03",
-                        "GW_Armando_plate2_TTGW_15_04" => "GW_Armando_plate2_TTGW-15-04",
-                        "GW_Armando_plate2_TTGW_15_06" => "GW_Armando_plate2_TTGW-15-06",
-                        "GW_Armando_plate2_TTGW_15_10" => "GW_Armando_plate2_TTGW-15-10") 
-end
 
 ind_with_metadata_indFiltered.ind = correctNames(ind_with_metadata_indFiltered.ind)
 

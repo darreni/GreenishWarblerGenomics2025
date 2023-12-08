@@ -314,7 +314,7 @@ plotGroups = groups_to_plot_all
 plotGroupColors = group_colors_all
 group1 = "vir"   # these groups will determine the color used in the graph
 group2 = "plumb"
-groupsToCompare = "Fst_among" #"vir_plumb" 
+groupsToCompare = ["vir_plumb", "vir_troch_LN", "troch_LN_plumb"]  #"Fst_among" #"vir_plumb" 
 Fst_cutoff = 0.9
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 

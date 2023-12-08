@@ -930,7 +930,7 @@ plotGroupColors = ["yellow","gold","orange","pink","red"]
 numIndsToPlot = [15, 15, 15, 15, 17] # maximum number of individuals to plot from each group
 group1 = "troch_LN"   # these groups will determine the color used in the graph
 group2 = "plumb"
-groupsToCompare = "troch_LN_plumb" #"Fst_among"
+groupsToCompare = "troch_LN_plumb" #"troch_LN_plumb" #"Fst_among"
 Fst_cutoff = 0.9
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
@@ -980,7 +980,7 @@ group_colors_all = ["blue","blue","turquoise1","grey","seagreen4","seagreen3","s
 ```
 
 This will use Fst among multiple groups to determine SNPs to plot.
-For chr 26:
+For chr 28:
 
 ```{julia}
 groups = ["vir","lud_PK","troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
@@ -988,7 +988,7 @@ plotGroups = groups_to_plot_all
 plotGroupColors = group_colors_all
 group1 = "vir"   # these groups will determine the color used in the graph
 group2 = "plumb"
-groupsToCompare = "Fst_among" #"vir_plumb" 
+groupsToCompare = ["vir_plumb", "vir_troch_LN", "troch_LN_plumb"]     # "Fst_among" #"vir_plumb" 
 Fst_cutoff = 0.8
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
@@ -999,7 +999,7 @@ println("Calculated population allele frequencies and sample sizes")
 Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
 println("Calculated Fst values")
 
-chr = "gw26"
+chr = "gw28"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
@@ -1012,16 +1012,18 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff,
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 ```
 
-# Make list of scaffolds to plot:
+# Make list of scaffolds to plot according to above:
 
 ```{julia}
-scaffolds_to_plot = "gw" .* string.(vcat(1:15, 17:28))
+scaffolds_to_plot = "gw" .* string.(vcat(28:-1:17, 15:-1:1))
 push!(scaffolds_to_plot, "gw1A", "gw4A")  # add two other scaffolds
 ```
 
+scaffolds_to_plot = ["gw4A", "gw1A"]
+
 Loop through each scaffold and produce GBI plot. (Making inactive because already saved figs and takes long.)
 
-```julia
+```{julia}
 for i in 1:length(scaffolds_to_plot)
     chr = scaffolds_to_plot[i]
     regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
@@ -1033,7 +1035,7 @@ for i in 1:length(scaffolds_to_plot)
         indFontSize=4, figureSize=(1200,1600), plotTitle = "");
     println("Completed the figure for ", chr, ".")
     if true  # set to true to save plot
-        filename = string("Figure_", chr, "_GBI_allInds_from_Julia.png")
+        filename = string("Figure_", chr, "_Fst3groups_GBI_allInds_from_Julia.png")
         save(filename, plotInfo[1], px_per_unit = 2.0)
         println("Saved ", filename)
     end 

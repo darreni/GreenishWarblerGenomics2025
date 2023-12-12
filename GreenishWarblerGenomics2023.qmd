@@ -358,6 +358,7 @@ ax = Axis(f[1, 1],
     ylabel = "latitude (N)"
 )
 scatter!(latlongs.long_E, latlongs.lat_N)
+text!(latlongs.long_E, latlongs.lat_N; text = latlongs.location_short)
 f
 ```
 
@@ -384,21 +385,21 @@ distances = [(HaversineDistance(geoPoints[i], geoPoints[j])/1000) for i in eachi
 
 ```{julia}
 # get some key distances
-function getIndex(name, nameVector = latlongs2.Location_name)
+function getIndex(name; nameVector = latlongs2.Location_name)
     findfirst(isequal(name), nameVector)
 end
 
 index_AA = getIndex("Ala_Archa")
-index_PK = getIndex("Naran_Pakistan")
+index_NR = getIndex("Naran_Pakistan")
 index_LN = getIndex("Langtang")
-index_EM = getIndex("Emeishan")
+index_GG = getIndex("Gongga")
 index_XN = getIndex("Xining")
 index_BJ = getIndex("Beijing")
 index_last = nrow(latlongs2)
 
-dist_PK_to_LN = distances[index_PK, index_LN]
-dist_LN_to_EM = distances[index_LN, index_EM]
-dist_EM_to_BJ = distances[index_EM, index_BJ]
+dist_NR_to_LN = distances[index_NR, index_LN]
+dist_LN_to_GG = distances[index_LN, index_GG]
+dist_GG_to_BJ = distances[index_GG, index_BJ]
 
 # This next part will assume locations in the input file are arranged in order around ring:
 distsAroundRing = Matrix{Float32}(undef, size(distances)[1], size(distances)[2])
@@ -413,17 +414,17 @@ end
 # accept all distances within viridanus:
 distsAroundRing = acceptDists(distances, 1, index_AA, distsAroundRing)
 
-# accept dist from AA to PK:
-distsAroundRing = acceptDists(distances, index_AA, index_PK, distsAroundRing)
+# accept dist from AA to NR:
+distsAroundRing = acceptDists(distances, index_AA, index_NR, distsAroundRing)
 
-# accept all distances from PK to LN:
-distsAroundRing = acceptDists(distances, index_PK, index_LN, distsAroundRing)
+# accept all distances from NR to LN:
+distsAroundRing = acceptDists(distances, index_NR, index_LN, distsAroundRing)
 
-# accept dist from LN to EM:
-distsAroundRing = acceptDists(distances, index_LN, index_EM, distsAroundRing)
+# accept dist from LN to GG:
+distsAroundRing = acceptDists(distances, index_LN, index_GG, distsAroundRing)
 
-# accept dists between EM, XN, BJ:
-distsAroundRing = acceptDists(distances, index_EM, index_BJ, distsAroundRing)
+# accept dists between GG, EM, XN, BJ:
+distsAroundRing = acceptDists(distances, index_GG, index_BJ, distsAroundRing)
 
 # accept all distances within plumbeitarsus:
 distsAroundRing = acceptDists(distances, index_BJ, index_last, distsAroundRing)
@@ -438,17 +439,17 @@ addDists = function(set1start, set1end, set2start, set2end, distsAroundRing)
     return(distsAroundRing)
 end
 
-# dists from viridanus to PK are sum of dists to AA plus AA to PK:
-distsAroundRing = addDists(1, index_AA, index_PK, index_PK, distsAroundRing)
+# dists from viridanus to NR are sum of dists to AA plus AA to NR:
+distsAroundRing = addDists(1, index_AA, index_NR, index_NR, distsAroundRing)
 
-# dists from "northwest of PK" to Himalayas are sum of ringdists to PK plus PK to locations up to LN:
-distsAroundRing = addDists(1, index_PK, index_PK+1, index_LN, distsAroundRing)
+# dists from "northwest of PK" to Himalayas are sum of ringdists to NR plus NR to locations up to LN:
+distsAroundRing = addDists(1, index_NR, index_NR+1, index_LN, distsAroundRing)
 
-# dists from "west / northwest of LN" to EM are sum of dists to LN plus LN to EM:
-distsAroundRing = addDists(1, index_LN, index_EM, index_EM, distsAroundRing)
+# dists from "west / northwest of LN" to GG are sum of dists to LN plus LN to EM:
+distsAroundRing = addDists(1, index_LN, index_GG, index_GG, distsAroundRing)
 
-# dists from "west / northwest of EM" to China are sum of dists to EM plus EM to (XN, BJ):
-distsAroundRing = addDists(1, index_EM, index_XN, index_BJ, distsAroundRing)
+# dists from "west / northwest of EM" to China are sum of dists to GG plus GG to (EM, XN, BJ):
+distsAroundRing = addDists(1, index_GG, index_GG, index_BJ, distsAroundRing)
 
 # dists from "west of BJ" to east Siberia are sum of dists to BJ plus BJ to other plumbeitarsus:
 distsAroundRing = addDists(1, index_BJ, index_BJ+1, index_last, distsAroundRing);
@@ -975,8 +976,8 @@ end
 ## Make GBI plots showing all individuals in the study
 
 ```{julia}
-groups_to_plot_all = ["vir","vir_misID","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
-group_colors_all = ["blue","blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
+groups_to_plot_all = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
+group_colors_all = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
 ```
 
 This will use Fst among multiple groups to determine SNPs to plot.
@@ -1018,8 +1019,6 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff,
 scaffolds_to_plot = "gw" .* string.(vcat(28:-1:17, 15:-1:1))
 push!(scaffolds_to_plot, "gw1A", "gw4A")  # add two other scaffolds
 ```
-
-scaffolds_to_plot = ["gw4A", "gw1A"]
 
 Loop through each scaffold and produce GBI plot. (Making inactive because already saved figs and takes long.)
 
@@ -1264,8 +1263,8 @@ end
 Now we can cycle through a set of chromosomes and plot a PCA for each. We need to first specify some groups to include in the plot, and their colors:
 
 ```{julia}
-groups_to_plot_PCA = ["vir","vir_misID","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
-group_colors_PCA = ["blue","blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
+groups_to_plot_PCA = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
+group_colors_PCA = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
 ```
 
 Now we'll actually do the PCA and make the plot for each scaffold. The code block below is what I initially used, based on the SVD method of imputing. I've now decided that KNN is better (see further below).

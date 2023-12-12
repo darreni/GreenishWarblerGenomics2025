@@ -41,13 +41,20 @@ groups_to_plot_PCA = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "l
 group_colors_PCA = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
 ```
 
+#### Make list of scaffolds to include in the whole-genome PCA:
+
 ```{julia}
-chromosomes_to_process[chromosomes_to_process .== "gwZ"] .= "gwZ_cleaned"
+scaffolds_to_include = "gw" .* string.(vcat(28:-1:17, 15:-1:1))
+push!(scaffolds_to_include, "gw1A", "gw4A", "gwZ_cleaned")  # add two other scaffolds
+```
+
+```{julia}
+#chromosomes_to_process[chromosomes_to_process .== "gwZ"] .= "gwZ_cleaned"
 # initialize data structures for gneotypes and positions
 genos_imputed_loaded = Matrix{Union{Missing, Float32}}(undef, nrow(ind_with_metadata_indFiltered), 0)
 pos_SNP_loaded = DataFrame(chrom = String[], position = Int64[])
-for i in eachindex(chromosomes_to_process)
-    chrom = chromosomes_to_process[i]
+for i in eachindex(scaffolds_to_include)
+    chrom = scaffolds_to_include[i]
     regionText = string("chr", chrom)
     filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
     imputed_genos_one_chr = load(filename, "imputed_genos")
@@ -230,7 +237,7 @@ end
 scaffold = "23"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
-                            flipPC1=true, flipPC2=true, showTitle=false)
+                            flipPC1=false, flipPC2=false, showTitle=false)
 if false  #set to true to save
     save("Figure_4lowerleft_chrgw23_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
 end
@@ -240,7 +247,7 @@ end
 scaffold = "26"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
-                            flipPC1=true, flipPC2=true, showTitle=false)
+                            flipPC1=false, flipPC2=true, showTitle=false)
 if false  #set to true to save
     save("Figure_4lowerright_chrgw26_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
 end
@@ -250,7 +257,7 @@ end
 scaffold = "28"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
-                            flipPC1=true, flipPC2=true, showTitle=false)
+                            flipPC1=false, flipPC2=false, showTitle=false)
 if false  #set to true to save
     save("Figure_6lower_chrgw28_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
 end
@@ -259,11 +266,16 @@ end
 ### Make other PCA plots for supplement:
 
 ```{julia}
+savefig = true  #set to true to save the figures from cells below
+```
+
+
+```{julia}
 scaffold = "1"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=false, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -275,7 +287,7 @@ scaffold = "1A"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=false, flipPC2=false, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -287,7 +299,7 @@ scaffold = "2"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -299,7 +311,7 @@ scaffold = "3"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -311,7 +323,7 @@ scaffold = "4"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=false, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -323,7 +335,7 @@ scaffold = "4A"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -335,7 +347,7 @@ scaffold = "5"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -347,7 +359,7 @@ scaffold = "6"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -359,7 +371,7 @@ scaffold = "7"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=false, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -371,7 +383,7 @@ scaffold = "8"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=false, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -383,7 +395,7 @@ scaffold = "9"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -395,7 +407,7 @@ scaffold = "10"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -407,7 +419,7 @@ scaffold = "11"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=false, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -419,7 +431,7 @@ scaffold = "12"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -431,7 +443,7 @@ scaffold = "13"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=false, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -443,7 +455,7 @@ scaffold = "14"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -455,7 +467,7 @@ scaffold = "15"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=false, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -467,7 +479,7 @@ scaffold = "17"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -479,7 +491,7 @@ scaffold = "18"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -491,7 +503,7 @@ scaffold = "19"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -503,7 +515,7 @@ scaffold = "20"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -515,7 +527,7 @@ scaffold = "21"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -527,7 +539,7 @@ scaffold = "22"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=false, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -539,7 +551,7 @@ scaffold = "23"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -551,7 +563,7 @@ scaffold = "24"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -563,7 +575,7 @@ scaffold = "25"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -575,7 +587,7 @@ scaffold = "26"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -587,7 +599,7 @@ scaffold = "27"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -599,7 +611,7 @@ scaffold = "28"
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -644,13 +656,12 @@ try
 catch
     println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
 end
-if true  #set to true to save
+if savefig  #set to true to save
     filename = string("Figure_gwZ_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
-
 
 
 

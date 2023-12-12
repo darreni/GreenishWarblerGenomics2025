@@ -230,7 +230,7 @@ regionText = "chrgwZ_cleaned"
 filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
 # to do the imputing, do this by setting to true:
 cd(dataDirectory)
-do_imputing = false
+do_imputing = true
 if do_imputing
     @time imputed_genos = Impute.knn(genotypes_gwZ_SNPfiltered_with_missing; k=1, dims=:rows)
     # took 46 sec
@@ -251,7 +251,11 @@ group_colors_PCA = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen
 plotPCA(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText=regionText,
-            flip1 = true, flip2 = true)
+            flip1 = true, flip2 = true,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Chromosome Z PC1"), yLabelText = string("Chromosome Z PC2"),
+            showPlot = true)
 ```
 
 Looks Great!! Now have a Z chromosome PCA with both males and females, based on only Z-chromosome markers.
@@ -298,7 +302,7 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFraction
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;
     plotTitle = "");
-save("Figure2_from_Julia_test.png", plotInfo[1], px_per_unit = 2.0) # the last bit doubles the pixels per row and per column (times 4 overall) 
+save("Figure2_from_Julia.png", plotInfo[1], px_per_unit = 2.0) # the last bit doubles the pixels per row and per column (times 4 overall) 
 
 ```
 
@@ -388,7 +392,11 @@ group_colors_PCA = ["blue", "turquoise1", "grey", "seagreen4", "seagreen3", "sea
 PCA_Zchrom_west = plotPCA(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText=regionText,
-            flip1 = true, flip2 = true)
+            flip1 = true, flip2 = false,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Chromosome Z PC1"), yLabelText = string("Chromosome Z PC2"),
+            showPlot = true)
 totalObservationVariance = var(PCA_Zchrom_west.model) 
 PC1_variance, PC2_variance = principalvars(PCA_Zchrom_west.model)[1:2]
 PC1_prop_variance = PC1_variance / totalObservationVariance
@@ -447,7 +455,11 @@ group_colors_PCA = ["yellow","gold","orange","pink","red"]
 PCA_Zchrom_east = plotPCA(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText=regionText,
-            flip1 = true, flip2 = true)
+            flip1 = true, flip2 = false,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Chromosome Z PC1"), yLabelText = string("Chromosome Z PC2"),
+            showPlot = true)
 totalObservationVariance = var(PCA_Zchrom_east.model) 
 PC1_variance, PC2_variance = principalvars(PCA_Zchrom_east.model)[1:2]
 PC1_prop_variance = PC1_variance / totalObservationVariance

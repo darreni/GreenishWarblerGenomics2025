@@ -98,13 +98,13 @@ filenameTextMiddle = ".max2allele_noindel.vcf.maxmiss"
 # this was set by earlier filtering, and is just a record-keeper for the filenames:
 missingGenotypeThreshold = 60 
 filenameTextEnd = ".MQ20.lowHet.tab"
-tagName = ".Sept2023."   # choose a tag name for this analysis
+tagName = ".Dec2023."   # choose a tag name for this analysis
 # indicate name of metadata file, a text file with these column headings:
 # ID	location	group	Fst_group	plot_order
 metadataFile = "GW_genomics_2022_with_new_genome/GW_all4plates.Fst_groups.txt"
 ```
 
-### List the scaffolds to be imputed and included in PCA
+### List the scaffolds to be imputed (for later inclusion in PCA)
 
 ```{julia}
 chromosomes_to_process = vec(["gw2",
@@ -479,6 +479,15 @@ for i in axes(latlongs2, 1)
 end
 ```
 
+# Make a table of locations and groups of individuals included after filtering
+
+```{julia}
+gdf = groupby(ind_with_metadata_indFiltered, [:location, :Fst_group])
+sample_origin_summary = combine(gdf, nrow)
+print(sample_origin_summary)
+# to save as comma-delimited text:
+# CSV.write("GW2023_sample_origin_summary.txt", sample_origin_summary; delim='\t')
+```
 
 ## Save the filtered dataset
 ```{julia}
@@ -498,6 +507,394 @@ ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
 pos_SNP_filtered = load(filename, "pos_SNP_filtered")
 println("Loaded the filtered data.")
 ```
+
+####################
+
+
+## Prepare data for Genotype-by-individual plots and PCA
+
+For missing genotypes, change our code of `-1` to `missing`:
+
+```{julia}
+genosOnly_with_missing = Matrix{Union{Missing, Int16}}(genosOnly_ind_SNP_ind_filtered)
+genosOnly_with_missing[genosOnly_with_missing .== -1] .= missing;
+```
+
+
+## Genotype-by-individual plots
+
+Now, show individual genotypes for subsets of the dataset. Can choose individuals and genomic regions to plot, along with an Fst cutoff (only show SNPs with greater Fst than the cutoff).
+
+```{julia}
+groups = ["vir","plumb"]
+plotGroups = ["vir","plumb_vir","plumb"]
+plotGroupColors = ["blue","purple","red"]
+numIndsToPlot = [100,100,100] # maximum number of individuals to plot from each group
+group1 = "vir"   # these groups will determine the color used in the graph
+group2 = "plumb"
+groupsToCompare = "vir_plumb"
+Fst_cutoff =  0.8
+missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+```
+
+#### Calculate allele freqs and sample sizes (use column Fst_group)
+
+```{julia}
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+println("Calculated population allele frequencies and sample sizes")
+```
+
+#### calculate Fst 
+```{julia}
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+println("Calculated Fst values")
+```
+
+#### limit the individuals to include in plot
+
+```{julia}
+# For this figure only, filter out individuals with lots of missing genotypes
+numMissings_threshold = 800_000
+selection = ind_with_metadata_indFiltered.numMissings .< numMissings_threshold
+genosOnly_with_missing_selected = view(genosOnly_with_missing, selection, :)
+ind_with_metadata_indFiltered_selected = view(ind_with_metadata_indFiltered, selection, :)
+# now limit each group to specified numbers
+genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected);
+```
+
+#### Choose the scaffold and region to show
+```{julia}
+chr = "gw23"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+```
+
+#### Now actually make the plot
+
+```{julia}
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
+
+if false  # set to true to save plot
+    save("Figure4_upperleft_gw23GBIplot_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
+end 
+```
+  
+#### choose another chromosome, and plot similarly to above
+```{julia}
+chr = "gw26"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst,
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+if false  # set to true to save plot
+    save("Figure4_upperright_gw26GBIplot_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
+end 
+```
+
+#### Make a GBI plot to illustrate variation along west side of ring
+
+```{julia}
+groups = ["vir","troch_LN"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
+plotGroups = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
+plotGroupColors = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow"]
+numIndsToPlot = [10, 5, 2, 3, 5, 15, 3, 5, 10, 10] # maximum number of individuals to plot from each group
+group1 = "vir"   # these groups will determine the color used in the graph
+group2 = "troch_LN"
+groupsToCompare = "vir_troch_LN" # "Fst_among"
+Fst_cutoff = 0.9
+missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+
+# Calculate allele freqs and sample sizes (use column Fst_group)
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+println("Calculated population allele frequencies and sample sizes")
+
+# calculate Fst 
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+println("Calculated Fst values")
+
+# limit the individuals to include in plot
+# For this figure only, filter out individuals with lots of missing genotypes
+numMissings_threshold = 800_000
+selection = ind_with_metadata_indFiltered.numMissings .< numMissings_threshold
+genosOnly_with_missing_selected = view(genosOnly_with_missing, selection, :)
+ind_with_metadata_indFiltered_selected = view(ind_with_metadata_indFiltered, selection, :)
+# now limit each group to specified numbers
+genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected);
+
+# choose the scaffold and region to show
+chr = "gw26"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) 
+
+#### Now actually make the plot
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+if false  # set to true to save plot
+    save("Figure5_left_gw26GBIplotWest_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
+end 
+```
+
+Show another chromosome along west side of ring:
+
+```{julia}
+# choose the scaffold and region to show
+chr = "gw28"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) 
+
+#### Now actually make the plot
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+if false  # set to true to save plot
+    save("Figure5_right_gw28GBIplotWest_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
+end 
+```
+
+
+#### Make a GBI plot to illustrate variation along east side of ring
+
+```{julia}
+groups = ["troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
+plotGroups = ["troch_LN","troch_EM","obs","plumb_BJ","plumb"]
+plotGroupColors = ["yellow","gold","orange","pink","red"]
+numIndsToPlot = [15, 15, 15, 15, 17] # maximum number of individuals to plot from each group
+group1 = "troch_LN"   # these groups will determine the color used in the graph
+group2 = "plumb"
+groupsToCompare = "troch_LN_plumb" #"troch_LN_plumb" #"Fst_among"
+Fst_cutoff = 0.9
+missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+
+# Calculate allele freqs and sample sizes (use column Fst_group)
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+println("Calculated population allele frequencies and sample sizes")
+
+# calculate Fst 
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+println("Calculated Fst values")
+
+# limit the individuals to include in plot
+# For this figure only, filter out individuals with lots of missing genotypes
+numMissings_threshold = 800_000
+selection = ind_with_metadata_indFiltered.numMissings .< numMissings_threshold
+genosOnly_with_missing_selected = view(genosOnly_with_missing, selection, :)
+ind_with_metadata_indFiltered_selected = view(ind_with_metadata_indFiltered, selection, :)
+
+# now limit each group to specified numbers
+genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected);
+
+# choose the scaffold and region to show
+chr = "gw28"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+
+# need to remove two plumbeitarsus individuals that have introgression from viridanus, as that would otherwise be misleading in this figure since viridanus are not shown
+selection = Not(ind_with_metadata_included.ind .∈ Ref(["GW_Armando_plate1_JF09G01", "GW_Armando_plate1_JF24G02"]))
+ind_with_metadata_included = ind_with_metadata_included[selection,:]
+genosOnly_included = genosOnly_included[selection,:]
+
+#### Now actually make the plot
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+if false  # set to true to save plot
+    save("Figure6_top_gw28GBIplotEast_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
+end 
+```
+
+######################
+
+## Make GBI plots showing all individuals in the study
+
+```{julia}
+groups_to_plot_all = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
+group_colors_all = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
+```
+
+This will use Fst among multiple groups to determine SNPs to plot.
+For chr 28:
+
+```{julia}
+groups = ["vir","lud_PK","troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
+plotGroups = groups_to_plot_all 
+plotGroupColors = group_colors_all
+group1 = "vir"   # these groups will determine the color used in the graph
+group2 = "plumb"
+groupsToCompare = ["vir_plumb", "vir_troch_LN", "troch_LN_plumb"]     # "Fst_among" #"vir_plumb" 
+Fst_cutoff = 0.8
+missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+
+# Calculate allele freqs and sample sizes (use column Fst_group)
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+println("Calculated population allele frequencies and sample sizes")
+
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+println("Calculated Fst values")
+
+chr = "gw28"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+    missingFractionAllowed, regionInfo,
+    pos_SNP_filtered, Fst, pairwiseNamesFst, 
+    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+    plotGroups, plotGroupColors;
+    indFontSize=4, figureSize=(1200,1600),
+    plotTitle = "");
+# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
+```
+
+# Make list of scaffolds to plot according to above:
+
+```{julia}
+scaffolds_to_plot = "gw" .* string.(vcat(28:-1:17, 15:-1:1))
+push!(scaffolds_to_plot, "gw1A", "gw4A")  # add two other scaffolds
+```
+
+Loop through each scaffold and produce GBI plot. (Making inactive because already saved figs and takes long.)
+
+```julia
+for i in 1:length(scaffolds_to_plot)
+    chr = scaffolds_to_plot[i]
+    regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+    plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+        missingFractionAllowed, regionInfo,
+        pos_SNP_filtered, Fst, pairwiseNamesFst, 
+        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+        plotGroups, plotGroupColors;
+        indFontSize=4, figureSize=(1200,1600), plotTitle = "");
+    println("Completed the figure for ", chr, ".")
+    if true  # set to true to save plot
+        filename = string("Figure_", chr, "_Fst3groups_GBI_allInds_from_Julia.png")
+        save(filename, plotInfo[1], px_per_unit = 2.0)
+        println("Saved ", filename)
+    end 
+end
+```
+
+#####################
+
+
+## Estimate relationships of individuals using PCA
+
+Our goal is to produce plots showing individuals in genotype space, using Principal Components Analysis. 
+
+#### Impute and save genotypes for each scaffold
+
+PCA requires imputation of missing genotypes. I did imputation for each scaffold above a certain size threshold. These are listed in `chromosomes_to_process` .
+
+Imputation can take several minutes per scaffold, so I ran this imputation step separately from this Quarto notebook (otherwise render would take long) and saved the genotype data for each scaffold for loading in the next step. Below is the code I initially used for imputing, BUT IT USES THE SVD ALGORITHM AND I LATER DECIDED THAT KNN IS BETTER:
+
+```julia
+for i in eachindex(chromosomes_to_process)
+    chrom = chromosomes_to_process[i]
+    regionText = string("chr", chrom)
+    loci_selection = (pos_SNP_filtered.chrom .== chrom)
+    pos_SNP_filtered_region = pos_SNP_filtered[loci_selection,:]
+    genosOnly_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing[:,loci_selection])
+    @time imputed_genos = Impute.svd(genosOnly_region_for_imputing)
+    filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
+    jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_region)
+    println(string("Chromosome ", chrom, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_region, 1)," SNPs and ", size(genosOnly_region_for_imputing, 1)," filtered individuals."))
+end
+```
+
+Now we can cycle through a set of chromosomes and plot a PCA for each. We need to first specify some groups to include in the plot, and their colors:
+
+```{julia}
+groups_to_plot_PCA = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
+group_colors_PCA = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
+```
+
+Now we'll actually do the PCA and make the plot for each scaffold. The code block below is what I initially used, based on the SVD method of imputing. I've now decided that KNN is better (see further below).
+
+MAKING INACTIVE FOR NOW, BECAUSE MAKES A LOT OF PLOTS:
+
+```julia
+for i in eachindex(chromosomes_to_process)
+    chrom = chromosomes_to_process[i]
+    regionText = string("chr", chrom)
+    filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
+    imputed_genos = load(filename, "imputed_genos")
+    ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
+    pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
+    println(string("Loaded ", filename))
+    println(string(regionText, ": ", size(imputed_genos, 2), " SNPs from ", size(imputed_genos, 1), " individuals"))
+    flipPC1 = true
+    flipPC2 = true
+    PCAmodel = plotPCA(imputed_genos, ind_with_metadata_indFiltered,
+        groups_to_plot_PCA, group_colors_PCA;
+        sampleSet="greenish warblers", regionText=regionText,
+        flip1=flipPC1, flip2=flipPC2,
+        showPlot=false)
+    # add position of reference genome
+    refGenomePCAposition = predict(PCAmodel.model, zeros(size(imputed_genos, 2)))
+    flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
+    flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
+    CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker=:diamond, color="black", markersize=15, strokewidth=0.5)
+    try
+        display(PCAmodel.PCAfig)
+    catch
+        println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
+    end
+end
+```
+
+#### Imputation using KNN
+
+Troyanskaya _et al._ (2001) recommend imputation using K-nearest neighbors approach as being better than SVD, both of which are better than other methods for DNA genotyping. They also recommend using Euclidian distance. So I will try KNN with Euclidian distance, which like SVD is provided by Impute.jl. I am going with the default of setting `dims` to `:rows`, as that seems to run much faster and produces PCAs that make a lot of sense. I've already run this next code cell, which does the imputing and saves the imputed data matrix for each scaffold. This actually runs quite quickly--at most a couple minutes per scaffold. :)
+
+```julia
+for i in eachindex(chromosomes_to_process)
+    chrom = chromosomes_to_process[i]
+    regionText = string("chr", chrom)
+    loci_selection = (pos_SNP_filtered.chrom .== chrom)
+    pos_SNP_filtered_region = pos_SNP_filtered[loci_selection,:]
+    genosOnly_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing[:,loci_selection])
+    @time imputed_genos = Impute.knn(genosOnly_region_for_imputing; k=1, dims=:rows)
+    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+    jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_region)
+    println(string("Chromosome ", chrom, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_region, 1)," SNPs and ", size(genosOnly_region_for_imputing, 1)," filtered individuals."))
+end
+```
+
+Now do the KNN PCA:
+
+MAKING INACTIVE FOR NOW, BECAUSE MAKES A LOT OF PLOTS:
+
+```julia
+for i in eachindex(chromosomes_to_process)
+    scaffold = chromosomes_to_process[i]
+    regionText = string("chr", scaffold)
+    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+    imputed_genos = load(filename, "imputed_genos")
+    ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
+    pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
+    println(string("Loaded ",filename))
+    println(string(regionText, ": ", size(imputed_genos,2), " SNPs from ", size(imputed_genos,1), " individuals"))
+    flipPC1 = true
+    flipPC2 = true
+    PCAmodel = plotPCA(imputed_genos, ind_with_metadata_indFiltered, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText=regionText,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Chromosome ", scaffold," PC1"), yLabelText = string("Chromosome ", scaffold," PC2"),
+            showPlot = false)
+    # add position of reference genome
+    refGenomePCAposition = predict(PCAmodel.model, zeros(size(imputed_genos, 2)))
+    flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
+    flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
+    CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker = :diamond, color="black", markersize=15, strokewidth=0.5)
+    try
+        display(PCAmodel.PCAfig)
+    catch
+        println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
+    end
+end
+```
+
 
 
 ####################################
@@ -775,323 +1172,6 @@ plotGenomeFst(scaffolds_to_plot,
 
 
 
-## Prepare data for Genotype-by-individual plots and PCA
-
-NO LONGER NEEDED: Remove the first column of the genotype matrix (which was an initial row number):
-```julia
-# genosOnly = geno_ind_SNP_ind_filtered[:, Not(1)]
-```
-
-For missing genotypes, change our code of `-1` to `missing`:
-
-```{julia}
-genosOnly_with_missing = Matrix{Union{Missing, Int16}}(genosOnly_ind_SNP_ind_filtered)
-genosOnly_with_missing[genosOnly_with_missing .== -1] .= missing;
-```
-
-
-## Genotype-by-individual plots
-
-Now, show individual genotypes for subsets of the dataset. Can choose individuals and genomic regions to plot, along with an Fst cutoff (only show SNPs with greater Fst than the cutoff).
-
-```{julia}
-groups = ["vir","plumb"]
-plotGroups = ["vir","plumb_vir","plumb"]
-plotGroupColors = ["blue","purple","red"]
-numIndsToPlot = [100,100,100] # maximum number of individuals to plot from each group
-group1 = "vir"   # these groups will determine the color used in the graph
-group2 = "plumb"
-groupsToCompare = "vir_plumb"
-Fst_cutoff =  0.8
-missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
-```
-
-#### Calculate allele freqs and sample sizes (use column Fst_group)
-
-```{julia}
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
-println("Calculated population allele frequencies and sample sizes")
-```
-
-#### calculate Fst 
-```{julia}
-Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
-println("Calculated Fst values")
-```
-
-#### limit the individuals to include in plot
-
-```{julia}
-# For this figure only, filter out individuals with lots of missing genotypes
-numMissings_threshold = 800_000
-selection = ind_with_metadata_indFiltered.numMissings .< numMissings_threshold
-genosOnly_with_missing_selected = view(genosOnly_with_missing, selection, :)
-ind_with_metadata_indFiltered_selected = view(ind_with_metadata_indFiltered, selection, :)
-# now limit each group to specified numbers
-genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected);
-```
-
-#### Choose the scaffold and region to show
-```{julia}
-chr = "gw23"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-```
-
-#### Now actually make the plot
-
-```{julia}
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
-    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
-# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
-
-if false  # set to true to save plot
-    save("Figure4_upperleft_gw23GBIplot_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
-end 
-```
-  
-#### choose another chromosome, and plot similarly to above
-```{julia}
-chr = "gw26"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
-    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst,
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
-if false  # set to true to save plot
-    save("Figure4_upperright_gw26GBIplot_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
-end 
-```
-
-#### Make a GBI plot to illustrate variation along west side of ring
-
-```{julia}
-groups = ["vir","troch_LN"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
-plotGroups = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
-plotGroupColors = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow"]
-numIndsToPlot = [10, 5, 2, 3, 5, 15, 3, 5, 10, 10] # maximum number of individuals to plot from each group
-group1 = "vir"   # these groups will determine the color used in the graph
-group2 = "troch_LN"
-groupsToCompare = "vir_troch_LN" # "Fst_among"
-Fst_cutoff = 0.9
-missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
-
-# Calculate allele freqs and sample sizes (use column Fst_group)
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
-println("Calculated population allele frequencies and sample sizes")
-
-# calculate Fst 
-Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
-println("Calculated Fst values")
-
-# limit the individuals to include in plot
-# For this figure only, filter out individuals with lots of missing genotypes
-numMissings_threshold = 800_000
-selection = ind_with_metadata_indFiltered.numMissings .< numMissings_threshold
-genosOnly_with_missing_selected = view(genosOnly_with_missing, selection, :)
-ind_with_metadata_indFiltered_selected = view(ind_with_metadata_indFiltered, selection, :)
-# now limit each group to specified numbers
-genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected);
-
-# choose the scaffold and region to show
-chr = "gw26"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) 
-
-#### Now actually make the plot
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
-    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
-if false  # set to true to save plot
-    save("Figure5_left_gw26GBIplotWest_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
-end 
-```
-
-Show another chromosome along west side of ring:
-
-```{julia}
-# choose the scaffold and region to show
-chr = "gw28"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) 
-
-#### Now actually make the plot
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
-    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
-if false  # set to true to save plot
-    save("Figure5_right_gw28GBIplotWest_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
-end 
-```
-
-
-#### Make a GBI plot to illustrate variation along east side of ring
-
-```{julia}
-groups = ["troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
-plotGroups = ["troch_LN","troch_EM","obs","plumb_BJ","plumb"]
-plotGroupColors = ["yellow","gold","orange","pink","red"]
-numIndsToPlot = [15, 15, 15, 15, 17] # maximum number of individuals to plot from each group
-group1 = "troch_LN"   # these groups will determine the color used in the graph
-group2 = "plumb"
-groupsToCompare = "troch_LN_plumb" #"troch_LN_plumb" #"Fst_among"
-Fst_cutoff = 0.9
-missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
-
-# Calculate allele freqs and sample sizes (use column Fst_group)
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
-println("Calculated population allele frequencies and sample sizes")
-
-# calculate Fst 
-Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
-println("Calculated Fst values")
-
-# limit the individuals to include in plot
-# For this figure only, filter out individuals with lots of missing genotypes
-numMissings_threshold = 800_000
-selection = ind_with_metadata_indFiltered.numMissings .< numMissings_threshold
-genosOnly_with_missing_selected = view(genosOnly_with_missing, selection, :)
-ind_with_metadata_indFiltered_selected = view(ind_with_metadata_indFiltered, selection, :)
-
-# now limit each group to specified numbers
-genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected);
-
-# choose the scaffold and region to show
-chr = "gw28"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-
-# need to remove two plumbeitarsus individuals that have introgression from viridanus, as that would otherwise be misleading in this figure since viridanus are not shown
-selection = Not(ind_with_metadata_included.ind .∈ Ref(["GW_Armando_plate1_JF09G01", "GW_Armando_plate1_JF24G02"]))
-ind_with_metadata_included = ind_with_metadata_included[selection,:]
-genosOnly_included = genosOnly_included[selection,:]
-
-#### Now actually make the plot
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
-    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
-if false  # set to true to save plot
-    save("Figure6_top_gw28GBIplotEast_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
-end 
-```
-
-######################
-
-## Make GBI plots showing all individuals in the study
-
-```{julia}
-groups_to_plot_all = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
-group_colors_all = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
-```
-
-This will use Fst among multiple groups to determine SNPs to plot.
-For chr 28:
-
-```{julia}
-groups = ["vir","lud_PK","troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
-plotGroups = groups_to_plot_all 
-plotGroupColors = group_colors_all
-group1 = "vir"   # these groups will determine the color used in the graph
-group2 = "plumb"
-groupsToCompare = ["vir_plumb", "vir_troch_LN", "troch_LN_plumb"]     # "Fst_among" #"vir_plumb" 
-Fst_cutoff = 0.8
-missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
-
-# Calculate allele freqs and sample sizes (use column Fst_group)
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
-println("Calculated population allele frequencies and sample sizes")
-
-Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
-println("Calculated Fst values")
-
-chr = "gw28"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
-    missingFractionAllowed, regionInfo,
-    pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-    plotGroups, plotGroupColors;
-    indFontSize=4, figureSize=(1200,1600),
-    plotTitle = "");
-# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
-```
-
-# Make list of scaffolds to plot according to above:
-
-```{julia}
-scaffolds_to_plot = "gw" .* string.(vcat(28:-1:17, 15:-1:1))
-push!(scaffolds_to_plot, "gw1A", "gw4A")  # add two other scaffolds
-```
-
-Loop through each scaffold and produce GBI plot. (Making inactive because already saved figs and takes long.)
-
-```{julia}
-for i in 1:length(scaffolds_to_plot)
-    chr = scaffolds_to_plot[i]
-    regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-    plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
-        missingFractionAllowed, regionInfo,
-        pos_SNP_filtered, Fst, pairwiseNamesFst, 
-        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-        plotGroups, plotGroupColors;
-        indFontSize=4, figureSize=(1200,1600), plotTitle = "");
-    println("Completed the figure for ", chr, ".")
-    if true  # set to true to save plot
-        filename = string("Figure_", chr, "_Fst3groups_GBI_allInds_from_Julia.png")
-        save(filename, plotInfo[1], px_per_unit = 2.0)
-        println("Saved ", filename)
-    end 
-end
-```
-
-```{julia}
-chr = "gw6"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
-    missingFractionAllowed, regionInfo,
-    pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-    plotGroups, plotGroupColors;
-    indFontSize=4, figureSize=(1200,1600))
-println("Completed the figure for ", chr, ".")
-```
-
-For chr 28:
-
-```{julia}
-chr = "gw28"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr])
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
-    missingFractionAllowed, regionInfo,
-    pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-    plotGroups, plotGroupColors;
-    indFontSize=4, figureSize=(1200,1600));
-```
-
-For chr 23:
-
-```{julia}
-chr = "gw23"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr])
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
-    missingFractionAllowed, regionInfo,
-    pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-    plotGroups, plotGroupColors;
-    indFontSize=4, figureSize=(1200,1600));
-```
-
-For chr 25:
-
-```{julia}
-chr = "gw25"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr])
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
-    missingFractionAllowed, regionInfo,
-    pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-    plotGroups, plotGroupColors;
-    indFontSize=4, figureSize=(1200,1600));
-```
-
 
 ###############
 
@@ -1236,254 +1316,6 @@ end
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 ```
 
-## Estimate relationships of individuals using PCA
-
-Our goal is to produce plots showing individuals in genotype space, using Principal Components Analysis. 
-
-#### Impute and save genotypes for each scaffold
-
-PCA requires imputation of missing genotypes. I did imputation for each scaffold above a certain size threshold. These are listed in `chromosomes_to_process` .
-
-Imputation can take several minutes per scaffold, so I ran this imputation step separately from this Quarto notebook (otherwise render would take long) and saved the genotype data for each scaffold for loading in the next step. Below is the code I initially used for imputing, BUT IT USES THE SVD ALGORITHM AND I LATER DECIDED THAT KNN IS BETTER:
-
-```julia
-for i in eachindex(chromosomes_to_process)
-    chrom = chromosomes_to_process[i]
-    regionText = string("chr", chrom)
-    loci_selection = (pos_SNP_filtered.chrom .== chrom)
-    pos_SNP_filtered_region = pos_SNP_filtered[loci_selection,:]
-    genosOnly_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing[:,loci_selection])
-    @time imputed_genos = Impute.svd(genosOnly_region_for_imputing)
-    filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
-    jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_region)
-    println(string("Chromosome ", chrom, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_region, 1)," SNPs and ", size(genosOnly_region_for_imputing, 1)," filtered individuals."))
-end
-```
-
-Now we can cycle through a set of chromosomes and plot a PCA for each. We need to first specify some groups to include in the plot, and their colors:
-
-```{julia}
-groups_to_plot_PCA = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
-group_colors_PCA = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
-```
-
-Now we'll actually do the PCA and make the plot for each scaffold. The code block below is what I initially used, based on the SVD method of imputing. I've now decided that KNN is better (see further below).
-
-MAKING INACTIVE FOR NOW, BECAUSE MAKES A LOT OF PLOTS:
-
-```julia
-for i in eachindex(chromosomes_to_process)
-    chrom = chromosomes_to_process[i]
-    regionText = string("chr", chrom)
-    filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
-    imputed_genos = load(filename, "imputed_genos")
-    ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
-    pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
-    println(string("Loaded ", filename))
-    println(string(regionText, ": ", size(imputed_genos, 2), " SNPs from ", size(imputed_genos, 1), " individuals"))
-    flipPC1 = true
-    flipPC2 = true
-    PCAmodel = plotPCA(imputed_genos, ind_with_metadata_indFiltered,
-        groups_to_plot_PCA, group_colors_PCA;
-        sampleSet="greenish warblers", regionText=regionText,
-        flip1=flipPC1, flip2=flipPC2,
-        showPlot=false)
-    # add position of reference genome
-    refGenomePCAposition = predict(PCAmodel.model, zeros(size(imputed_genos, 2)))
-    flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
-    flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
-    CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker=:diamond, color="black", markersize=15, strokewidth=0.5)
-    try
-        display(PCAmodel.PCAfig)
-    catch
-        println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
-    end
-end
-```
-
-#### Imputation using KNN
-
-Troyanskaya _et al._ (2001) recommend imputation using K-nearest neighbors approach as being better than SVD, both of which are better than other methods for DNA genotyping. They also recommend using Euclidian distance. So I will try KNN with Euclidian distance, which like SVD is provided by Impute.jl. I am going with the default of setting `dims` to `:rows`, as that seems to run much faster and produces PCAs that make a lot of sense. I've already run this next code cell, which does the imputing and saves the imputed data matrix for each scaffold:
-
-```julia
-for i in eachindex(chromosomes_to_process)
-    chrom = chromosomes_to_process[i]
-    regionText = string("chr", chrom)
-    loci_selection = (pos_SNP_filtered.chrom .== chrom)
-    pos_SNP_filtered_region = pos_SNP_filtered[loci_selection,:]
-    genosOnly_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing[:,loci_selection])
-    @time imputed_genos = Impute.knn(genosOnly_region_for_imputing; k=1, dims=:rows)
-    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
-    jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_region)
-    println(string("Chromosome ", chrom, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_region, 1)," SNPs and ", size(genosOnly_region_for_imputing, 1)," filtered individuals."))
-end
-```
-Now do the KNN PCA:
 
 
-MAKING INACTIVE FOR NOW, BECAUSE MAKES A LOT OF PLOTS:
-
-```julia
-for i in eachindex(chromosomes_to_process)
-    chrom = chromosomes_to_process[i]
-    regionText = string("chr", chrom)
-    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
-    imputed_genos = load(filename, "imputed_genos")
-    ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
-    pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
-    println(string("Loaded ",filename))
-    println(string(regionText, ": ", size(imputed_genos,2), " SNPs from ", size(imputed_genos,1), " individuals"))
-    flipPC1 = true
-    flipPC2 = true
-    PCAmodel = plotPCA(imputed_genos, ind_with_metadata_indFiltered, 
-            groups_to_plot_PCA, group_colors_PCA; 
-            sampleSet = "greenish warblers", regionText=regionText,
-            flip1 = flipPC1, flip2 = flipPC2,
-            showPlot = false)
-    # add position of reference genome
-    refGenomePCAposition = predict(PCAmodel.model, zeros(size(imputed_genos, 2)))
-    flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
-    flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
-    CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker = :diamond, color="black", markersize=15, strokewidth=0.5)
-    try
-        display(PCAmodel.PCAfig)
-    catch
-        println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
-    end
-end
-```
-
-### Whole-genome PCA
-
-In addition to making PCA plots for each scaffold, we can do one for the whole genome. The imputing for the whole genome takes some time (almost 2 hours!) for this dataset because the earlier GBS plates had low read depth so more missing genotypes, so I did this in advance and saved a file. This is incorporated into the code below--to actually do the imputing, set `do_imputing = true`. Otherwise this code will load the previously-imputed data.
-
-DON'T ACTUALLY USE THIS BLOCK BELOW TO MAKE A PCA, BECAUSE BASED ON IMPUTING THE WHOLE THING RATHER THAN CHROMOSOME BY CHROMOSOME:
-
-```julia
-genosOnly_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing)
-regionText = "wholeGenome"
-filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
-# to do the imputing, do this by setting to true, but TAKES A LONG TIME (e.g. took 8 hours on laptop with KNN method by rows):
-do_imputing = false
-if do_imputing
-    # @time imputed_genosOnly = Impute.svd(genosOnly_for_imputing) # old method; knn should work better
-    @time imputed_genosOnly = Impute.knn(genosOnly_for_imputing; k=1, dims=:rows)
-    jldsave(filename; imputed_genosOnly, ind_with_metadata_indFiltered, pos_SNP_filtered)
-    imputed_genosOnly_wholeGenome = imputed_genosOnly
-    ind_with_metadata_indFiltered_wholeGenome = ind_with_metadata_indFiltered
-    pos_SNP_filtered_wholeGenome = pos_SNP_filtered
-    print("Saved matrix of real and imputed genotypes for filtered individuals. \n")
-else # load the already saved imputing
-    imputed_genosOnly_wholeGenome = load(filename, "imputed_genosOnly")
-    ind_with_metadata_indFiltered_wholeGenome = load(filename, "ind_with_metadata_indFiltered")
-    pos_SNP_filtered_wholeGenome = load(filename, "pos_SNP_filtered")
-    println(string("Loaded ",filename))
-    println(string(regionText, ": ", size(imputed_genosOnly_wholeGenome, 2), " SNPs from ", size(imputed_genosOnly_wholeGenome, 1), " individuals"))
-end
-```
-Now make the whole-genome PCA (DON'T USE BECAUSE NOT PER-CHR IMPUTATION):
-
-```julia
-flipPC1 = true
-flipPC2 = true
-GW_wholeGenome_PCA = plotPCA(imputed_genosOnly_wholeGenome,          
-        ind_with_metadata_indFiltered_wholeGenome, 
-        groups_to_plot_PCA, group_colors_PCA;
-        sampleSet = "greenish warblers", regionText=regionText,
-        flip1 = flipPC1, flip2 = flipPC2)
-ind_with_metadata_indFiltered_wholeGenome.PC1 = GW_wholeGenome_PCA.PC1
-ind_with_metadata_indFiltered_wholeGenome.PC2 = GW_wholeGenome_PCA.PC2
-
-# add position of reference genome
-refGenomePCAposition = predict(GW_wholeGenome_PCA.model, zeros(size(imputed_genosOnly_wholeGenome, 2)))
-flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
-flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
-CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker = :diamond, color="black", markersize=15, strokewidth=0.5)
-try
-    display(GW_wholeGenome_PCA.PCAfig)
-catch
-    println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
-end
-
-save("Figure_1b_from_Julia.svg", GW_wholeGenome_PCA.PCAfig)
-```
-
-#### PCA plot of the east side of the ring, for one chromosome (DON'T USE BECAUSE NOT PER-CHR IMPUTATION)
-
-```{julia}
-eastern_groups_to_plot_PCA = ["troch_LN","troch_EM","obs","plumb_BJ","plumb"]
-eastern_group_colors_PCA = ["yellow","gold","orange","pink","red"];
-chrom = "gw28"
-regionText = string("chr", chrom)
-filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
-imputed_genos = load(filename, "imputed_genos")
-ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
-pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
-println(string("Loaded ",filename))
-println(string(regionText, ": ", size(imputed_genos,2), " SNPs from ", size(imputed_genos,1), " individuals"))
-plotPCA(imputed_genos, ind_with_metadata_indFiltered, 
-        eastern_groups_to_plot_PCA, eastern_group_colors_PCA; 
-        sampleSet = "greenish warblers", regionText=regionText,
-        flip1 = false, flip2 = true)
-
-f = CairoMakie.Figure()
-ax = Axis(f[1, 1],
-        title = "Title",
-        xlabel = "PC1",
-        ylabel = "PC2"
-    )
-    
-hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
-lines!(1:10, 3:12)
-   display(f)
-
-```
-
-
-
-
-
-
-
-# Make GBI plots showing all individuals
-
-For Z chromosome:
-
-```{julia}
-groups = ["vir","lud_PK","troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
-plotGroups = groups_to_plot_PCA # all GW individuals
-plotGroupColors = group_colors_PCA
-group1 = "vir"   # these groups will determine the color used in the graph
-group2 = "plumb"
-groupsToCompare = "Fst_among" #"vir_plumb" 
-Fst_cutoff = 0.7
-missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
-
-# Calculate allele freqs and sample sizes (use column Fst_group)
-freqs, sampleSizes = getFreqsAndSampleSizes(genotypes_gwZ_SNPfiltered, ind_with_metadata_indFiltered_sex.Fst_group, groups)
-println("Calculated population allele frequencies and sample sizes")
-
-Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
-println("Calculated Fst values")
-
-chr = "gwZ"
-regionInfo = chooseChrRegion(pos_SNP_filtered_gwZ_SNPfiltered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff,
-    missingFractionAllowed, regionInfo, 
-    pos_SNP_filtered_gwZ_SNPfiltered, Fst, pairwiseNamesFst, 
-    genotypes_gwZ_SNPfiltered, ind_with_metadata_indFiltered_sex, freqs, plotGroups, plotGroupColors;
-    indFontSize=4, figureSize=(1200,1600));
-# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
-```
-
-
-
-# Make a table of locations and groups of individuals included after filtering
-
-```{julia}
-gdf = groupby(ind_with_metadata_indFiltered, [:location, :Fst_group])
-sample_origin_summary = combine(gdf, nrow)
-print(sample_origin_summary)
-```
  

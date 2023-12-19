@@ -117,6 +117,12 @@ for i in eachindex(groups_to_plot_PCA)
     selection = ind_with_metadata_indFiltered.Fst_group .== groups_to_plot_PCA[i]
     CairoMakie.scatter!(ax, x_plot_values[selection], y_plot_values[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize=14, strokewidth=0.5, strokecolor = ("black", 0.7))
 end
+# add position of reference genome
+cd(repoDirectory)
+ring_locations = DataFrame(CSV.File("metadata/GW2023_ring_locations.txt"))
+refGenome_location = ring_locations.LocationAroundRing[ring_locations.location_short .== "GG"][1]
+CairoMakie.scatter!(refGenome_location, refGenomePCAposition[1], marker = :diamond, color="black", markersize=15, strokewidth=0.5)
+cd(dataDirectory)
 display(f)
 
 if false  #set to true to save
@@ -133,7 +139,7 @@ western_group_colors_PCA = ["blue", "blue", "turquoise1", "grey", "seagreen4", "
 PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered,
     western_groups_to_plot_PCA, western_group_colors_PCA;
     sampleSet="greenish warblers", regionText="wholeGenome",
-    flip1=true, flip2=true,
+    flip1=false, flip2=false,
     lineOpacity = 0.7, fillOpacity = 0.6,
     symbolSize = 14, showTitle = false)
 totalObservationVariance = var(PCA_wholeGenome.model)
@@ -154,8 +160,8 @@ end
 ```{julia}
 eastern_groups_to_plot_PCA = ["troch_LN","troch_EM","obs","plumb_BJ","plumb"]
 eastern_group_colors_PCA = ["yellow","gold","orange","pink","red"]
-flipPC1 = true
-flipPC2 = false
+flipPC1 = false
+flipPC2 = true
 PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered, 
         eastern_groups_to_plot_PCA, eastern_group_colors_PCA; 
         sampleSet = "greenish warblers", regionText = "wholeGenome",
@@ -237,7 +243,7 @@ end
 scaffold = "23"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
-                            flipPC1=false, flipPC2=false, showTitle=false)
+                            flipPC1=true, flipPC2=true, showTitle=false)
 if false  #set to true to save
     save("Figure_4lowerleft_chrgw23_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
 end
@@ -247,7 +253,7 @@ end
 scaffold = "26"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
-                            flipPC1=false, flipPC2=true, showTitle=false)
+                            flipPC1=true, flipPC2=true, showTitle=false)
 if false  #set to true to save
     save("Figure_4lowerright_chrgw26_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
 end
@@ -257,7 +263,7 @@ end
 scaffold = "28"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
-                            flipPC1=false, flipPC2=false, showTitle=false)
+                            flipPC1=true, flipPC2=true, showTitle=false)
 if false  #set to true to save
     save("Figure_6lower_chrgw28_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
 end
@@ -266,7 +272,7 @@ end
 ### Make other PCA plots for supplement:
 
 ```{julia}
-savefig = true  #set to true to save the figures from cells below
+savefig = false  #set to true to save the figures from cells below
 ```
 
 

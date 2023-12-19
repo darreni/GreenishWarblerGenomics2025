@@ -230,7 +230,7 @@ regionText = "chrgwZ_cleaned"
 filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
 # to do the imputing, do this by setting to true:
 cd(dataDirectory)
-do_imputing = true
+do_imputing = false
 if do_imputing
     @time imputed_genos = Impute.knn(genotypes_gwZ_SNPfiltered_with_missing; k=1, dims=:rows)
     # took 46 sec
@@ -340,7 +340,7 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff,
     indFontSize=4, figureSize=(1200,1600),
     plotTitle = "");
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
-save("Fig_gwZ_GBI_allinds_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
+save("Fig_gwZ_Fst3groups_FstCutoff0.9_GBI_allinds_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
 ```
 
 ## Just west side
@@ -381,7 +381,7 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFraction
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;
     plotTitle = "");
-save("Figure_suppWestZ_from_Julia.svg", plotInfo[1])
+save("Figure_suppWestZ_GBI_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
 ```
 
 ### Do Z-chromosome PCA on west side
@@ -444,7 +444,7 @@ plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFraction
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;
     plotTitle = "");
-save("Figure_suppEastZ_from_Julia.svg", plotInfo[1])
+save("Figure_suppEastZ_GBI_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
 ```
 
 ### Do Z-chromosome PCA on east side
@@ -455,7 +455,7 @@ group_colors_PCA = ["yellow","gold","orange","pink","red"]
 PCA_Zchrom_east = plotPCA(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText=regionText,
-            flip1 = true, flip2 = false,
+            flip1 = true, flip2 = true,
             lineOpacity = 0.7, fillOpacity = 0.6,
             symbolSize = 14, showTitle = true,
             xLabelText = string("Chromosome Z PC1"), yLabelText = string("Chromosome Z PC2"),

@@ -453,6 +453,7 @@ distsAroundRing = addDists(1, index_GG, index_GG, index_BJ, distsAroundRing)
 
 # dists from "west of BJ" to east Siberia are sum of dists to BJ plus BJ to other plumbeitarsus:
 distsAroundRing = addDists(1, index_BJ, index_BJ+1, index_last, distsAroundRing);
+
 ```
 
 #### Do Principal Coordinates Analysis on the distances around the ring
@@ -465,8 +466,10 @@ PCO_around_ring = fit(MDS, distsAroundRing; distances=true, maxoutdim=1)
 latlongs2.LocationAroundRing = vec(-predict(PCO_around_ring))
 # another way: 
 # latlongs2[:, :LocationAroundRing] = vec(-predict(PCO_around_ring))
-latlongs2[:, [:location_short, :LocationAroundRing]]
-println(latlongs2[:, [:location_short, :LocationAroundRing]])
+ringLocations = latlongs2[:, [:location_short, :LocationAroundRing]]
+println(ringLocations)
+
+CSV.write("metadata/GW2023_ring_locations.txt", ringLocations; delim='\t')
 ```
 
 Add these ring locations to the metadata table:

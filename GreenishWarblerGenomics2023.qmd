@@ -10,7 +10,7 @@ format:
   pdf:
     keep-tex: false
     monofont: "JuliaMono"
-jupyter: julia-1.9
+jupyter: julia-1.10
 ---
 
 This page contains notes and code describing the data analysis for a manuscript on Greenish Warbler genomics. I've been working with the data for several years, and the R and then Julia code has been in development for a while. This is a Quarto notebook, which can run and display the results of Julia (or other) code blocks, along with text narration, and output in html, pdf, Word, etc.
@@ -453,7 +453,6 @@ distsAroundRing = addDists(1, index_GG, index_GG, index_BJ, distsAroundRing)
 
 # dists from "west of BJ" to east Siberia are sum of dists to BJ plus BJ to other plumbeitarsus:
 distsAroundRing = addDists(1, index_BJ, index_BJ+1, index_last, distsAroundRing);
-
 ```
 
 #### Do Principal Coordinates Analysis on the distances around the ring
@@ -466,10 +465,8 @@ PCO_around_ring = fit(MDS, distsAroundRing; distances=true, maxoutdim=1)
 latlongs2.LocationAroundRing = vec(-predict(PCO_around_ring))
 # another way: 
 # latlongs2[:, :LocationAroundRing] = vec(-predict(PCO_around_ring))
-ringLocations = latlongs2[:, [:location_short, :LocationAroundRing]]
-println(ringLocations)
-
-CSV.write("metadata/GW2023_ring_locations.txt", ringLocations; delim='\t')
+latlongs2[:, [:location_short, :LocationAroundRing]]
+println(latlongs2[:, [:location_short, :LocationAroundRing]])
 ```
 
 Add these ring locations to the metadata table:

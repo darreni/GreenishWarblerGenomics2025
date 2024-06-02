@@ -979,47 +979,6 @@ This is calculated according to Weir&Cockerham1984 (with sample size and pop num
 
 ```{julia}
 
-function getRollingMean(inputVector, windowSize)
-    numWindows = length(inputVector) ÷ windowSize  # this is the quotient (rounds to integer)
-    rollingMeans = Vector{Float64}(undef, numWindows) # set up place to store data
-    for i in 1:numWindows
-        start = 1 + (i-1)*windowSize
-        windowValues = inputVector[start : (start + windowSize - 1)]  # this ignores the NaN values
-        windowValues_real = windowValues[.!isnan.(windowValues)]
-        if length(windowValues_real) > 0
-            rollingMeans[i] = sum(windowValues_real) / length(windowValues_real)
-        else
-            rollingMeans[i] = NaN # if there are no non-NaN values in the inputVector
-        end
-    end
-    return rollingMeans
-end
-
-function getWindowedFst(FstNumerator, FstDenominator, pos, windowSize)
-    rollingMeanPos = getRollingMean(pos.position, windowSize) # get per-window mean SNP position along scaffold
-    rollingMeanFst = Array{Float64, 2}(undef, size(FstNumerator, 1), length(rollingMeanPos))
-    for i in 1:size(FstNumerator, 1)
-        rollingMeanFstNumerator = getRollingMean(FstNumerator[i,:], windowSize)
-        rollingMeanFstDenominator = getRollingMean(FstDenominator[i,:], windowSize)
-        rollingMeanFst[i,:] = rollingMeanFstNumerator ./ rollingMeanFstDenominator
-    end
-    return rollingMeanPos, rollingMeanFst
-    # note regarding NaN values: I checked and confirmed that wherever FstNumerator has NaN values,
-    # so does FstDenominator.
-    # My rollingMean function is designed to ignore NaN values, or return NaN if there are no real values.
-end
-
-# chrom = "gw26"
-# regionText = string("chr", chrom)
-# loci_selection = (pos_SNP_filtered.chrom .== chrom)
-# pos_region = pos_SNP_filtered[loci_selection, :]
-# FstNumerator_region = FstNumerator[:, loci_selection]
-# FstDenominator_region = FstDenominator[:, loci_selection]
-
-# windowSize = 1000
-
-# windowedPos, windowedFst = getWindowedFst(FstNumerator_region, FstDenominator_region, pos_region, windowSize)
-
 windowSize = 500
 
 # calculate windowed Fst across all scaffolds:
@@ -1038,7 +997,8 @@ for chrom in scaffolds_for_Fst
     windowed_Fst_all = hcat(windowed_Fst_all, windowedFst)
 end
 
-plot(windowed_pos_all.mean_position, windowed_Fst_all[1,:])
+# The below is just a test plot, showing nothing useful really (as it overlaps all chromosomes onto one x axis):
+#plot(windowed_pos_all.mean_position, windowed_Fst_all[1,:])
 ```
 
 The above has produced windowed Fst values across the whole genome, for each population comparison. These are stored in `windowed_Fst_all` and the location info is stored in `windowed_pos_all`.
@@ -1107,7 +1067,7 @@ function plotGenomeFst(scaffolds_to_plot,
     # the above works. I have the scaffolds arranged for plotting.
 
     # Plot in the order defined above
-    f = CairoMakie.Figure(resolution=figureSize)
+    f = CairoMakie.Figure(size=figureSize)
     numRows = length(scaffoldInRow)
     # make one axis object per row:
     axs = [Axis(f[i, 1], limits=(0, bpPerRow,

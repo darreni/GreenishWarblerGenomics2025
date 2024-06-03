@@ -1181,40 +1181,231 @@ genotypes_region = genosOnly_with_missing[:, loci_selection]
 
 windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
 
+plotTitle = string("Windowed heterozygosity of ", size(windowedIndHet, 1), " individuals")
+titleSize = 24
+xLabelText = string("Location on scaffold ", chr)
+yLabelText = "Heterozygosity"
+labelSize = 24
 f = CairoMakie.Figure()
-Axis(f[1, 1])
-lines!(windowedPos, windowedIndHet[1,:])
+ax = Axis(f[1, 1],
+    title=plotTitle, titlesize=titleSize,
+    xlabel=xLabelText, xlabelsize=labelSize,
+    ylabel=yLabelText, ylabelsize=labelSize)
+lines!(windowedPos, windowedIndHet[1, :])
 for i in 2:size(windowedIndHet, 1)
-    lines!(windowedPos, windowedIndHet[i,:])
+    lines!(windowedPos, windowedIndHet[i, :])
 end
 meanPerWindow_windowedIndHet = sum(windowedIndHet, dims=1) ./ size(windowedIndHet, 1)
-lines!(windowedPos, vec(meanPerWindow_windowedIndHet), linewidth = 10, color = :red)
+lines!(windowedPos, vec(meanPerWindow_windowedIndHet), linewidth=10, color=:red)
 display(f)
+
 
 # Now standardize the heterozygosity in each window by diving by the average:
 
-meanPerWindow_windowedIndHet = sum(windowedIndHet, dims=1) ./ size(windowedIndHet, 1)
-windowedIndHet_standardized = Array{Float64, 2}(undef, size(windowedIndHet, 1), size(windowedIndHet, 2))
-for row in 1:size(windowedIndHet,1)
-    windowedIndHet_standardized[row, :] = windowedIndHet[row, :] ./ vec(meanPerWindow_windowedIndHet)
+"""
+    standardizeIndHet(windowedIndHet)
+
+Divide each individual's windowed heterozgyosity by the average heterozygosity of all individuals (at each window).
+
+​# Arguments
+- `windowedIndHet`: The matrix of individual windowed heterozygosity values (rows are individuals; columns represent windowed genomic regions)
+
+# Notes
+Returns a matrix of standardized individual windowed heterozygosities.  
+"""
+function standardizeIndHet(windowedIndHet)
+    meanPerWindow_windowedIndHet = sum(windowedIndHet, dims=1) ./ size(windowedIndHet, 1)
+    windowedIndHet_standardized = Array{Float64,2}(undef, size(windowedIndHet, 1), size(windowedIndHet, 2))
+    for row in 1:size(windowedIndHet, 1)
+        windowedIndHet_standardized[row, :] = windowedIndHet[row, :] ./ vec(meanPerWindow_windowedIndHet)
+    end
+    return windowedIndHet_standardized
 end
 
-f = CairoMakie.Figure()
-Axis(f[1, 1])
+windowedIndHet_standardized = standardizeIndHet(windowedIndHet)
+
+plotTitle = string("Standardized heterozygosity of ", size(windowedIndHet, 1), " individuals")
+titleSize = 24
+xLabelText = string("Location on scaffold ", chr)
+yLabelText = "Standardized heterozygosity"
+labelSize = 24
+g = CairoMakie.Figure()
+ax = Axis(g[1, 1],
+    title=plotTitle, titlesize=titleSize,
+    xlabel=xLabelText, xlabelsize=labelSize,
+    ylabel=yLabelText, ylabelsize=labelSize)
 for i in 1:size(windowedIndHet_standardized, 1)
-    lines!(windowedPos, windowedIndHet_standardized[i,:])
+    lines!(windowedPos, windowedIndHet_standardized[i, :])
 end
 #lines!(windowedPos, windowedIndHet[21,:], linewidth = 10, color = :red)
-display(f)
+display(g)
 
 # Now graph the variance in standardized heterozygosity
 
-variancePerWindow_windowedIndHet = var(windowedIndHet_standardized; dims=1)
+"""
+    getVarWindowedIndHet(windowedIndHet_standardized)
 
-lines(windowedPos, vec(variancePerWindow_windowedIndHet))
+Calculate the windowed variance in standardized individual heterozygosity. 
+
+​# Arguments
+- `windowedIndHet_standardized`: The matrix of standardized individual windowed heterozygosity values (rows are individuals; columns represent windowed genomic regions)
+
+# Notes
+Returns a vector of variances in standardized individual heterozygosities (each value corresponds to a different windowed genomic region).  
+"""
+function getVarWindowedIndHet(windowedIndHet_standardized)
+    variancePerWindow_windowedIndHet = vec(var(windowedIndHet_standardized; dims=1))
+end
+
+varWindowedIndHet = getVarWindowedIndHet(windowedIndHet_standardized)
+
+plotTitle = string("Variance in standardized het. among ", size(windowedIndHet, 1), " individuals")
+titleSize = 18
+xLabelText = string("Location on scaffold ", chr)
+yLabelText = "Heterozygosity variance (standardized)"
+labelSize = 18
+h = CairoMakie.Figure()
+ax = Axis(h[1, 1],
+    title=plotTitle, titlesize=titleSize,
+    xlabel=xLabelText, xlabelsize=labelSize,
+    ylabel=yLabelText, ylabelsize=labelSize)
+lines!(windowedPos, vec(variancePerWindow_windowedIndHet))
+display(h)
+
+```
+
+
+# Make heterozygosity variance plot for whole genome:
+
+```{julia}
+scaffolds_for_HetVariance = scaffolds_for_Fst
+#initialize data structures
+windowed_pos_all = DataFrame(chrom = String[], mean_position = Float64[])
+windowed_HetVariance_all = Vector{Float32}(undef, 0)
+for chrom in scaffolds_for_HetVariance
+    regionText = string("chr", chrom)
+    loci_selection = (pos_SNP_filtered.chrom .== chrom)
+    pos_region = pos_SNP_filtered[loci_selection, :]
+    genotypes_region = genosOnly_with_missing[:, loci_selection]
+    windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
+    windowedIndHet_standardized = standardizeIndHet(windowedIndHet)
+    windowed_HetVariance_scaffold = getVarWindowedIndHet(windowedIndHet_standardized)
+    windowed_pos_chrom = DataFrame(chrom = repeat([chrom], length(windowedPos)), mean_position = windowedPos)
+    windowed_pos_all = vcat(windowed_pos_all, windowed_pos_chrom)
+    windowed_HetVariance_all = [windowed_HetVariance_all; windowed_HetVariance_scaffold]
+end
+
+# Quick test plot (overlapping all chromosomes, so not good)
+plot(windowed_pos_all.mean_position, windowed_HetVariance_all)
+
+
+function plotGenomeHetVariance(scaffolds_to_plot, 
+                                windowed_HetVariance_all,
+                                windowed_pos_all;
+                                fillColor = "purple",
+                                lineTransparency = 0.8,
+                                fillTransparency = 0.2,
+                                figureSize=(1200, 1200))
+    
+    # get sizes of chromosomes (note this actually isn't the true length, just the mean position of the rightmost window):
+    scaffold_lengths = repeat([-1], length(scaffolds_to_plot))	# vector of Int64
+    for i in 1:length(scaffolds_to_plot)
+        selection = windowed_pos_all.chrom .== scaffolds_to_plot[i]
+        if sum(selection) == 0
+            scaffold_lengths[i] = 0
+        else
+            scaffold_lengths[i] = round(Int, maximum(windowed_pos_all.mean_position[selection]))
+        end
+    end
+
+    # my plan is to use the layout feature of Makie to make one axis per row, and then plot
+    # multiple scaffolds to each row
+
+    scaffoldPlottedAlready = falses(length(scaffolds_to_plot))
+    bpPerRow = 200_000_000
+    bpGapBetweenScaffolds = 10_000_000
+    scaffoldInRow = Vector{Vector{String}}() # declare a vector of vectors to store the chromosome names per row
+    scaffoldBpStartInRow = Vector{Vector{Int}}()
+    row = 1
+
+    while sum(scaffoldPlottedAlready .== false) > 0  # repeat until all chr have a row to be plotted in
+        bpStart = 0
+        remainingRowLength = bpPerRow
+        push!(scaffoldInRow, []) # initialize an empty vector for the next row
+        push!(scaffoldBpStartInRow, []) # initialize an empty vector for the next row
+        placeInRow = 1
+        # look through chromosomes and find some to go in this row
+        for i in 1:length(scaffolds_to_plot)
+            # if not plotted and short enough, add to row:
+            if scaffoldPlottedAlready[i] .== false .&& scaffold_lengths[i] .<= remainingRowLength
+                push!(scaffoldInRow[row], scaffolds_to_plot[i])
+                push!(scaffoldBpStartInRow[row], bpStart)
+                remainingRowLength = remainingRowLength - scaffold_lengths[i] - bpGapBetweenScaffolds
+                scaffoldPlottedAlready[i] = true
+                placeInRow += 1
+                bpStart = bpStart + scaffold_lengths[i] + bpGapBetweenScaffolds
+            end	
+        end
+        row += 1
+    end
+    println(scaffoldInRow)
+
+    # the above works. I have the scaffolds arranged for plotting.
+
+    # Plot in the order defined above
+    f = CairoMakie.Figure(size=figureSize)
+    numRows = length(scaffoldInRow)
+    # make one axis object per row:
+    axs = [Axis(f[i, 1], limits=(0, bpPerRow,
+            0, 2.3), ylabel = "HetVar") for i in 1:numRows]
+    for i in 1:numRows
+        hidexdecorations!(axs[i]) #hide background lattice and axis labels
+        hidespines!(axs[i], :t, :r, :b) # hide box around plot
+    end
+
+    for rowNum in 1:numRows
+        numScaffoldsInRow = length(scaffoldInRow[rowNum])
+        nextPlotShiftBP = 0
+        for orderNum in 1:numScaffoldsInRow 
+            scaffoldName = scaffoldInRow[rowNum][orderNum]
+            plotBpLength = scaffold_lengths[findfirst(scaffolds_to_plot .== scaffoldName)]
+            # select one scaffold from the whole genome:
+            selection = windowed_pos_all.chrom .== scaffoldName 
+            windowed_pos_selected = view(windowed_pos_all.mean_position, selection)
+            windowed_HetVariance_selected = view(windowed_HetVariance_all, selection)
+            if length(windowed_pos_selected) > 0  # only plot if there is data for that scaffold        
+                text!(axs[rowNum], scaffoldBpStartInRow[rowNum][orderNum] + 0.005bpPerRow, 2.1; text=scaffoldName, align=(:left, :center), fontsize=20)
+                xx = vcat(first(windowed_pos_selected), windowed_pos_selected, last(windowed_pos_selected)) .+ scaffoldBpStartInRow[rowNum][orderNum]
+                yy = vcat(0, windowed_HetVariance_selected, 0)
+                poly!(axs[rowNum], Point2f.(xx, yy), color = (fillColor, fillTransparency), strokecolor = (fillColor, lineTransparency), strokewidth = 1)
+            end
+        end
+    end
+    display(f)
+end
+
+
+plotGenomeHetVariance(scaffolds_to_plot, 
+                        windowed_HetVariance_all,
+                        windowed_pos_all;
+                        fillColor = "purple",
+                        lineTransparency = 0.8,
+                        fillTransparency = 0.2,
+                        figureSize=(1200, 1200))
+
 
 
 ```
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1269,7 +1269,7 @@ ax = Axis(h[1, 1],
     title=plotTitle, titlesize=titleSize,
     xlabel=xLabelText, xlabelsize=labelSize,
     ylabel=yLabelText, ylabelsize=labelSize)
-lines!(windowedPos, vec(variancePerWindow_windowedIndHet))
+lines!(windowedPos, varWindowedIndHet)
 display(h)
 
 ```

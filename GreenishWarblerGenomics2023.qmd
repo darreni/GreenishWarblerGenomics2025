@@ -1414,7 +1414,7 @@ function plotGenomeHetVariance(scaffolds_to_plot,
                     regionsToPlot_thisScaffold = regionsToPlot[regionsToPlot.regionChrom .== scaffoldName, :]
                     for i in eachindex(regionsToPlot_thisScaffold.regionStart)
                         xValues = [regionsToPlot_thisScaffold.regionStart[i], regionsToPlot_thisScaffold.regionEnd[i]] .+ scaffoldBpStartInRow[rowNum][orderNum]
-                        yValues = [1.5, 1.5]
+                        yValues = [0.05, 0.05]
                         lines!(axs[rowNum], xValues, yValues, color="red", linewidth=10)
                     end
                 end

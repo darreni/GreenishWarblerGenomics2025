@@ -1200,7 +1200,7 @@ lines!(windowedPos, vec(meanPerWindow_windowedIndHet), linewidth=10, color=:red)
 display(f)
 
 
-# Now standardize the heterozygosity in each window by diving by the average:
+# Now standardize the heterozygosity in each window by dividing by the average:
 
 """
     standardizeIndHet(windowedIndHet)
@@ -1334,7 +1334,9 @@ function plotGenomeHetVariance(scaffolds_to_plot,
                                 fillColor = "purple",
                                 lineTransparency = 0.8,
                                 fillTransparency = 0.2,
-                                figureSize=(1200, 1200))
+                                figureSize = (1200, 1200),
+                                plotRegions = false,
+                                regionsToPlot = [])
     
     # get sizes of chromosomes (note this actually isn't the true length, just the mean position of the rightmost window):
     scaffold_lengths = repeat([-1], length(scaffolds_to_plot))	# vector of Int64
@@ -1407,6 +1409,15 @@ function plotGenomeHetVariance(scaffolds_to_plot,
                 xx = vcat(first(windowed_pos_selected), windowed_pos_selected, last(windowed_pos_selected)) .+ scaffoldBpStartInRow[rowNum][orderNum]
                 yy = vcat(0, windowed_HetVariance_selected, 0)
                 poly!(axs[rowNum], Point2f.(xx, yy), color = (fillColor, fillTransparency), strokecolor = (fillColor, lineTransparency), strokewidth = 1)
+                # if indicating regions (e.g. that have high HetVar)
+                if plotRegions
+                    regionsToPlot_thisScaffold = regionsToPlot[regionsToPlot.regionChrom .== scaffoldName, :]
+                    for i in eachindex(regionsToPlot_thisScaffold.regionStart)
+                        xValues = [regionsToPlot_thisScaffold.regionStart[i], regionsToPlot_thisScaffold.regionEnd[i]] .+ scaffoldBpStartInRow[rowNum][orderNum]
+                        yValues = [1.5, 1.5]
+                        lines!(axs[rowNum], xValues, yValues, color="red", linewidth=10)
+                    end
+                end
             end
         end
     end
@@ -1420,7 +1431,9 @@ plotGenomeHetVariance(scaffolds_to_plot,
                         fillColor = "purple",
                         lineTransparency = 0.8,
                         fillTransparency = 0.2,
-                        figureSize=(1200, 1200))
+                        figureSize=(1200, 1200),
+                        plotRegions = true,
+                        regionsToPlot = highHetVarRegions)
 
 ```
 
@@ -1443,7 +1456,7 @@ while i <= lastWindow # eachindex(windowed_pos_all[:,1])
         regionEnd = windowed_pos_all.last_position[i]
         # check whether contiguous with next
         next = 1
-        while i + next <= lastWindow
+        while i + next <= lastWindow && windowed_pos_all.chrom[i + next] == regionChrom
             if windowed_pos_all.high_HetVar[i + next] == true
                 regionEnd = windowed_pos_all.last_position[i + next]
                 next += 1

@@ -1278,9 +1278,37 @@ display(h)
 # Make heterozygosity variance plot for whole genome:
 
 ```{julia}
+
+# CAN MOVE THIS FUNCTION TO SNPLOTS (READY TO GO):
+"""
+    getWindowBoundaries(lociVector, windowSize)
+
+Determine the start and end scaffold positions for each window along a single scaffold. 
+
+​# Arguments
+- `lociVector`: Vector of included locus positions along a scaffold.
+- `windowSize`: Size of each window (in number of loci).
+
+# Notes
+- returns a Matrix, where rows represent windows and columns are starting location and ending location of each window along the scaffold. 
+"""
+function getWindowBoundaries(lociVector, windowSize)
+    numWindows = length(lociVector) ÷ windowSize  # this is the quotient (rounds to integer)
+    windowBoundaries = Matrix{Int}(undef, numWindows, 2) # set up place to store data
+    for i in 1:numWindows
+        startIndex = 1 + (i-1)*windowSize
+        endIndex = startIndex + windowSize - 1
+        windowBoundaries[i, 1] = lociVector[startIndex] # this is the position of the first locus in the window
+        windowBoundaries[i, 2] = lociVector[endIndex] # this is the position of the last locus in the window
+    end
+    return windowBoundaries
+end
+############
+
+#scaffolds_for_HetVariance = ["gw26", "gw28"]
 scaffolds_for_HetVariance = scaffolds_for_Fst
 #initialize data structures
-windowed_pos_all = DataFrame(chrom = String[], mean_position = Float64[])
+windowed_pos_all = DataFrame(chrom = String[], mean_position = Float64[], first_position = Int[], last_position = Int[])
 windowed_HetVariance_all = Vector{Float32}(undef, 0)
 for chrom in scaffolds_for_HetVariance
     regionText = string("chr", chrom)
@@ -1288,9 +1316,10 @@ for chrom in scaffolds_for_HetVariance
     pos_region = pos_SNP_filtered[loci_selection, :]
     genotypes_region = genosOnly_with_missing[:, loci_selection]
     windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
+    windowBoundaries = getWindowBoundaries(pos_region.position, windowSize)
     windowedIndHet_standardized = standardizeIndHet(windowedIndHet)
     windowed_HetVariance_scaffold = getVarWindowedIndHet(windowedIndHet_standardized)
-    windowed_pos_chrom = DataFrame(chrom = repeat([chrom], length(windowedPos)), mean_position = windowedPos)
+    windowed_pos_chrom = DataFrame(chrom = repeat([chrom], length(windowedPos)), mean_position = windowedPos, first_position = windowBoundaries[:,1], last_position = windowBoundaries[:,2])
     windowed_pos_all = vcat(windowed_pos_all, windowed_pos_chrom)
     windowed_HetVariance_all = [windowed_HetVariance_all; windowed_HetVariance_scaffold]
 end
@@ -1393,10 +1422,49 @@ plotGenomeHetVariance(scaffolds_to_plot,
                         fillTransparency = 0.2,
                         figureSize=(1200, 1200))
 
+```
+
+# Identify "haploblock regions" as those that have high HetVar
+
+```{julia}
+threshold_HetVar = 0.4
+selection = windowed_HetVariance_all .>= threshold_HetVar
+windowed_pos_all.high_HetVar = selection # adds true/false column to dataframe indicating high HetVar windows
+
+# Make list of contiguous high HetVar region:
+
+highHetVarRegions = DataFrame(regionChrom = String[], regionStart = Int[], regionEnd = Int[])
+i = 1
+lastWindow = nrow(windowed_pos_all)
+while i <= lastWindow # eachindex(windowed_pos_all[:,1])
+    if windowed_pos_all.high_HetVar[i] == true
+        regionChrom = windowed_pos_all.chrom[i]
+        regionStart = windowed_pos_all.first_position[i]
+        regionEnd = windowed_pos_all.last_position[i]
+        # check whether contiguous with next
+        next = 1
+        while i + next <= lastWindow
+            if windowed_pos_all.high_HetVar[i + next] == true
+                regionEnd = windowed_pos_all.last_position[i + next]
+                next += 1
+            else
+                break
+            end
+        end
+        highHetVarRegions = push!(highHetVarRegions, [regionChrom, regionStart, regionEnd])
+        i = i + next + 1
+    else
+        i = i + 1
+    end 
+    i
+end
+
+# The above works!!
+
+
 
 
 ```
-
 
 
 

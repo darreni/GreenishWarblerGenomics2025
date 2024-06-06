@@ -1050,12 +1050,24 @@ figHandle_GenomeFst1 = plotGenomeFst(scaffolds_to_plot,
 
 ```{julia}
 
-chr = "gw26"
+# option to select a subset of individuals
+filterGroups = true
+groupsToInclude = ["vir"]
+#groupsToInclude = ["troch_LN"]
+numIndsToPlot = [1000]
+
+if filterGroups
+    genosOnly_included, ind_with_metadata_included = limitIndsToPlot(groupsToInclude, numIndsToPlot, genosOnly_with_missing, ind_with_metadata_indFiltered)
+else
+    genosOnly_included = genosOnly_with_missing
+    ind_with_metadata_included = ind_with_metadata_indFiltered
+end
+
+chr = "gw1A"
 windowSize = 500
 loci_selection = (pos_SNP_filtered.chrom .== chr)
 pos_region = pos_SNP_filtered[loci_selection, :]
-#genotypes_region = genosOnly_included[:, loci_selection]
-genotypes_region = genosOnly_with_missing[:, loci_selection]
+genotypes_region = genosOnly_included[:, loci_selection]
 
 windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
 
@@ -1127,8 +1139,12 @@ filterGroups = true
 # groupsToInclude = ["lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
 # numIndsToPlot = [1000, 1000, 1000, 1000, 1000, 1000, 1000]
 
-groupsToInclude = ["troch_LN","troch_EM","obs","plumb_BJ"]
-numIndsToPlot = [1000, 1000, 1000, 1000]
+# groupsToInclude = ["troch_LN","troch_EM","obs","plumb_BJ"]
+# numIndsToPlot = [1000, 1000, 1000, 1000]
+
+groupsToInclude = ["vir"]
+#groupsToInclude = ["troch_LN"]
+numIndsToPlot = [1000]
 
 if filterGroups
     genosOnly_included, ind_with_metadata_included = limitIndsToPlot(groupsToInclude, numIndsToPlot, genosOnly_with_missing, ind_with_metadata_indFiltered)

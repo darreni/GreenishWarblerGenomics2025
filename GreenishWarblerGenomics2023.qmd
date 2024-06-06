@@ -1433,7 +1433,36 @@ selection = (positionMin .< pos_region.position .< positionMax)
 
 geno_indFiltered_highHetVarRegion = geno_indFiltered[:, selection]
 
+# put in plot order:
+
+indexOrder = sortperm(ind_with_metadata_chosenInds.plot_order)
+geno_indFiltered_highHetVarRegion_ordered = geno_indFiltered_highHetVarRegion[indexOrder, :]
+ind_with_metadata_chosenInds_ordered = ind_with_metadata_chosenInds[indexOrder, :]
+
 # ABOVE HAVE GENOTYPES FOR JUST THESE INDIVIDUALS IN JUST THE HIGH HETVAR REGION ON THE ONE CHR. NEXT DO GENETIC DISTANCE BETWEEN ALL PAIRS OF INDIVIDUALS FOR THIS REGION. 
+# count mismatches and divide by total number of sites.
+# mismatches of genotype 0 to genotype 2 count as 1 mismatch.
+# genotype 0 or 2 to genotype 1 (het) counts as 0.5 mismatch.
+# genotype 1 to genotype 1 counts as 0.5 mismatch
+
+numInds = nrow(ind_with_metadata_chosenInds_ordered)
+distanceMatrix = Matrix{Float64}(undef, numInds, numInds)
+for i in 1:numInds
+    for j in 1:numInds
+        firstGeno = geno_indFiltered_highHetVarRegion_ordered[i,:]
+        secondGeno = geno_indFiltered_highHetVarRegion_ordered[j,:]
+        fullMismatches = sum((firstGeno .== 0 .&& secondGeno .== 2) .||
+                            (firstGeno .== 2 .&& secondGeno .== 0))
+        partialMismatches = sum((firstGeno .== 0 .&& secondGeno .== 1) .|| 
+                                (firstGeno .== 1 .&& secondGeno .== 0) .|| 
+                                (firstGeno .== 2 .&& secondGeno .== 1) .|| 
+                                (firstGeno .== 1 .&& secondGeno .== 2))
+        bothHet = sum(firstGeno .== 1 .&& secondGeno .== 1)
+        distanceMatrix[i,j] = (fullMismatches + 0.5partialMismatches + 0.5bothHet) / size(geno_indFiltered_highHetVarRegion_ordered, 2)
+    end
+end
+
+
 
 
 

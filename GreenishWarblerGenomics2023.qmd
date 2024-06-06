@@ -43,6 +43,7 @@ Now actually load those packages into the Julia session:
 using CSV # for reading in delimited files
 using DataFrames # for storing data as type DataFrame
 using Haversine # for calculating Great Circle (haversine) distances between sites
+using Statistics # for mean() function
 using MultivariateStats # for Principal Coordinates Analysis (multidimensional scaling)
 using DelimitedFiles # for reading delimited files (the genotypic data)
 using Impute # for imputing missing genotypes
@@ -1141,7 +1142,7 @@ display(h)
 ```{julia}
 
 # option to select a subset of individuals
-filterGroups = true
+filterGroups = false
 # groupsToInclude = ["vir", "plumb", "plumb_vir"]
 # numIndsToPlot = [1000, 1000, 1000]
 
@@ -1334,6 +1335,110 @@ plotGenomeHetVariance(scaffolds_to_plot,
                         regionsToPlot = highHetVarRegions)
 
 ```
+
+# Choose low-het individuals in a high HetVar region
+
+Now that we have high HetVar regions indicated, we can automate the choosing of essential homozygous individuals in those regions. Here I will do this for chr15:
+
+```{julia}
+# choose scaffold
+chr = "gw15"
+
+# remake the windowedIndHet_standardized (done above in a different cell)
+windowSize = 500
+loci_selection = (pos_SNP_filtered.chrom .== chr)
+pos_region = pos_SNP_filtered[loci_selection, :]
+genotypes_region = genosOnly_included[:, loci_selection]
+
+windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
+
+windowedIndHet_standardized = standardizeIndHet(windowedIndHet)
+
+# look up the boundaries of the high HetVar region:
+
+selection = highHetVarRegions.regionChrom .== chr
+if sum(selection) == 1
+    "Good news: 1 region on that scaffold"
+    positionMin = highHetVarRegions.regionStart[selection][1]
+    positionMax = highHetVarRegions.regionEnd[selection][1]
+    regionText = string("chr ", chr, " ",positionMin," to ",positionMax)
+elseif sum(selection) > 1
+    "More than 1 region on that scaffold"
+elseif sum(selection) == 0
+    "No high HetVar regions on that scaffold"
+end
+
+# choose just the windows that are in the high HetVar region:
+
+selection = (positionMin .< windowedPos .< positionMax)
+windowedIndHet_standardized_region = windowedIndHet_standardized[:,selection]
+
+# average across windows for each individual:
+
+meanAcrossRegion_IndHet_standardized = mean.(eachrow(windowedIndHet_standardized_region)) 
+
+plot(meanAcrossRegion_IndHet_standardized)
+
+ind_with_metadata_included.chr15RegIndHetStan = meanAcrossRegion_IndHet_standardized
+
+# check whether missing data related to heterozygosity (good news: not really)
+plot(ind_with_metadata_included.numMissings, ind_with_metadata_included.chr15RegIndHetStan)
+
+# to inspect data, sort by chr15RegIndHetStan :
+
+ind_with_metadata_included_sortedbyHetVar = sort(ind_with_metadata_included, [:chr15RegIndHetStan])
+
+# for demonstration haplotypes, choose individuals with numMissings < 100_000
+# and chr15RegIndHetStan < 0.5:
+
+selection = (ind_with_metadata_included.numMissings .< 200_000) .& (ind_with_metadata_included.chr15RegIndHetStan .< 0.75)
+
+ind_with_metadata_haplotypeCandidates = ind_with_metadata_included[selection, :]
+
+# But the above cuts out the obscuratus and nitidus individuals (which have about 700k missing genome-wide at least in early filtering calculations)
+# So don't worry about missings for now--just sort and choose low ones for each haplogroup:
+
+# GW_Armando_plate2_TTGW73  #lud_Sath
+
+# GW_Armando_plate2_LN2 #troch_LN
+
+# GW_Armando_plate2_TTGW-15-04 #lud_Sural
+
+# GW_Armando_plate1_JG02G02 #plumb
+
+# GW_Armando_plate2_JE31G01 #vir
+
+# GW_Armando_plate1_RF20G01 #plumb_BJ
+
+# GW_Lane5_TU1 #nit
+
+indsToChoose = ["GW_Armando_plate2_TTGW73",
+                "GW_Armando_plate2_LN2",
+                "GW_Armando_plate2_TTGW-15-04",
+                "GW_Armando_plate1_JG02G02",
+                "GW_Armando_plate2_JE31G01",
+                "GW_Armando_plate1_RF20G01",
+                "GW_Lane5_TU1"]
+
+selection = map(in(indsToChoose), ind_with_metadata_included.ind)
+filtered_in = ind_with_metadata_included.ind[selection]
+ind_with_metadata_chosenInds = ind_with_metadata_included[selection, :]
+geno_indFiltered = view(genotypes_region, selection, :)
+println("Specific individuals chosen as requested: ")
+display(filtered_in)
+
+# choose the loci in the high HetVar region:
+
+selection = (positionMin .< pos_region.position .< positionMax)
+
+geno_indFiltered_highHetVarRegion = geno_indFiltered[:, selection]
+
+# ABOVE HAVE GENOTYPES FOR JUST THESE INDIVIDUALS IN JUST THE HIGH HETVAR REGION ON THE ONE CHR. NEXT DO GENETIC DISTANCE BETWEEN ALL PAIRS OF INDIVIDUALS FOR THIS REGION. 
+
+
+
+```
+
 
 
 

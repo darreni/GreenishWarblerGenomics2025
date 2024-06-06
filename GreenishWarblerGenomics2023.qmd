@@ -1011,105 +1011,16 @@ scaffolds_to_plot = scaffolds_for_Fst
 
 groupsToPlotFst = ["vir_troch_LN", "troch_LN_plumb", "vir_plumb"]
 groupColorsFst = ["green3", "orange", "purple"]
-function plotGenomeFst(scaffolds_to_plot, 
-                        windowed_Fst_all,
-                        pairwiseNamesFst,
-                        windowed_pos_all,
-                        groupsToPlotFst,
-                        groupColorsFst;
-                        lineTransparency = 0.8,
-                        fillTransparency = 0.2,
-                        figureSize=(1200, 1200))
-    
-    # get sizes of chromosomes (note this actually isn't the true length, just the mean position of the rightmost window):
-    scaffold_lengths = repeat([-1], length(scaffolds_to_plot))	# vector of Int64
-    for i in 1:length(scaffolds_to_plot)
-        selection = windowed_pos_all.chrom .== scaffolds_to_plot[i]
-        if sum(selection) == 0
-            scaffold_lengths[i] = 0
-        else
-            scaffold_lengths[i] = round(Int, maximum(windowed_pos_all.mean_position[selection]))
-        end
-    end
-
-    # my plan is to use the layout feature of Makie to make one axis per row, and then plot
-    # multiple scaffolds to each row
-
-    scaffoldPlottedAlready = falses(length(scaffolds_to_plot))
-    bpPerRow = 200_000_000
-    bpGapBetweenScaffolds = 10_000_000
-    scaffoldInRow = Vector{Vector{String}}() # declare a vector of vectors to store the chromosome names per row
-    scaffoldBpStartInRow = Vector{Vector{Int}}()
-    row = 1
-
-    while sum(scaffoldPlottedAlready .== false) > 0  # repeat until all chr have a row to be plotted in
-        bpStart = 0
-        remainingRowLength = bpPerRow
-        push!(scaffoldInRow, []) # initialize an empty vector for the next row
-        push!(scaffoldBpStartInRow, []) # initialize an empty vector for the next row
-        placeInRow = 1
-        # look through chromosomes and find some to go in this row
-        for i in 1:length(scaffolds_to_plot)
-            # if not plotted and short enough, add to row:
-            if scaffoldPlottedAlready[i] .== false .&& scaffold_lengths[i] .<= remainingRowLength
-                push!(scaffoldInRow[row], scaffolds_to_plot[i])
-                push!(scaffoldBpStartInRow[row], bpStart)
-                remainingRowLength = remainingRowLength - scaffold_lengths[i] - bpGapBetweenScaffolds
-                scaffoldPlottedAlready[i] = true
-                placeInRow += 1
-                bpStart = bpStart + scaffold_lengths[i] + bpGapBetweenScaffolds
-            end	
-        end
-        row += 1
-    end
-    println(scaffoldInRow)
-
-    # the above works. I have the scaffolds arranged for plotting.
-
-    # Plot in the order defined above
-    f = CairoMakie.Figure(size=figureSize)
-    numRows = length(scaffoldInRow)
-    # make one axis object per row:
-    axs = [Axis(f[i, 1], limits=(0, bpPerRow,
-            0, 1.15), ylabel = "Fst") for i in 1:numRows]
-    for i in 1:numRows
-        hidexdecorations!(axs[i]) #hide background lattice and axis labels
-        hidespines!(axs[i], :t, :r, :b) # hide box around plot
-    end
-
-    for rowNum in 1:numRows
-        numScaffoldsInRow = length(scaffoldInRow[rowNum])
-        nextPlotShiftBP = 0
-        for orderNum in 1:numScaffoldsInRow 
-            scaffoldName = scaffoldInRow[rowNum][orderNum]
-            plotBpLength = scaffold_lengths[findfirst(scaffolds_to_plot .== scaffoldName)]
-            # select one scaffold from the whole genome:
-            selection = windowed_pos_all.chrom .== scaffoldName 
-            windowed_pos_selected = view(windowed_pos_all.mean_position, selection)
-            windowed_Fst_selected = view(windowed_Fst_all, :, selection)
-            if length(windowed_pos_selected) > 0  # only plot if there is data for that scaffold        
-                text!(axs[rowNum], scaffoldBpStartInRow[rowNum][orderNum] + 0.005bpPerRow, 1.05; text=scaffoldName, align=(:left, :center), fontsize=20)
-                for j in 1:length(groupsToPlotFst) 
-                    xx = vcat(first(windowed_pos_selected), windowed_pos_selected, last(windowed_pos_selected)) .+ scaffoldBpStartInRow[rowNum][orderNum]
-                    FstRow = findfirst(pairwiseNamesFst .== groupsToPlotFst[j]) 
-                    yy = vcat(0, windowed_Fst_selected[FstRow, :], 0)
-                    poly!(axs[rowNum], Point2f.(xx, yy), color = (groupColorsFst[j], fillTransparency), strokecolor = (groupColorsFst[j], lineTransparency), strokewidth = 1)
-                end
-            end
-        end
-    end
-    display(f)
-end
  
-plotGenomeFst(scaffolds_to_plot, 
-                windowed_Fst_all,
-                pairwiseNamesFst,
-                windowed_pos_all,
-                groupsToPlotFst,
-                groupColorsFst;
-                lineTransparency = 0.8,
-                fillTransparency = 0.2,
-                figureSize=(1200, 1200))
+figHandle_GenomeFst3 = plotGenomeFst(scaffolds_to_plot, 
+                                    windowed_Fst_all,
+                                    pairwiseNamesFst,
+                                    windowed_pos_all,
+                                    groupsToPlotFst,
+                                    groupColorsFst;
+                                    lineTransparency = 0.8,
+                                    fillTransparency = 0.2,
+                                    figureSize=(1200, 1200))
 
 
 ```
@@ -1119,15 +1030,15 @@ Now do one with just the vir_plumb connection
 groupsToPlotFst = ["vir_plumb"]
 groupColorsFst = ["purple"]
 
-plotGenomeFst(scaffolds_to_plot, 
-                windowed_Fst_all,
-                pairwiseNamesFst,
-                windowed_pos_all,
-                groupsToPlotFst,
-                groupColorsFst;
-                lineTransparency = 0.8,
-                fillTransparency = 0.2,
-                figureSize=(1200, 800))
+figHandle_GenomeFst1 = plotGenomeFst(scaffolds_to_plot, 
+                                    windowed_Fst_all,
+                                    pairwiseNamesFst,
+                                    windowed_pos_all,
+                                    groupsToPlotFst,
+                                    groupColorsFst;
+                                    lineTransparency = 0.8,
+                                    fillTransparency = 0.2,
+                                    figureSize=(1200, 800))
 ```
 
 
@@ -1139,45 +1050,12 @@ plotGenomeFst(scaffolds_to_plot,
 
 ```{julia}
 
-# Moved function below to SNPlots:
-#= """
-    getWindowedIndHet(genotypes, pos, windowSize)
-
-Calculate windowed heterozygosity for each individual, across a genomic region.
-
-​# Arguments
-- `genotypes`: The genotype matrix, where rows are individuals and columns are loci, with genotype codes 0,1,2 meaning homozygous reference, heterozygote, homozygous alternate, and missing genotypes can be either -1 or `missing`.
-- `pos`: A matrix containing genomic location of each locus; must have a `position` column (numerical position on scaffold). 
-- `windowSize`: An integer indicating the number of loci to include in each mean.
-
-# Notes
-Returns a tuple containing 1) a vector of windowed mean positions, and 2) a matrix of windowed heterozgyosity values (rows are individuals and columns are loci). 
-"""
-function getWindowedIndHet(genotypes, pos, windowSize)
-    rollingMeanPos = getRollingMean(pos.position, windowSize) # get per-window mean SNP position along scaffold
-    # convert both homozygotes to value zero, leaving heterozgyotes value one;
-    # also covert missing and -1 values to NaN, which getRollingMean function deals with
-    heterozygotes = replace(genotypes, 2 => 0, missing => NaN, -1 => NaN)
-
-    rollingMeanHet = Array{Float64, 2}(undef, size(heterozygotes, 1), length(rollingMeanPos))
-    # cycle through individuals
-    for i in 1:size(heterozygotes, 1)
-        rollingMeanHet[i,:] = getRollingMean(heterozygotes[i,:], windowSize)
-    end
-    return rollingMeanPos, rollingMeanHet
-end =#
-
 chr = "gw26"
 windowSize = 500
 loci_selection = (pos_SNP_filtered.chrom .== chr)
 pos_region = pos_SNP_filtered[loci_selection, :]
 #genotypes_region = genosOnly_included[:, loci_selection]
 genotypes_region = genosOnly_with_missing[:, loci_selection]
-
-
-# temp defs for stepping into function
-# genotypes = genotypes_region
-# pos = pos_region
 
 windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
 
@@ -1199,29 +1077,6 @@ meanPerWindow_windowedIndHet = sum(windowedIndHet, dims=1) ./ size(windowedIndHe
 lines!(windowedPos, vec(meanPerWindow_windowedIndHet), linewidth=10, color=:red)
 display(f)
 
-
-# Now standardize the heterozygosity in each window by dividing by the average:
-
-"""
-    standardizeIndHet(windowedIndHet)
-
-Divide each individual's windowed heterozgyosity by the average heterozygosity of all individuals (at each window).
-
-​# Arguments
-- `windowedIndHet`: The matrix of individual windowed heterozygosity values (rows are individuals; columns represent windowed genomic regions)
-
-# Notes
-Returns a matrix of standardized individual windowed heterozygosities.  
-"""
-function standardizeIndHet(windowedIndHet)
-    meanPerWindow_windowedIndHet = sum(windowedIndHet, dims=1) ./ size(windowedIndHet, 1)
-    windowedIndHet_standardized = Array{Float64,2}(undef, size(windowedIndHet, 1), size(windowedIndHet, 2))
-    for row in 1:size(windowedIndHet, 1)
-        windowedIndHet_standardized[row, :] = windowedIndHet[row, :] ./ vec(meanPerWindow_windowedIndHet)
-    end
-    return windowedIndHet_standardized
-end
-
 windowedIndHet_standardized = standardizeIndHet(windowedIndHet)
 
 plotTitle = string("Standardized heterozygosity of ", size(windowedIndHet, 1), " individuals")
@@ -1241,21 +1096,6 @@ end
 display(g)
 
 # Now graph the variance in standardized heterozygosity
-
-"""
-    getVarWindowedIndHet(windowedIndHet_standardized)
-
-Calculate the windowed variance in standardized individual heterozygosity. 
-
-​# Arguments
-- `windowedIndHet_standardized`: The matrix of standardized individual windowed heterozygosity values (rows are individuals; columns represent windowed genomic regions)
-
-# Notes
-Returns a vector of variances in standardized individual heterozygosities (each value corresponds to a different windowed genomic region).  
-"""
-function getVarWindowedIndHet(windowedIndHet_standardized)
-    variancePerWindow_windowedIndHet = vec(var(windowedIndHet_standardized; dims=1))
-end
 
 varWindowedIndHet = getVarWindowedIndHet(windowedIndHet_standardized)
 
@@ -1278,33 +1118,6 @@ display(h)
 # Make heterozygosity variance plot for whole genome:
 
 ```{julia}
-
-# CAN MOVE THIS FUNCTION TO SNPLOTS (READY TO GO):
-"""
-    getWindowBoundaries(lociVector, windowSize)
-
-Determine the start and end scaffold positions for each window along a single scaffold. 
-
-​# Arguments
-- `lociVector`: Vector of included locus positions along a scaffold.
-- `windowSize`: Size of each window (in number of loci).
-
-# Notes
-- returns a Matrix, where rows represent windows and columns are starting location and ending location of each window along the scaffold. 
-"""
-function getWindowBoundaries(lociVector, windowSize)
-    numWindows = length(lociVector) ÷ windowSize  # this is the quotient (rounds to integer)
-    windowBoundaries = Matrix{Int}(undef, numWindows, 2) # set up place to store data
-    for i in 1:numWindows
-        startIndex = 1 + (i-1)*windowSize
-        endIndex = startIndex + windowSize - 1
-        windowBoundaries[i, 1] = lociVector[startIndex] # this is the position of the first locus in the window
-        windowBoundaries[i, 2] = lociVector[endIndex] # this is the position of the last locus in the window
-    end
-    return windowBoundaries
-end
-############
-
 #scaffolds_for_HetVariance = ["gw26", "gw28"]
 scaffolds_for_HetVariance = scaffolds_for_Fst
 #initialize data structures
@@ -1326,7 +1139,48 @@ end
 
 # Quick test plot (overlapping all chromosomes, so not good)
 plot(windowed_pos_all.mean_position, windowed_HetVariance_all)
+```
 
+# Identify "haploblock regions" as those that have high HetVar
+
+```{julia}
+threshold_HetVar = 0.4
+selection = windowed_HetVariance_all .>= threshold_HetVar
+windowed_pos_all.high_HetVar = selection # adds true/false column to dataframe indicating high HetVar windows
+
+# Make list of contiguous high HetVar region:
+
+highHetVarRegions = DataFrame(regionChrom = String[], regionStart = Int[], regionEnd = Int[])
+i = 1
+lastWindow = nrow(windowed_pos_all)
+while i <= lastWindow # eachindex(windowed_pos_all[:,1])
+    if windowed_pos_all.high_HetVar[i] == true
+        regionChrom = windowed_pos_all.chrom[i]
+        regionStart = windowed_pos_all.first_position[i]
+        regionEnd = windowed_pos_all.last_position[i]
+        # check whether contiguous with next
+        next = 1
+        while i + next <= lastWindow && windowed_pos_all.chrom[i + next] == regionChrom
+            if windowed_pos_all.high_HetVar[i + next] == true
+                regionEnd = windowed_pos_all.last_position[i + next]
+                next += 1
+            else
+                break
+            end
+        end
+        highHetVarRegions = push!(highHetVarRegions, [regionChrom, regionStart, regionEnd])
+        i = i + next + 1
+    else
+        i = i + 1
+    end 
+    i
+end
+```
+
+
+# Plot "haploblock regions" for whole genome
+
+```{julia}
 
 function plotGenomeHetVariance(scaffolds_to_plot, 
                                 windowed_HetVariance_all,
@@ -1436,56 +1290,6 @@ plotGenomeHetVariance(scaffolds_to_plot,
                         regionsToPlot = highHetVarRegions)
 
 ```
-
-# Identify "haploblock regions" as those that have high HetVar
-
-```{julia}
-threshold_HetVar = 0.4
-selection = windowed_HetVariance_all .>= threshold_HetVar
-windowed_pos_all.high_HetVar = selection # adds true/false column to dataframe indicating high HetVar windows
-
-# Make list of contiguous high HetVar region:
-
-highHetVarRegions = DataFrame(regionChrom = String[], regionStart = Int[], regionEnd = Int[])
-i = 1
-lastWindow = nrow(windowed_pos_all)
-while i <= lastWindow # eachindex(windowed_pos_all[:,1])
-    if windowed_pos_all.high_HetVar[i] == true
-        regionChrom = windowed_pos_all.chrom[i]
-        regionStart = windowed_pos_all.first_position[i]
-        regionEnd = windowed_pos_all.last_position[i]
-        # check whether contiguous with next
-        next = 1
-        while i + next <= lastWindow && windowed_pos_all.chrom[i + next] == regionChrom
-            if windowed_pos_all.high_HetVar[i + next] == true
-                regionEnd = windowed_pos_all.last_position[i + next]
-                next += 1
-            else
-                break
-            end
-        end
-        highHetVarRegions = push!(highHetVarRegions, [regionChrom, regionStart, regionEnd])
-        i = i + next + 1
-    else
-        i = i + 1
-    end 
-    i
-end
-
-# The above works!!
-
-
-
-
-```
-
-
-
-
-
-
-
-
 
 
 

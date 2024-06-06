@@ -1118,6 +1118,25 @@ display(h)
 # Make heterozygosity variance plot for whole genome:
 
 ```{julia}
+
+# option to select a subset of individuals
+filterGroups = true
+# groupsToInclude = ["vir", "plumb", "plumb_vir"]
+# numIndsToPlot = [1000, 1000, 1000]
+
+# groupsToInclude = ["lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
+# numIndsToPlot = [1000, 1000, 1000, 1000, 1000, 1000, 1000]
+
+groupsToInclude = ["troch_LN","troch_EM","obs","plumb_BJ"]
+numIndsToPlot = [1000, 1000, 1000, 1000]
+
+if filterGroups
+    genosOnly_included, ind_with_metadata_included = limitIndsToPlot(groupsToInclude, numIndsToPlot, genosOnly_with_missing, ind_with_metadata_indFiltered)
+else
+    genosOnly_included = genosOnly_with_missing
+    ind_with_metadata_included = ind_with_metadata_indFiltered
+end
+
 #scaffolds_for_HetVariance = ["gw26", "gw28"]
 scaffolds_for_HetVariance = scaffolds_for_Fst
 #initialize data structures
@@ -1127,7 +1146,7 @@ for chrom in scaffolds_for_HetVariance
     regionText = string("chr", chrom)
     loci_selection = (pos_SNP_filtered.chrom .== chrom)
     pos_region = pos_SNP_filtered[loci_selection, :]
-    genotypes_region = genosOnly_with_missing[:, loci_selection]
+    genotypes_region = genosOnly_included[:, loci_selection]
     windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
     windowBoundaries = getWindowBoundaries(pos_region.position, windowSize)
     windowedIndHet_standardized = standardizeIndHet(windowedIndHet)

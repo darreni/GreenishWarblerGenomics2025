@@ -1443,24 +1443,43 @@ ind_with_metadata_chosenInds_ordered = ind_with_metadata_chosenInds[indexOrder, 
 # count mismatches and divide by total number of sites.
 # mismatches of genotype 0 to genotype 2 count as 1 mismatch.
 # genotype 0 or 2 to genotype 1 (het) counts as 0.5 mismatch.
-# genotype 1 to genotype 1 counts as 0.5 mismatch
+# genotype 1 to genotype 1 counts as 0 mismatch (debatable whether it should be 0 or 0.5, but I want F1 hybrids to not have distance between them).
 
-numInds = nrow(ind_with_metadata_chosenInds_ordered)
-distanceMatrix = Matrix{Float64}(undef, numInds, numInds)
-for i in 1:numInds
-    for j in 1:numInds
-        firstGeno = geno_indFiltered_highHetVarRegion_ordered[i,:]
-        secondGeno = geno_indFiltered_highHetVarRegion_ordered[j,:]
-        fullMismatches = sum((firstGeno .== 0 .&& secondGeno .== 2) .||
-                            (firstGeno .== 2 .&& secondGeno .== 0))
-        partialMismatches = sum((firstGeno .== 0 .&& secondGeno .== 1) .|| 
-                                (firstGeno .== 1 .&& secondGeno .== 0) .|| 
-                                (firstGeno .== 2 .&& secondGeno .== 1) .|| 
-                                (firstGeno .== 1 .&& secondGeno .== 2))
-        bothHet = sum(firstGeno .== 1 .&& secondGeno .== 1)
-        distanceMatrix[i,j] = (fullMismatches + 0.5partialMismatches + 0.5bothHet) / size(geno_indFiltered_highHetVarRegion_ordered, 2)
+function getIndGenDistances(genotypeMatrix)
+    numInds = size(genotypeMatrix)[1]
+    distanceMatrix = Matrix{Float64}(undef, numInds, numInds)
+    for i in 1:numInds
+        for j in 1:numInds
+            firstGeno = genotypeMatrix[i,:]
+            secondGeno = genotypeMatrix[j,:]
+            fullMismatches = sum((firstGeno .== 0 .&& secondGeno .== 2) .||
+                                (firstGeno .== 2 .&& secondGeno .== 0))
+            partialMismatches = sum((firstGeno .== 0 .&& secondGeno .== 1) .|| 
+                                    (firstGeno .== 1 .&& secondGeno .== 0) .|| 
+                                    (firstGeno .== 2 .&& secondGeno .== 1) .|| 
+                                    (firstGeno .== 1 .&& secondGeno .== 2))
+            bothHet = sum(firstGeno .== 1 .&& secondGeno .== 1)
+            distanceMatrix[i,j] = (fullMismatches + 0.5partialMismatches + 0*bothHet) / size(geno_indFiltered_highHetVarRegion_ordered, 2)
+        end
     end
+    return distanceMatrix
 end
+
+indGenDistances = getIndGenDistances(geno_indFiltered_highHetVarRegion_ordered)
+
+mds = fit(MDS, indGenDistances; distances=true)
+pco_coords = predict(mds)
+PCO1 = pco_coords[1,:]
+PCO2 = pco_coords[2,:]
+
+plot(PCO1, PCO2)
+
+#### Planning next step: 
+# - Get all samples with chr15RegIndHetStan .< 0.75 (or maybe another value)
+# - Construct distance matrix
+# - Do PCoA on distance matrix (also known as Metric Multidimensional Scaling)
+# mds = fit(MDS, D; distances=true, maxoutdim=size(D,1)-1)
+# https://juliastats.org/MultivariateStats.jl/dev/mds/
 
 
 

@@ -485,7 +485,7 @@ end
 ```{julia}
 gdf = groupby(ind_with_metadata_indFiltered, [:location, :Fst_group])
 sample_origin_summary = combine(gdf, nrow)
-print(sample_origin_summary)
+println(sample_origin_summary)
 # to save as comma-delimited text:
 # CSV.write("GW2023_sample_origin_summary.txt", sample_origin_summary; delim='\t')
 ```
@@ -1338,11 +1338,11 @@ plotGenomeHetVariance(scaffolds_to_plot,
 
 # Choose low-het individuals in a high HetVar region
 
-Now that we have high HetVar regions indicated, we can automate the choosing of essential homozygous individuals in those regions. Here I will do this for chr15:
+Now that we have high HetVar regions indicated, we can automate the choosing of essential homozygous individuals in those regions. Here I will do this for chr15 and chr18:
 
 ```{julia}
 # choose scaffold
-chr = "gw15"
+chr = "gw26"
 
 # remake the windowedIndHet_standardized (done above in a different cell)
 windowSize = 500
@@ -1356,16 +1356,24 @@ windowedIndHet_standardized = standardizeIndHet(windowedIndHet)
 
 # look up the boundaries of the high HetVar region:
 
-selection = highHetVarRegions.regionChrom .== chr
+selection = (highHetVarRegions.regionChrom .== chr)
 if sum(selection) == 1
-    "Good news: 1 region on that scaffold"
+    println("Good news: 1 region on that scaffold")
     positionMin = highHetVarRegions.regionStart[selection][1]
     positionMax = highHetVarRegions.regionEnd[selection][1]
     regionText = string("chr ", chr, " ",positionMin," to ",positionMax)
 elseif sum(selection) > 1
-    "More than 1 region on that scaffold"
+    println("More than 1 region on that scaffold. Using just the longest one.")
+    highHetVarRegions_chr = highHetVarRegions[selection, :]
+    display(highHetVarRegions_chr)
+    # get biggest region (first one if tied):
+    regionSizes = highHetVarRegions_chr.regionEnd .- highHetVarRegions_chr.regionStart
+    indexOfLongest = findfirst(regionSizes .== maximum(regionSizes))
+    positionMin = highHetVarRegions_chr.regionStart[indexOfLongest]
+    positionMax = highHetVarRegions_chr.regionEnd[indexOfLongest]
+    regionText = string("chr ", chr, " ",positionMin," to ",positionMax)
 elseif sum(selection) == 0
-    "No high HetVar regions on that scaffold"
+    println("No high HetVar regions on that scaffold")
 end
 
 # choose just the windows that are in the high HetVar region:
@@ -1379,19 +1387,19 @@ meanAcrossRegion_IndHet_standardized = mean.(eachrow(windowedIndHet_standardized
 
 plot(meanAcrossRegion_IndHet_standardized)
 
-ind_with_metadata_included.chr15RegIndHetStan = meanAcrossRegion_IndHet_standardized
+ind_with_metadata_included.regionIndHetStan = meanAcrossRegion_IndHet_standardized
 
 # check whether missing data related to heterozygosity (good news: not really)
-plot(ind_with_metadata_included.numMissings, ind_with_metadata_included.chr15RegIndHetStan)
+plot(ind_with_metadata_included.numMissings, ind_with_metadata_included.regionIndHetStan)
 
-# to inspect data, sort by chr15RegIndHetStan :
+# to inspect data, sort by regionIndHetStan :
 
-ind_with_metadata_included_sortedbyHetVar = sort(ind_with_metadata_included, [:chr15RegIndHetStan])
+ind_with_metadata_included_sortedbyHetVar = sort(ind_with_metadata_included, [:regionIndHetStan])
 
 # for demonstration haplotypes, choose individuals with numMissings < 100_000
-# and chr15RegIndHetStan < 0.5:
+# and regionIndHetStan < 0.5:
 
-selection = (ind_with_metadata_included.numMissings .< 200_000) .& (ind_with_metadata_included.chr15RegIndHetStan .< 0.75)
+selection = (ind_with_metadata_included.numMissings .< 200_000) .& (ind_with_metadata_included.regionIndHetStan .< 0.75)
 
 ind_with_metadata_haplotypeCandidates = ind_with_metadata_included[selection, :]
 
@@ -1475,15 +1483,92 @@ PCO2 = pco_coords[2,:]
 plot(PCO1, PCO2)
 
 #### Planning next step: 
-# - Get all samples with chr15RegIndHetStan .< 0.75 (or maybe another value)
+# - Get all samples with regionIndHetStan .< 0.75 (or maybe another value)
 # - Construct distance matrix
 # - Do PCoA on distance matrix (also known as Metric Multidimensional Scaling)
 # mds = fit(MDS, D; distances=true, maxoutdim=size(D,1)-1)
 # https://juliastats.org/MultivariateStats.jl/dev/mds/
 
+# choose inds with low IndHet in high HetVar region:
+indSelection = (ind_with_metadata_included.regionIndHetStan .< 1000)    # 0.75
+
+ind_with_metadata_lowIndHetStan = ind_with_metadata_included[indSelection, :]
+
+# choose the loci in the high HetVar region:
+lociSelection = (positionMin .< pos_region.position .< positionMax)
+
+geno_lowIndHetStan = genotypes_region[indSelection, lociSelection]
+
+# convert `-1` genotypes (which indicates missing) to `missing`:
+geno_lowIndHetStan[geno_lowIndHetStan .== -1] .= missing
+
+# check that missing genotypes are encoded as `missing` rather than `-1`:
+if sum(ismissing.(geno_lowIndHetStan)) == 0
+    println("Warning: No `missing` genotypes to be imputed")
+end
+
+# impute missing genotypes:
+
+geno_lowIndHetStan_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(geno_lowIndHetStan))
+
+flipPC1 = false
+flipPC2 = false
+
+PCAmodel = plotPCA(geno_lowIndHetStan_imputed, ind_with_metadata_lowIndHetStan, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText = regionText,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodel.PCAfig)
+
+```
+
+# Below, what I tried first here is to calculate a matrix of pairwise genetic distances and then use Principal Coordinates Analysis (Metric Multidimensional Scaling. The below works. Then I realized that it is perhaps better to stick with PCA like in the rest of the paper. So will do that above.
+
+```{julia}
+indGenDistances = getIndGenDistances(geno_lowIndHetStan)
+
+mds = fit(MDS, indGenDistances; distances=true)
+pco_coords = predict(mds)
+PCO1 = pco_coords[1,:]
+PCO2 = pco_coords[2,:]
+PCO3 = pco_coords[3,:]
+PCO4 = pco_coords[4,:]
 
 
+plot(PCO1, PCO2)
 
+#plot(PCO1, PCO3)
+
+#plot(PCO1, PCO4)
+
+pcoResults = DataFrame(ind = ind_with_metadata_lowIndHetStan.ind, Fst_group = ind_with_metadata_lowIndHetStan.Fst_group, PCo1 = PCO1, PCo2 = PCO2)
+
+# code taken from SNPlots.plotPCA :
+autolimitaspect_setting = 1; lineOpacity = 0.8; fillOpacity = 0.2;
+    symbolSize = 10; plotTitle = "PCo plot"; showTitle = true;
+    xLabelText = "Genomic PC1"; yLabelText = "Genomic PC2";
+    labelSize = 24
+
+ind_with_metadata_forPlot = ind_with_metadata_lowIndHetStan
+PC1 = PCO1; PC2 = PCO2
+
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+            title = plotTitle,
+            xlabel = xLabelText, xlabelsize = labelSize,
+            ylabel = yLabelText, ylabelsize = labelSize,
+            autolimitaspect = autolimitaspect_setting)
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+for i in eachindex(groups_to_plot_PCA) 
+    selection = ind_with_metadata_forPlot.Fst_group .== groups_to_plot_PCA[i]
+    CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color = (group_colors_PCA[i], fillOpacity), markersize = symbolSize, strokewidth=0.5, strokecolor = ("black", lineOpacity))
+end
+display(f)
 
 ```
 

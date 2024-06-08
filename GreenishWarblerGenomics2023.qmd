@@ -1342,7 +1342,7 @@ Now that we have high HetVar regions indicated, we can automate the choosing of 
 
 ```{julia}
 # choose scaffold
-chr = "gw26"
+chr = "gw28"
 
 # remake the windowedIndHet_standardized (done above in a different cell)
 windowSize = 500
@@ -1490,7 +1490,7 @@ plot(PCO1, PCO2)
 # https://juliastats.org/MultivariateStats.jl/dev/mds/
 
 # choose inds with low IndHet in high HetVar region:
-indSelection = (ind_with_metadata_included.regionIndHetStan .< 1000)    # 0.75
+indSelection = (ind_with_metadata_included.regionIndHetStan .< 100)    # 0.75
 
 ind_with_metadata_lowIndHetStan = ind_with_metadata_included[indSelection, :]
 

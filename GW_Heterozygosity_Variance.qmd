@@ -1,0 +1,614 @@
+---
+title: "Greenish Warbler heterozygosity variance analysis"
+author: "Darren Irwin"
+date: "6/11/2024"
+execute:
+  echo: true
+format:
+  html:
+    code-fold: false
+  pdf:
+    keep-tex: false
+    monofont: "JuliaMono"
+jupyter: julia-1.10
+---
+
+This script depends on `GreenishWarblerGenomics2023.qmd` and `GW_Zchromosome_analysis.qmd`
+
+## Load the filtered dataset
+
+This dataset was produced through filtering in GreenishWarblerGenomics2023.qmd
+
+```{julia}
+filename = string(baseName, tagName, ".ind_SNP_ind_filtered.jld2")
+genosOnly = load(filename, "genosOnly_ind_SNP_ind_filtered")
+ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
+pos_SNP_filtered = load(filename, "pos_SNP_filtered")
+println("Loaded the filtered data.")
+```
+
+## Replace the Z chromosome SNPs with the filtered Z chromosome SNPs
+
+```{julia}
+# remove the Z SNPs from the big dataset loaded above:
+selection = (pos_SNP_filtered.chrom .!= "gwZ")
+pos_SNP_filtered = pos_SNP_filtered[selection, :]
+genosOnly = genosOnly[:,selection]
+
+# load and add the Z filtered SNPs:
+filename = string(baseName, tagName, "chrgwZ_cleaned.notImputed.jld2")
+genosOnly_chrgwZ_cleaned = load(filename, "genotypes_gwZ_SNPfiltered")
+ind_with_metadata_indFiltered_chrgwZ_cleaned = load(filename, "ind_with_metadata_indFiltered")
+pos_SNP_filtered_chrgwZ_cleaned = load(filename, "pos_SNP_filtered_region")
+
+if ind_with_metadata_indFiltered.ind != ind_with_metadata_indFiltered_chrgwZ_cleaned.ind
+    println("Warning: the list of individuals in the big file and Z file are not completely identical.")
+end
+
+pos_SNP_filtered = vcat(pos_SNP_filtered, pos_SNP_filtered_chrgwZ_cleaned)
+genosOnly = hcat(genosOnly, genosOnly_chrgwZ_cleaned)
+
+println("Replaced the Z chromosome data with the filtered Z data.")
+
+```
+
+
+
+
+## Prepare data for Genotype-by-individual plots and PCA
+
+For missing genotypes, change our code of `-1` to `missing`:
+
+```{julia}
+genosOnly_with_missing = Matrix{Union{Missing, Int16}}(genosOnly)
+genosOnly_with_missing = replace(genosOnly_with_missing, -1 => missing)
+#genosOnly_with_missing[genosOnly_with_missing .== -1] .= missing;
+```
+
+# Make list of scaffolds to plot:
+
+```{julia}
+scaffolds_to_plot = "gw" .* string.(vcat(1, "1A", 2:4, "4A", 5:15, 17:28, "Z"))
+```
+
+# Choose groups and colors
+
+```{julia}
+groups_to_plot_PCA = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
+group_colors_PCA = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
+```
+
+###############
+
+## Show windowed heterozygosity for individuals
+
+```{julia}
+
+# option to select a subset of individuals
+filterGroups = false
+#groupsToInclude = ["vir"]
+#groupsToInclude = ["troch_LN"]
+#numIndsToPlot = [1000]
+
+# groupsToInclude = ["vir", "plumb", "plumb_vir"]
+# numIndsToPlot = [1000, 1000, 1000]
+
+# groupsToInclude = ["troch_LN","troch_EM","obs","plumb_BJ"]
+# numIndsToPlot = [1000, 1000, 1000, 1000]
+
+groupsToInclude = ["lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west"]
+numIndsToPlot = [1000, 1000, 1000, 1000, 1000, 1000]
+
+if filterGroups
+    genosOnly_included, ind_with_metadata_included = limitIndsToPlot(groupsToInclude, numIndsToPlot, genosOnly_with_missing, ind_with_metadata_indFiltered)
+else
+    genosOnly_included = genosOnly_with_missing
+    ind_with_metadata_included = ind_with_metadata_indFiltered
+end
+
+chr = "gw15"
+windowSize = 500
+loci_selection = (pos_SNP_filtered.chrom .== chr)
+pos_region = pos_SNP_filtered[loci_selection, :]
+genotypes_region = genosOnly_included[:, loci_selection]
+
+windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
+
+plotTitle = string("Windowed heterozygosity of ", size(windowedIndHet, 1), " individuals")
+titleSize = 24
+xLabelText = string("Location on scaffold ", chr)
+yLabelText = "Heterozygosity"
+labelSize = 24
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title=plotTitle, titlesize=titleSize,
+    xlabel=xLabelText, xlabelsize=labelSize,
+    ylabel=yLabelText, ylabelsize=labelSize)
+lines!(windowedPos, windowedIndHet[1, :])
+for i in 2:size(windowedIndHet, 1)
+    lines!(windowedPos, windowedIndHet[i, :])
+end
+meanPerWindow_windowedIndHet = sum(windowedIndHet, dims=1) ./ size(windowedIndHet, 1)
+lines!(windowedPos, vec(meanPerWindow_windowedIndHet), linewidth=10, color=:red)
+display(f)
+
+windowedIndHet_standardized = standardizeIndHet(windowedIndHet)
+
+plotTitle = string("Standardized heterozygosity of ", size(windowedIndHet, 1), " individuals")
+titleSize = 24
+xLabelText = string("Location on scaffold ", chr)
+yLabelText = "Standardized heterozygosity"
+labelSize = 24
+g = CairoMakie.Figure()
+ax = Axis(g[1, 1],
+    title=plotTitle, titlesize=titleSize,
+    xlabel=xLabelText, xlabelsize=labelSize,
+    ylabel=yLabelText, ylabelsize=labelSize)
+for i in 1:size(windowedIndHet_standardized, 1)
+    lines!(windowedPos, windowedIndHet_standardized[i, :])
+end
+#lines!(windowedPos, windowedIndHet[21,:], linewidth = 10, color = :red)
+display(g)
+
+# Now graph the variance in standardized heterozygosity
+
+varWindowedIndHet = getVarWindowedIndHet(windowedIndHet_standardized)
+
+plotTitle = string("Variance in standardized het. among ", size(windowedIndHet, 1), " individuals")
+titleSize = 18
+xLabelText = string("Location on scaffold ", chr)
+yLabelText = "Heterozygosity variance (standardized)"
+labelSize = 18
+h = CairoMakie.Figure()
+ax = Axis(h[1, 1],
+    title=plotTitle, titlesize=titleSize,
+    xlabel=xLabelText, xlabelsize=labelSize,
+    ylabel=yLabelText, ylabelsize=labelSize)
+lines!(windowedPos, varWindowedIndHet)
+display(h)
+
+```
+
+
+# Make heterozygosity variance plot for whole genome:
+
+```{julia}
+
+# option to select a subset of individuals
+filterGroups = false
+# groupsToInclude = ["vir", "plumb", "plumb_vir"]
+# numIndsToPlot = [1000, 1000, 1000]
+
+# groupsToInclude = ["lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
+# numIndsToPlot = [1000, 1000, 1000, 1000, 1000, 1000, 1000]
+
+# groupsToInclude = ["troch_LN","troch_EM","obs","plumb_BJ"]
+# numIndsToPlot = [1000, 1000, 1000, 1000]
+
+groupsToInclude = ["vir"]
+#groupsToInclude = ["troch_LN"]
+numIndsToPlot = [1000]
+
+if filterGroups
+    genosOnly_included, ind_with_metadata_included = limitIndsToPlot(groupsToInclude, numIndsToPlot, genosOnly_with_missing, ind_with_metadata_indFiltered)
+else
+    genosOnly_included = genosOnly_with_missing
+    ind_with_metadata_included = ind_with_metadata_indFiltered
+end
+
+#scaffolds_for_HetVariance = ["gw26", "gw28"]
+scaffolds_for_HetVariance = scaffolds_to_plot
+#initialize data structures
+windowed_pos_all = DataFrame(chrom = String[], mean_position = Float64[], first_position = Int[], last_position = Int[])
+windowed_HetVariance_all = Vector{Float32}(undef, 0)
+for chrom in scaffolds_for_HetVariance
+    regionText = string("chr", chrom)
+    loci_selection = (pos_SNP_filtered.chrom .== chrom)
+    pos_region = pos_SNP_filtered[loci_selection, :]
+    genotypes_region = genosOnly_included[:, loci_selection]
+    if chrom == "gwZ" #include only males (because females have only one Z)
+        genotypes_region_males = genotypes_region[ind_with_metadata_indFiltered_chrgwZ_cleaned.sex .== "M", :]
+        windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region_males, pos_region, windowSize)
+    else # for all other chromosomes, include all individuals
+        windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
+    end
+    windowBoundaries = getWindowBoundaries(pos_region.position, windowSize)
+    windowedIndHet_standardized = standardizeIndHet(windowedIndHet)
+    windowed_HetVariance_scaffold = getVarWindowedIndHet(windowedIndHet_standardized)
+    windowed_pos_chrom = DataFrame(chrom = repeat([chrom], length(windowedPos)), mean_position = windowedPos, first_position = windowBoundaries[:,1], last_position = windowBoundaries[:,2])
+    windowed_pos_all = vcat(windowed_pos_all, windowed_pos_chrom)
+    windowed_HetVariance_all = [windowed_HetVariance_all; windowed_HetVariance_scaffold]
+end
+
+# Quick test plot (overlapping all chromosomes, so not good)
+plot(windowed_pos_all.mean_position, windowed_HetVariance_all)
+```
+
+# Identify "haploblock regions" as those that have high HetVar
+
+```{julia}
+threshold_HetVar = 0.4
+selection = windowed_HetVariance_all .>= threshold_HetVar
+windowed_pos_all.high_HetVar = selection # adds true/false column to dataframe indicating high HetVar windows
+
+# Make list of contiguous high HetVar region:
+
+highHetVarRegions = DataFrame(regionChrom = String[], regionStart = Int[], regionEnd = Int[])
+i = 1
+lastWindow = nrow(windowed_pos_all)
+while i <= lastWindow # eachindex(windowed_pos_all[:,1])
+    if windowed_pos_all.high_HetVar[i] == true
+        regionChrom = windowed_pos_all.chrom[i]
+        regionStart = windowed_pos_all.first_position[i]
+        regionEnd = windowed_pos_all.last_position[i]
+        # check whether contiguous with next
+        next = 1
+        while i + next <= lastWindow && windowed_pos_all.chrom[i + next] == regionChrom
+            if windowed_pos_all.high_HetVar[i + next] == true
+                regionEnd = windowed_pos_all.last_position[i + next]
+                next += 1
+            else
+                break
+            end
+        end
+        highHetVarRegions = push!(highHetVarRegions, [regionChrom, regionStart, regionEnd])
+        i = i + next + 1
+    else
+        i = i + 1
+    end 
+    i
+end
+```
+
+
+# Plot "haploblock regions" for whole genome
+
+```{julia}
+
+function plotGenomeHetVariance(scaffolds_to_plot, 
+                                windowed_HetVariance_all,
+                                windowed_pos_all;
+                                fillColor = "purple",
+                                lineTransparency = 0.8,
+                                fillTransparency = 0.2,
+                                figureSize = (1200, 1200),
+                                plotRegions = false,
+                                regionsToPlot = [])
+    
+    # get sizes of chromosomes (note this actually isn't the true length, just the mean position of the rightmost window):
+    scaffold_lengths = repeat([-1], length(scaffolds_to_plot))	# vector of Int64
+    for i in 1:length(scaffolds_to_plot)
+        selection = windowed_pos_all.chrom .== scaffolds_to_plot[i]
+        if sum(selection) == 0
+            scaffold_lengths[i] = 0
+        else
+            scaffold_lengths[i] = round(Int, maximum(windowed_pos_all.mean_position[selection]))
+        end
+    end
+
+    # my plan is to use the layout feature of Makie to make one axis per row, and then plot
+    # multiple scaffolds to each row
+
+    scaffoldPlottedAlready = falses(length(scaffolds_to_plot))
+    bpPerRow = 200_000_000
+    bpGapBetweenScaffolds = 10_000_000
+    scaffoldInRow = Vector{Vector{String}}() # declare a vector of vectors to store the chromosome names per row
+    scaffoldBpStartInRow = Vector{Vector{Int}}()
+    row = 1
+
+    while sum(scaffoldPlottedAlready .== false) > 0  # repeat until all chr have a row to be plotted in
+        bpStart = 0
+        remainingRowLength = bpPerRow
+        push!(scaffoldInRow, []) # initialize an empty vector for the next row
+        push!(scaffoldBpStartInRow, []) # initialize an empty vector for the next row
+        placeInRow = 1
+        # look through chromosomes and find some to go in this row
+        for i in 1:length(scaffolds_to_plot)
+            # if not plotted and short enough, add to row:
+            if scaffoldPlottedAlready[i] .== false .&& scaffold_lengths[i] .<= remainingRowLength
+                push!(scaffoldInRow[row], scaffolds_to_plot[i])
+                push!(scaffoldBpStartInRow[row], bpStart)
+                remainingRowLength = remainingRowLength - scaffold_lengths[i] - bpGapBetweenScaffolds
+                scaffoldPlottedAlready[i] = true
+                placeInRow += 1
+                bpStart = bpStart + scaffold_lengths[i] + bpGapBetweenScaffolds
+            end	
+        end
+        row += 1
+    end
+    println(scaffoldInRow)
+
+    # the above works. I have the scaffolds arranged for plotting.
+
+    # Plot in the order defined above
+    f = CairoMakie.Figure(size=figureSize)
+    numRows = length(scaffoldInRow)
+    # make one axis object per row:
+    axs = [Axis(f[i, 1], limits=(0, bpPerRow,
+            0, 2.3), ylabel = "HetVar") for i in 1:numRows]
+    for i in 1:numRows
+        hidexdecorations!(axs[i]) #hide background lattice and axis labels
+        hidespines!(axs[i], :t, :r, :b) # hide box around plot
+    end
+
+    for rowNum in 1:numRows
+        numScaffoldsInRow = length(scaffoldInRow[rowNum])
+        nextPlotShiftBP = 0
+        for orderNum in 1:numScaffoldsInRow 
+            scaffoldName = scaffoldInRow[rowNum][orderNum]
+            plotBpLength = scaffold_lengths[findfirst(scaffolds_to_plot .== scaffoldName)]
+            # select one scaffold from the whole genome:
+            selection = windowed_pos_all.chrom .== scaffoldName 
+            windowed_pos_selected = view(windowed_pos_all.mean_position, selection)
+            windowed_HetVariance_selected = view(windowed_HetVariance_all, selection)
+            if length(windowed_pos_selected) > 0  # only plot if there is data for that scaffold        
+                text!(axs[rowNum], scaffoldBpStartInRow[rowNum][orderNum] + 0.005bpPerRow, 2.1; text=scaffoldName, align=(:left, :center), fontsize=20)
+                xx = vcat(first(windowed_pos_selected), windowed_pos_selected, last(windowed_pos_selected)) .+ scaffoldBpStartInRow[rowNum][orderNum]
+                yy = vcat(0, windowed_HetVariance_selected, 0)
+                poly!(axs[rowNum], Point2f.(xx, yy), color = (fillColor, fillTransparency), strokecolor = (fillColor, lineTransparency), strokewidth = 1)
+                # if indicating regions (e.g. that have high HetVar)
+                if plotRegions
+                    regionsToPlot_thisScaffold = regionsToPlot[regionsToPlot.regionChrom .== scaffoldName, :]
+                    for i in eachindex(regionsToPlot_thisScaffold.regionStart)
+                        xValues = [regionsToPlot_thisScaffold.regionStart[i], regionsToPlot_thisScaffold.regionEnd[i]] .+ scaffoldBpStartInRow[rowNum][orderNum]
+                        yValues = [0.05, 0.05]
+                        lines!(axs[rowNum], xValues, yValues, color="red", linewidth=10)
+                    end
+                end
+            end
+        end
+    end
+    display(f)
+end
+
+
+plotGenomeHetVariance(scaffolds_to_plot, 
+                        windowed_HetVariance_all,
+                        windowed_pos_all;
+                        fillColor = "purple",
+                        lineTransparency = 0.8,
+                        fillTransparency = 0.2,
+                        figureSize=(1200, 1200),
+                        plotRegions = true,
+                        regionsToPlot = highHetVarRegions)
+
+```
+
+# Choose low-het individuals in a high HetVar region
+
+Now that we have high HetVar regions indicated, we can automate the choosing of essential homozygous individuals in those regions. Here I will do this for chr15 and chr18:
+
+```{julia}
+# choose scaffold
+chr = "gwZ"
+
+# remake the windowedIndHet_standardized (done above in a different cell)
+windowSize = 500
+loci_selection = (pos_SNP_filtered.chrom .== chr)
+pos_region = pos_SNP_filtered[loci_selection, :]
+genotypes_region = genosOnly_included[:, loci_selection]
+
+windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
+
+windowedIndHet_standardized = standardizeIndHet(windowedIndHet)
+
+# look up the boundaries of the high HetVar region:
+
+selection = (highHetVarRegions.regionChrom .== chr)
+if sum(selection) == 1
+    println("Good news: 1 region on that scaffold")
+    positionMin = highHetVarRegions.regionStart[selection][1]
+    positionMax = highHetVarRegions.regionEnd[selection][1]
+    regionText = string("chr ", chr, " ",positionMin," to ",positionMax)
+elseif sum(selection) > 1
+    println("More than 1 region on that scaffold. Using just the longest one.")
+    highHetVarRegions_chr = highHetVarRegions[selection, :]
+    display(highHetVarRegions_chr)
+    # get biggest region (first one if tied):
+    regionSizes = highHetVarRegions_chr.regionEnd .- highHetVarRegions_chr.regionStart
+    indexOfLongest = findfirst(regionSizes .== maximum(regionSizes))
+    positionMin = highHetVarRegions_chr.regionStart[indexOfLongest]
+    positionMax = highHetVarRegions_chr.regionEnd[indexOfLongest]
+    regionText = string("chr ", chr, " ",positionMin," to ",positionMax)
+elseif sum(selection) == 0
+    println("No high HetVar regions on that scaffold")
+end
+
+# choose just the windows that are in the high HetVar region:
+
+selection = (positionMin .< windowedPos .< positionMax)
+windowedIndHet_standardized_region = windowedIndHet_standardized[:,selection]
+
+# average across windows for each individual:
+
+meanAcrossRegion_IndHet_standardized = mean.(eachrow(windowedIndHet_standardized_region)) 
+
+plot(meanAcrossRegion_IndHet_standardized)
+
+ind_with_metadata_included.regionIndHetStan = meanAcrossRegion_IndHet_standardized
+
+# check whether missing data related to heterozygosity (good news: not really)
+plot(ind_with_metadata_included.numMissings, ind_with_metadata_included.regionIndHetStan)
+
+# to inspect data, sort by regionIndHetStan :
+
+ind_with_metadata_included_sortedbyHetVar = sort(ind_with_metadata_included, [:regionIndHetStan])
+
+# for demonstration haplotypes, choose individuals with numMissings < 100_000
+# and regionIndHetStan < 0.5:
+
+selection = (ind_with_metadata_included.numMissings .< 200_000) .& (ind_with_metadata_included.regionIndHetStan .< 0.75)
+
+ind_with_metadata_haplotypeCandidates = ind_with_metadata_included[selection, :]
+
+# But the above cuts out the obscuratus and nitidus individuals (which have about 700k missing genome-wide at least in early filtering calculations)
+# So don't worry about missings for now--just sort and choose low ones for each haplogroup:
+
+# GW_Armando_plate2_TTGW73  #lud_Sath
+
+# GW_Armando_plate2_LN2 #troch_LN
+
+# GW_Armando_plate2_TTGW-15-04 #lud_Sural
+
+# GW_Armando_plate1_JG02G02 #plumb
+
+# GW_Armando_plate2_JE31G01 #vir
+
+# GW_Armando_plate1_RF20G01 #plumb_BJ
+
+# GW_Lane5_TU1 #nit
+
+indsToChoose = ["GW_Armando_plate2_TTGW73",
+                "GW_Armando_plate2_LN2",
+                "GW_Armando_plate2_TTGW-15-04",
+                "GW_Armando_plate1_JG02G02",
+                "GW_Armando_plate2_JE31G01",
+                "GW_Armando_plate1_RF20G01",
+                "GW_Lane5_TU1"]
+
+selection = map(in(indsToChoose), ind_with_metadata_included.ind)
+filtered_in = ind_with_metadata_included.ind[selection]
+ind_with_metadata_chosenInds = ind_with_metadata_included[selection, :]
+geno_indFiltered = view(genotypes_region, selection, :)
+println("Specific individuals chosen as requested: ")
+display(filtered_in)
+
+# choose the loci in the high HetVar region:
+
+selection = (positionMin .< pos_region.position .< positionMax)
+
+geno_indFiltered_highHetVarRegion = geno_indFiltered[:, selection]
+
+# put in plot order:
+
+indexOrder = sortperm(ind_with_metadata_chosenInds.plot_order)
+geno_indFiltered_highHetVarRegion_ordered = geno_indFiltered_highHetVarRegion[indexOrder, :]
+ind_with_metadata_chosenInds_ordered = ind_with_metadata_chosenInds[indexOrder, :]
+
+# ABOVE HAVE GENOTYPES FOR JUST THESE INDIVIDUALS IN JUST THE HIGH HETVAR REGION ON THE ONE CHR. NEXT DO GENETIC DISTANCE BETWEEN ALL PAIRS OF INDIVIDUALS FOR THIS REGION. 
+# count mismatches and divide by total number of sites.
+# mismatches of genotype 0 to genotype 2 count as 1 mismatch.
+# genotype 0 or 2 to genotype 1 (het) counts as 0.5 mismatch.
+# genotype 1 to genotype 1 counts as 0 mismatch (debatable whether it should be 0 or 0.5, but I want F1 hybrids to not have distance between them).
+
+function getIndGenDistances(genotypeMatrix)
+    genotypeMatrix[ismissing.(genotypeMatrix)] .= -1 # converts `missing` to -1
+    numInds = size(genotypeMatrix)[1]
+    distanceMatrix = Matrix{Float64}(undef, numInds, numInds)
+    for i in 1:numInds
+        for j in 1:numInds
+            firstGeno = genotypeMatrix[i,:]
+            secondGeno = genotypeMatrix[j,:]
+            fullMismatches = sum((firstGeno .== 0 .&& secondGeno .== 2) .||
+                                (firstGeno .== 2 .&& secondGeno .== 0))
+            partialMismatches = sum((firstGeno .== 0 .&& secondGeno .== 1) .|| 
+                                    (firstGeno .== 1 .&& secondGeno .== 0) .|| 
+                                    (firstGeno .== 2 .&& secondGeno .== 1) .|| 
+                                    (firstGeno .== 1 .&& secondGeno .== 2))
+            bothHet = sum(firstGeno .== 1 .&& secondGeno .== 1)
+            nonMissingGenotypes = sum((firstGeno .!= -1) .&& (secondGeno .!= -1))
+            distanceMatrix[i,j] = (fullMismatches + 0.5partialMismatches + 0*bothHet) / nonMissingGenotypes
+        end
+    end
+    return distanceMatrix
+end
+
+indGenDistances = getIndGenDistances(geno_indFiltered_highHetVarRegion_ordered)
+
+mds = fit(MDS, indGenDistances; distances=true)
+pco_coords = predict(mds)
+PCO1 = pco_coords[1,:]
+PCO2 = pco_coords[2,:]
+
+plot(PCO1, PCO2)
+
+#### Planning next step: 
+# - Get all samples with regionIndHetStan .< 0.75 (or maybe another value)
+# - Construct distance matrix
+# - Do PCoA on distance matrix (also known as Metric Multidimensional Scaling)
+# mds = fit(MDS, D; distances=true, maxoutdim=size(D,1)-1)
+# https://juliastats.org/MultivariateStats.jl/dev/mds/
+
+# choose inds with low IndHet in high HetVar region:
+indSelection = (ind_with_metadata_included.regionIndHetStan .< 2)    # 0.75
+
+ind_with_metadata_lowIndHetStan = ind_with_metadata_included[indSelection, :]
+
+# choose the loci in the high HetVar region:
+lociSelection = (positionMin .< pos_region.position .< positionMax)
+
+geno_lowIndHetStan = genotypes_region[indSelection, lociSelection]
+
+# convert `-1` genotypes (which indicates missing) to `missing`:
+geno_lowIndHetStan[.!(ismissing.(geno_lowIndHetStan)) .&& geno_lowIndHetStan .== -1] .= missing
+
+# check that missing genotypes are encoded as `missing` rather than `-1`:
+if sum(ismissing.(geno_lowIndHetStan)) == 0
+    println("Warning: No `missing` genotypes to be imputed")
+end
+
+# impute missing genotypes:
+
+geno_lowIndHetStan_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(geno_lowIndHetStan))
+
+flipPC1 = false
+flipPC2 = false
+
+PCAmodel = plotPCA(geno_lowIndHetStan_imputed, ind_with_metadata_lowIndHetStan, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText = regionText,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodel.PCAfig)
+
+```
+
+# Below, what I tried first here is to calculate a matrix of pairwise genetic distances and then use Principal Coordinates Analysis (Metric Multidimensional Scaling. The below works. Then I realized that it is perhaps better to stick with PCA like in the rest of the paper. So will do that above.
+
+```{julia}
+indGenDistances = getIndGenDistances(geno_lowIndHetStan)
+
+mds = fit(MDS, indGenDistances; distances=true)
+pco_coords = predict(mds)
+PCO1 = pco_coords[1,:]
+PCO2 = pco_coords[2,:]
+PCO3 = pco_coords[3,:]
+PCO4 = pco_coords[4,:]
+
+
+plot(PCO1, PCO2)
+
+#plot(PCO1, PCO3)
+
+#plot(PCO1, PCO4)
+
+pcoResults = DataFrame(ind = ind_with_metadata_lowIndHetStan.ind, Fst_group = ind_with_metadata_lowIndHetStan.Fst_group, PCo1 = PCO1, PCo2 = PCO2)
+
+# code taken from SNPlots.plotPCA :
+autolimitaspect_setting = 1; lineOpacity = 0.8; fillOpacity = 0.2;
+    symbolSize = 10; plotTitle = "PCo plot"; showTitle = true;
+    xLabelText = "Genomic PC1"; yLabelText = "Genomic PC2";
+    labelSize = 24
+
+ind_with_metadata_forPlot = ind_with_metadata_lowIndHetStan
+PC1 = PCO1; PC2 = PCO2
+
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+            title = plotTitle,
+            xlabel = xLabelText, xlabelsize = labelSize,
+            ylabel = yLabelText, ylabelsize = labelSize,
+            autolimitaspect = autolimitaspect_setting)
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+for i in eachindex(groups_to_plot_PCA) 
+    selection = ind_with_metadata_forPlot.Fst_group .== groups_to_plot_PCA[i]
+    CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color = (group_colors_PCA[i], fillOpacity), markersize = symbolSize, strokewidth=0.5, strokecolor = ("black", lineOpacity))
+end
+display(f)
+
+```
+

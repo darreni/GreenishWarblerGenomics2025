@@ -10,7 +10,7 @@ format:
   pdf:
     keep-tex: false
     monofont: "JuliaMono"
-jupyter: julia-1.9
+jupyter: julia-1.10
 ---
 
 ## Load the filtered dataset
@@ -220,6 +220,16 @@ CairoMakie.scatter!(ax, x_plot_values, y_plot_values, marker = :diamond, color="
 display(f);
 ```
 
+# Save the filtered Z chromosome genotypes
+
+```{julia}
+cd(dataDirectory)
+regionText = "chrgwZ_cleaned"
+filename = string(baseName, tagName, regionText, ".notImputed.jld2")
+jldsave(filename; genotypes_gwZ_SNPfiltered, ind_with_metadata_indFiltered = ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region = pos_SNP_filtered_gwZ_SNPfiltered)
+println("Saved matrix of real Z chromosome genotypes (without imputation).")
+```
+
 Looks good. Now impute and do the PCA. I did the imputing previously (to do it again, set `do_imputing = true` below).
 
 ```{julia}
@@ -238,7 +248,7 @@ if do_imputing
     imputed_genos_chrZcleaned = imputed_genos
     ind_with_metadata_indFiltered_sex_chrZcleaned = ind_with_metadata_indFiltered_sex
     pos_SNP_filtered_chZcleaned = pos_SNP_filtered_gwZ_SNPfiltered
-    print("Saved matrix of real and imputed Z chromosome genotypes. \n")
+    println("Saved matrix of real and imputed Z chromosome genotypes. \n")
 else # load the already saved imputing
     imputed_genos_chrZcleaned = load(filename, "imputed_genos")
     ind_with_metadata_indFiltered_sex_chrZcleaned = load(filename, "ind_with_metadata_indFiltered")

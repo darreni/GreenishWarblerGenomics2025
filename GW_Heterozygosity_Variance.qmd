@@ -380,7 +380,7 @@ Now that we have high HetVar regions indicated, we can automate the choosing of 
 
 ```{julia}
 # choose scaffold
-chr = "gw26"
+chr = "gwZ"
 
 # remake the windowedIndHet_standardized (done above in a different cell)
 windowSize = 500
@@ -434,7 +434,243 @@ plot(ind_with_metadata_included.numMissings, ind_with_metadata_included.regionIn
 
 ind_with_metadata_included_sortedbyHetVar = sort(ind_with_metadata_included, [:regionIndHetStan])
 
-# for demonstration haplotypes, choose individuals with numMissings < 100_000
+# choose inds with low IndHet in high HetVar region:
+indSelection = (ind_with_metadata_included.regionIndHetStan .< 1.75)    # 0.75
+
+ind_with_metadata_lowIndHetStan = ind_with_metadata_included[indSelection, :]
+
+# choose the loci in the high HetVar region:
+lociSelection = (positionMin .< pos_region.position .< positionMax)
+
+geno_lowIndHetStan = genotypes_region[indSelection, lociSelection]
+
+# convert `-1` genotypes (which indicates missing) to `missing`:
+geno_lowIndHetStan[.!(ismissing.(geno_lowIndHetStan)) .&& geno_lowIndHetStan .== -1] .= missing
+
+# check that missing genotypes are encoded as `missing` rather than `-1`:
+if sum(ismissing.(geno_lowIndHetStan)) == 0
+    println("Warning: No `missing` genotypes to be imputed")
+end
+
+# impute missing genotypes:
+
+geno_lowIndHetStan_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(geno_lowIndHetStan))
+
+flipPC1 = true
+flipPC2 = true
+
+PCAmodel = plotPCA(geno_lowIndHetStan_imputed, ind_with_metadata_lowIndHetStan, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText = regionText,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodel.PCAfig)
+
+# Add PC values to metadata for individuals included in PCA above:
+PCAmodel.metadata.PC1 = PCAmodel.values[1,:]
+PCAmodel.metadata.PC2 = PCAmodel.values[2,:]
+PCAmodel.metadata.PC3 = PCAmodel.values[3,:]
+
+```
+
+# Plot PC1 vs. PC2:
+
+```{julia}
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "PC1 vs. PC2",
+    xlabel = "Region PC1", xlabelsize = 24,
+    ylabel = "Region PC2", ylabelsize = 24,
+    autolimitaspect = 1)
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+for i in eachindex(groups_to_plot_PCA) 
+    selection = PCAmodel.metadata.Fst_group .== groups_to_plot_PCA[i]
+    CairoMakie.scatter!(ax, PCAmodel.metadata.PC1[selection], PCAmodel.metadata.PC2[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
+end
+display(f)
+```
+
+# Plot PC1 vs. PC3:
+
+```{julia}
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "PC1 vs. PC3",
+    xlabel = "Region PC1", xlabelsize = 24,
+    ylabel = "Region PC3", ylabelsize = 24,
+    autolimitaspect = 1)
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+for i in eachindex(groups_to_plot_PCA) 
+    selection = PCAmodel.metadata.Fst_group .== groups_to_plot_PCA[i]
+    CairoMakie.scatter!(ax, PCAmodel.metadata.PC1[selection], PCAmodel.metadata.PC3[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
+end
+display(f)
+```
+
+# Now it is clear that there are six clear haplogroups of Z high HetVar region. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+
+```{julia}
+# Inspect Z chromosome PCA of low IndHet (< 1.75) individuals,
+# and specify group boundaries:
+
+vir_indices = (5 .< PCAmodel.metadata.PC1) .&& (PCAmodel.metadata.PC3 .< 2)
+lud_indices = (5 .< PCAmodel.metadata.PC1) .&& (2 .< PCAmodel.metadata.PC3)
+nit_indices = (2 .< PCAmodel.metadata.PC1 .< 4)
+troch_indices = PCAmodel.metadata.PC2 .> 5
+obs_indices = (-2 .< PCAmodel.metadata.PC1 .< 2) .&& (1 .< PCAmodel.metadata.PC2 .< 4)
+plumb_indices = PCAmodel.metadata.PC1 .< -5
+
+PCAmodel.metadata.Fst_group[vir_indices]
+PCAmodel.metadata.Fst_group[lud_indices]
+PCAmodel.metadata.Fst_group[nit_indices] # note there are two nitidus with nearly identical values
+PCAmodel.metadata.Fst_group[troch_indices]
+PCAmodel.metadata.Fst_group[obs_indices]
+PCAmodel.metadata.Fst_group[plumb_indices]
+```
+
+
+# Do a PCA based on above info, on just the west side of the ring
+
+```{julia}
+groups_to_plot_PCA_westside = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
+group_colors_PCA_westside = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow"]
+
+# without nitidus:
+groups_to_plot_PCA_westside = ["vir","vir_S", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
+group_colors_PCA_westside = ["blue","turquoise1","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow"]
+
+PCAmodel = plotPCA(geno_lowIndHetStan_imputed, ind_with_metadata_lowIndHetStan, 
+            groups_to_plot_PCA_westside, group_colors_PCA_westside; 
+            sampleSet = "greenish warblers (west side)", regionText = regionText,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodel.PCAfig)
+```
+
+
+# Do a PCA based on above info, on just the east side of the ring
+
+```{julia}
+groups_to_plot_PCA_eastside = ["troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
+group_colors_PCA_eastside = ["yellow","gold","orange","pink","red","purple"];
+
+PCAmodel = plotPCA(geno_lowIndHetStan_imputed, ind_with_metadata_lowIndHetStan, 
+            groups_to_plot_PCA_eastside, group_colors_PCA_eastside; 
+            sampleSet = "greenish warblers (east side)", regionText = regionText,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodel.PCAfig)
+```
+
+
+# Do a PCA based on a same-size region elsewhere on the Z (with low HetVar):
+
+```{julia}
+# get length of region
+lengthHighHetVarRegion = positionMax - positionMin
+
+leftLocus = 10_000_000 # start at very left side, or 10 Mb in
+rightLocus = leftLocus + lengthHighHetVarRegion
+regionText_lowHetVarRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
+
+lociSelection = (leftLocus .<= pos_region.position .<= rightLocus)
+genotypes_lowHetVarRegion = genotypes_region[:, lociSelection]
+
+# impute missing genotypes:
+
+genotypes_lowHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genotypes_lowHetVarRegion))
+
+flipPC1 = true
+flipPC2 = true
+
+PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText = regionText_lowHetVarRegion,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodel.PCAfig)
+
+
+```
+
+
+
+
+
+
+
+# Below, what I tried first here is to calculate a matrix of pairwise genetic distances and then use Principal Coordinates Analysis (Metric Multidimensional Scaling. The below works. Then I realized that it is perhaps better to stick with PCA like in the rest of the paper. So will do that above.
+
+```{julia}
+indGenDistances = getIndGenDistances(geno_lowIndHetStan)
+
+mds = fit(MDS, indGenDistances; distances=true)
+pco_coords = predict(mds)
+PCO1 = pco_coords[1,:]
+PCO2 = pco_coords[2,:]
+PCO3 = pco_coords[3,:]
+PCO4 = pco_coords[4,:]
+
+
+plot(PCO1, PCO2)
+
+#plot(PCO1, PCO3)
+
+#plot(PCO1, PCO4)
+
+pcoResults = DataFrame(ind = ind_with_metadata_lowIndHetStan.ind, Fst_group = ind_with_metadata_lowIndHetStan.Fst_group, PCo1 = PCO1, PCo2 = PCO2)
+
+# code taken from SNPlots.plotPCA :
+autolimitaspect_setting = 1; lineOpacity = 0.8; fillOpacity = 0.2;
+    symbolSize = 10; plotTitle = "PCo plot"; showTitle = true;
+    xLabelText = "Genomic PC1"; yLabelText = "Genomic PC2";
+    labelSize = 24
+
+ind_with_metadata_forPlot = ind_with_metadata_lowIndHetStan
+PC1 = PCO1; PC2 = PCO2
+
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+            title = plotTitle,
+            xlabel = xLabelText, xlabelsize = labelSize,
+            ylabel = yLabelText, ylabelsize = labelSize,
+            autolimitaspect = autolimitaspect_setting)
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+for i in eachindex(groups_to_plot_PCA) 
+    selection = ind_with_metadata_forPlot.Fst_group .== groups_to_plot_PCA[i]
+    CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color = (group_colors_PCA[i], fillOpacity), markersize = symbolSize, strokewidth=0.5, strokecolor = ("black", lineOpacity))
+end
+display(f)
+
+```
+
+#### Notes: 
+# - Get all samples with regionIndHetStan .< 0.75 (or maybe another value)
+# - Construct distance matrix
+# - Do PCoA on distance matrix (also known as Metric Multidimensional Scaling)
+# mds = fit(MDS, D; distances=true, maxoutdim=size(D,1)-1)
+# https://juliastats.org/MultivariateStats.jl/dev/mds/
+
+# Pick a small set of individuals to examine genetic distances
+
+```{julia}
+# for demonstration haplotypes, choose individuals with numMissings < 200_000
 # and regionIndHetStan < 0.5:
 
 selection = (ind_with_metadata_included.numMissings .< 200_000) .& (ind_with_metadata_included.regionIndHetStan .< 0.75)
@@ -522,171 +758,4 @@ PCO2 = pco_coords[2,:]
 
 plot(PCO1, PCO2)
 
-#### Planning next step: 
-# - Get all samples with regionIndHetStan .< 0.75 (or maybe another value)
-# - Construct distance matrix
-# - Do PCoA on distance matrix (also known as Metric Multidimensional Scaling)
-# mds = fit(MDS, D; distances=true, maxoutdim=size(D,1)-1)
-# https://juliastats.org/MultivariateStats.jl/dev/mds/
-
-# choose inds with low IndHet in high HetVar region:
-indSelection = (ind_with_metadata_included.regionIndHetStan .< 100)    # 0.75
-
-ind_with_metadata_lowIndHetStan = ind_with_metadata_included[indSelection, :]
-
-# choose the loci in the high HetVar region:
-lociSelection = (positionMin .< pos_region.position .< positionMax)
-
-geno_lowIndHetStan = genotypes_region[indSelection, lociSelection]
-
-# convert `-1` genotypes (which indicates missing) to `missing`:
-geno_lowIndHetStan[.!(ismissing.(geno_lowIndHetStan)) .&& geno_lowIndHetStan .== -1] .= missing
-
-# check that missing genotypes are encoded as `missing` rather than `-1`:
-if sum(ismissing.(geno_lowIndHetStan)) == 0
-    println("Warning: No `missing` genotypes to be imputed")
-end
-
-# impute missing genotypes:
-
-geno_lowIndHetStan_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(geno_lowIndHetStan))
-
-flipPC1 = true
-flipPC2 = false
-
-PCAmodel = plotPCA(geno_lowIndHetStan_imputed, ind_with_metadata_lowIndHetStan, 
-            groups_to_plot_PCA, group_colors_PCA; 
-            sampleSet = "greenish warblers", regionText = regionText,
-            flip1 = flipPC1, flip2 = flipPC2,
-            lineOpacity = 0.7, fillOpacity = 0.6,
-            symbolSize = 14, showTitle = true,
-            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
-            showPlot = false)
-
-display(PCAmodel.PCAfig)
-
 ```
-
-
-# Do a PCA based on above info, on just the west side of the ring
-
-```{julia}
-groups_to_plot_PCA_westside = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
-group_colors_PCA_westside = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow"]
-
-# without nitidus:
-groups_to_plot_PCA_westside = ["vir","vir_S", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
-group_colors_PCA_westside = ["blue","turquoise1","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow"]
-
-PCAmodel = plotPCA(geno_lowIndHetStan_imputed, ind_with_metadata_lowIndHetStan, 
-            groups_to_plot_PCA_westside, group_colors_PCA_westside; 
-            sampleSet = "greenish warblers (west side)", regionText = regionText,
-            flip1 = flipPC1, flip2 = flipPC2,
-            lineOpacity = 0.7, fillOpacity = 0.6,
-            symbolSize = 14, showTitle = true,
-            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
-            showPlot = false)
-
-display(PCAmodel.PCAfig)
-```
-
-# Do a PCA based on above info, on just the east side of the ring
-
-```{julia}
-groups_to_plot_PCA_eastside = ["troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
-group_colors_PCA_eastside = ["yellow","gold","orange","pink","red","purple"];
-
-PCAmodel = plotPCA(geno_lowIndHetStan_imputed, ind_with_metadata_lowIndHetStan, 
-            groups_to_plot_PCA_eastside, group_colors_PCA_eastside; 
-            sampleSet = "greenish warblers (east side)", regionText = regionText,
-            flip1 = flipPC1, flip2 = flipPC2,
-            lineOpacity = 0.7, fillOpacity = 0.6,
-            symbolSize = 14, showTitle = true,
-            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
-            showPlot = false)
-
-display(PCAmodel.PCAfig)
-```
-
-
-# Do a PCA based on a same-size region elsewhere on the Z (with low HetVar):
-
-```{julia}
-# get length of region
-lengthHighHetVarRegion = positionMax - positionMin
-
-leftLocus = 10_000_000 # start at very left side, or 10 Mb in
-rightLocus = leftLocus + lengthHighHetVarRegion
-regionText_lowHetVarRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
-
-lociSelection = (leftLocus .<= pos_region.position .<= rightLocus)
-genotypes_lowHetVarRegion = genotypes_region[:, lociSelection]
-
-# impute missing genotypes:
-
-genotypes_lowHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genotypes_lowHetVarRegion))
-
-flipPC1 = true
-flipPC2 = true
-
-PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included, 
-            groups_to_plot_PCA, group_colors_PCA; 
-            sampleSet = "greenish warblers", regionText = regionText_lowHetVarRegion,
-            flip1 = flipPC1, flip2 = flipPC2,
-            lineOpacity = 0.7, fillOpacity = 0.6,
-            symbolSize = 14, showTitle = true,
-            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
-            showPlot = false)
-
-display(PCAmodel.PCAfig)
-
-
-```
-
-
-
-# Below, what I tried first here is to calculate a matrix of pairwise genetic distances and then use Principal Coordinates Analysis (Metric Multidimensional Scaling. The below works. Then I realized that it is perhaps better to stick with PCA like in the rest of the paper. So will do that above.
-
-```{julia}
-indGenDistances = getIndGenDistances(geno_lowIndHetStan)
-
-mds = fit(MDS, indGenDistances; distances=true)
-pco_coords = predict(mds)
-PCO1 = pco_coords[1,:]
-PCO2 = pco_coords[2,:]
-PCO3 = pco_coords[3,:]
-PCO4 = pco_coords[4,:]
-
-
-plot(PCO1, PCO2)
-
-#plot(PCO1, PCO3)
-
-#plot(PCO1, PCO4)
-
-pcoResults = DataFrame(ind = ind_with_metadata_lowIndHetStan.ind, Fst_group = ind_with_metadata_lowIndHetStan.Fst_group, PCo1 = PCO1, PCo2 = PCO2)
-
-# code taken from SNPlots.plotPCA :
-autolimitaspect_setting = 1; lineOpacity = 0.8; fillOpacity = 0.2;
-    symbolSize = 10; plotTitle = "PCo plot"; showTitle = true;
-    xLabelText = "Genomic PC1"; yLabelText = "Genomic PC2";
-    labelSize = 24
-
-ind_with_metadata_forPlot = ind_with_metadata_lowIndHetStan
-PC1 = PCO1; PC2 = PCO2
-
-f = CairoMakie.Figure()
-ax = Axis(f[1, 1],
-            title = plotTitle,
-            xlabel = xLabelText, xlabelsize = labelSize,
-            ylabel = yLabelText, ylabelsize = labelSize,
-            autolimitaspect = autolimitaspect_setting)
-hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
-for i in eachindex(groups_to_plot_PCA) 
-    selection = ind_with_metadata_forPlot.Fst_group .== groups_to_plot_PCA[i]
-    CairoMakie.scatter!(ax, PC1[selection], PC2[selection], marker = :diamond, color = (group_colors_PCA[i], fillOpacity), markersize = symbolSize, strokewidth=0.5, strokecolor = ("black", lineOpacity))
-end
-display(f)
-
-```
-

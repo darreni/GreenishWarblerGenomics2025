@@ -442,6 +442,10 @@ ind_with_metadata_lowIndHetStan = ind_with_metadata_included[indSelection, :]
 # choose the loci in the high HetVar region:
 lociSelection = (positionMin .< pos_region.position .< positionMax)
 
+pos_highHetVarRegion = pos_region[lociSelection, :]
+
+regionInfo = chooseChrRegion(pos_highHetVarRegion, chr; positionMin=positionMin, positionMax=positionMax) # this gets the maximum position for the chromosome
+
 geno_lowIndHetStan = genotypes_region[indSelection, lociSelection]
 
 # convert `-1` genotypes (which indicates missing) to `missing`:
@@ -524,6 +528,13 @@ clusterNames = ["vir",
                 "obs",
                 "plumb"]
 
+clusterColors = ["blue",
+                "seagreen4",
+                "grey",
+                "yellow",
+                "orange",
+                "red"]
+
 vir = (5 .< PCAmodel.metadata.PC1) .&& (PCAmodel.metadata.PC3 .< 2)
 lud = (5 .< PCAmodel.metadata.PC1) .&& (2 .< PCAmodel.metadata.PC3)
 nit = (2 .< PCAmodel.metadata.PC1 .< 4)
@@ -602,6 +613,8 @@ end
 
 Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames)
 
+Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampleSizes, clusterNames; among=false)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+
 # Now get averages of pi and Dxy for whole region:
 
 meanPi = fill(-9.0, size(sitePi, 1))
@@ -624,6 +637,43 @@ end
 
 regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = meanDxy)
 
+#= julia> regionDxyTable
+15×2 DataFrame
+ Row │ cluster_pair  Dxy       
+     │ String        Float64   
+─────┼─────────────────────────
+   1 │ vir_lud       0.0171587
+   2 │ vir_nit       0.0387239
+   3 │ vir_troch     0.0409623
+   4 │ vir_obs       0.0375541
+   5 │ vir_plumb     0.0466223
+   6 │ lud_nit       0.0364196
+   7 │ lud_troch     0.0388527
+   8 │ lud_obs       0.0354389
+   9 │ lud_plumb     0.0443947
+  10 │ nit_troch     0.0463029
+  11 │ nit_obs       0.0427271
+  12 │ nit_plumb     0.0523756
+  13 │ troch_obs     0.0266454
+  14 │ troch_plumb   0.0403336
+  15 │ obs_plumb     0.0365672 =#
+
+# It seems the distances are not very consistent with a bifurcating tree,
+# nor 1-D isolation by distance, but something more complex.
+# Obscuratus is closer to viridanus than troch is.
+# Nitidus quite distant but gets put in centre of PCA because off on its own axis.
+
+# Make a genotype-by-individual plot using all variable loci in the region,
+# by setting `Fst_cutoff` to super low value
+groupsToCompare = "vir_plumb"
+Fst_cutoff = -100 # super low to show all SNPs
+missingFractionAllowed = 0.2
+# in metadata, replace `Fst_group` column with cluster info (needed for the function below):
+PCAmodel.metadata.Fst_group = cluster_membership
+
+plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+    regionInfo, pos_highHetVarRegion, Fst, pairwiseNamesFst,
+    geno_lowIndHetStan, PCAmodel.metadata, freqs, clusterNames, clusterColors; plotTitle = "")
 ```
 
 

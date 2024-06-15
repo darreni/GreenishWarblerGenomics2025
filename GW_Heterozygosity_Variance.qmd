@@ -517,20 +517,115 @@ display(f)
 # Inspect Z chromosome PCA of low IndHet (< 1.75) individuals,
 # and specify group boundaries:
 
-vir_indices = (5 .< PCAmodel.metadata.PC1) .&& (PCAmodel.metadata.PC3 .< 2)
-lud_indices = (5 .< PCAmodel.metadata.PC1) .&& (2 .< PCAmodel.metadata.PC3)
-nit_indices = (2 .< PCAmodel.metadata.PC1 .< 4)
-troch_indices = PCAmodel.metadata.PC2 .> 5
-obs_indices = (-2 .< PCAmodel.metadata.PC1 .< 2) .&& (1 .< PCAmodel.metadata.PC2 .< 4)
-plumb_indices = PCAmodel.metadata.PC1 .< -5
+clusterNames = ["vir",
+                "lud",
+                "nit",
+                "troch",
+                "obs",
+                "plumb"]
 
-PCAmodel.metadata.Fst_group[vir_indices]
-PCAmodel.metadata.Fst_group[lud_indices]
-PCAmodel.metadata.Fst_group[nit_indices] # note there are two nitidus with nearly identical values
-PCAmodel.metadata.Fst_group[troch_indices]
-PCAmodel.metadata.Fst_group[obs_indices]
-PCAmodel.metadata.Fst_group[plumb_indices]
+vir = (5 .< PCAmodel.metadata.PC1) .&& (PCAmodel.metadata.PC3 .< 2)
+lud = (5 .< PCAmodel.metadata.PC1) .&& (2 .< PCAmodel.metadata.PC3)
+nit = (2 .< PCAmodel.metadata.PC1 .< 4)
+troch = PCAmodel.metadata.PC2 .> 5
+obs = (-2 .< PCAmodel.metadata.PC1 .< 2) .&& (1 .< PCAmodel.metadata.PC2 .< 4)
+plumb = PCAmodel.metadata.PC1 .< -5
+
+# check the individuals in each group
+PCAmodel.metadata.Fst_group[vir]
+PCAmodel.metadata.Fst_group[lud]
+PCAmodel.metadata.Fst_group[nit] # note there are two nitidus with nearly identical values
+PCAmodel.metadata.Fst_group[troch]
+PCAmodel.metadata.Fst_group[obs]
+PCAmodel.metadata.Fst_group[plumb]
+
+clusterArray = [vir lud nit troch obs plumb]
+
+# create a vector that indicates the groups for this analysis:
+clusterMembership = fill("none", length(PCAmodel.metadata.Fst_group))
+for i in eachindex(clusterArray[1,:])
+    clusterMembership[Bool.(clusterArray[:,i])] .= clusterNames[i]
+end
+
+# Calculate allele freqs and sample sizes
+freqs, sampleSizes = getFreqsAndSampleSizes(geno_lowIndHetStan, cluster_membership, clusterNames)
+println("Calculated population allele frequencies and sample sizes")
+
+# Calculate per-site pi (within-group nucleotide distance)
+
+"""
+    getSitePi(freqs, sampleSizes)
+
+Calculate non-biased nucleotide diversity (pi) at each site for each population, with correction for sample size, using allele freqs and sample size as input.
+
+​# Arguments
+- `freqs`: Matrix containing alternate allele frequencies for each group (row) and SNP (column).
+- `sampleSizes`: Matrix containing sample sizes for each group (row) and SNP (column).
+"""
+function getSitePi(freqs, sampleSizes)
+    sitePi = @. 2freqs*(1 - freqs) * (2sampleSizes / (2sampleSizes - 1)) # the @. macro broadcasts the dot to each math operator in the formula
+    # change infinites (when sample_size is somehow 1) to NaN:
+    replace(sitePi, Inf => NaN)
+    return sitePi
+end
+
+sitePi = getSitePi(freqs, sampleSizes)
+
+# calculate pairwise Dxy per site, using data in "freqs" and groups in "groups"
+"""
+    getDxy(freqs, groupsToCalc)
+
+Calculate per-locus Dxy (pi_between) for each pair of populations.
+
+# Arguments
+- `freqs`: Matrix containing alternate allele frequencies for each group (row) and SNP (column).
+- `groupsToCalc`: Vector containing the names of the groups corresponding to each row of `freqs`.
+
+# Notes
+Returns a tuple containing: 
+- Matrix of Dxy values for each comparison (row) and locus (column).
+- Vector of comparison names.
+"""
+function getDxy(freqs, groupsToCalc)
+    pairwiseNames = getPairwiseNames(groupsToCalc)
+    groupCount = length(groupsToCalc)
+    Dxy = Array{Float32, 2}(undef, length(pairwiseNames), size(freqs, 2))
+    rowCount = 1
+    for i in 1:(groupCount-1)
+        for j in (i+1):groupCount
+            Dxy[rowCount,:] = @. freqs[i,:]*(1-freqs[j,:]) + freqs[j,:]*(1-freqs[i,:])
+            rowCount += 1 # adds one to rowCount
+        end
+    end
+    return Dxy, pairwiseNames
+end
+
+Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames)
+
+# Now get averages of pi and Dxy for whole region:
+
+meanPi = fill(-9.0, size(sitePi, 1))
+for i in axes(sitePi, 1)
+    # get real values (ignore NaN):
+    nums = sitePi[i, .!isnan.(sitePi[i,:])]
+    # get mean of those real values:
+    meanPi[i] = mean(nums)
+end
+
+regionPiTable = DataFrame(cluster = clusterNames, pi = meanPi)
+
+meanDxy = fill(-9.0, size(Dxy, 1))
+for i in axes(Dxy, 1)
+    # get real values (ignore NaN):
+    nums = Dxy[i, .!isnan.(Dxy[i,:])]
+    # get mean of those real values:
+    meanDxy[i] = mean(nums)
+end
+
+regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = meanDxy)
+
 ```
+
 
 
 # Do a PCA based on above info, on just the west side of the ring

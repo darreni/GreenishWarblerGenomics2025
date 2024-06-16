@@ -552,14 +552,16 @@ PCAmodel.metadata.Fst_group[plumb]
 
 clusterArray = [vir lud nit troch obs plumb]
 
-# create a vector that indicates the groups for this analysis:
-clusterMembership = fill("none", length(PCAmodel.metadata.Fst_group))
+# create vectors that indicate the groups and plot order for this analysis:
+clusterMembership = fill("none", nrow(PCAmodel.metadata))
+plotOrder = fill(-9, nrow(PCAmodel.metadata))
 for i in eachindex(clusterArray[1,:])
-    clusterMembership[Bool.(clusterArray[:,i])] .= clusterNames[i]
+    clusterMembership[clusterArray[:,i]] .= clusterNames[i]
+    plotOrder[clusterArray[:,i]] .= i
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(geno_lowIndHetStan, cluster_membership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizes(geno_lowIndHetStan, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -667,13 +669,35 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = meanDxy
 # by setting `Fst_cutoff` to super low value
 groupsToCompare = "vir_plumb"
 Fst_cutoff = -100 # super low to show all SNPs
-missingFractionAllowed = 0.2
+missingFractionAllowed = 0.1
 # in metadata, replace `Fst_group` column with cluster info (needed for the function below):
-PCAmodel.metadata.Fst_group = cluster_membership
+PCAmodel.metadata.Fst_group = clusterMembership
+PCAmodel.metadata.plot_order = plotOrder
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
+genos_selectedSNPs = geno_lowIndHetStan[:, selectedSNPs]
+pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+Fst_selectedSNPs = Fst[:, selectedSNPs]
+freqs_selectedSNPs = freqs[:, selectedSNPs]
+
+# limit the number of individuals per group to plot
+
+numIndsToPlot = [10, 10, 10, 10, 10, 10]
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot, genos_selected, PCAmodel.metadata)
+
+# AS TEMP FIX, CHANGE ALL FST VALUES TO 0.0:
+Fst_selectedSNPs .= 0.0
 
 plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
-    regionInfo, pos_highHetVarRegion, Fst, pairwiseNamesFst,
-    geno_lowIndHetStan, PCAmodel.metadata, freqs, clusterNames, clusterColors; plotTitle = "")
+    regionInfo, pos_selectedSNPs, Fst_selectedSNPs, pairwiseNamesFst,
+    genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors; plotTitle = "")
+
+## NEED TO MAKE A VERSION OF THE ABOVE FUNCTION THAT DOES NOT DEPEND ON FST--BECAUSE SOME SNPS ARE BEING REMOVED BECAUSE FST IS NAN BECAUSE NO VARIATION.
 ```
 
 

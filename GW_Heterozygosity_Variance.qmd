@@ -564,9 +564,12 @@ end
 freqs, sampleSizes = getFreqsAndSampleSizes(geno_lowIndHetStan, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
+# NOTE THAT FOR Z CHR, SHOULD REALLY CORRECT FREQS AND SAMPLESIZE FOR SEX (BECAUSE ONE Z FEMALES AND 2 Z MALES)--MODIFY THE getFreqsAndSampleSizes FUNCTION.
+
 # Calculate per-site pi (within-group nucleotide distance)
 
-"""
+# MOVED THIS FUNCTION TO SNPLOTS SO CAN DELETE HERE:
+#= """
     getSitePi(freqs, sampleSizes)
 
 Calculate non-biased nucleotide diversity (pi) at each site for each population, with correction for sample size, using allele freqs and sample size as input.
@@ -580,12 +583,14 @@ function getSitePi(freqs, sampleSizes)
     # change infinites (when sample_size is somehow 1) to NaN:
     replace(sitePi, Inf => NaN)
     return sitePi
-end
+end =#
 
 sitePi = getSitePi(freqs, sampleSizes)
 
 # calculate pairwise Dxy per site, using data in "freqs" and groups in "groups"
-"""
+
+# MOVED THIS FUNCTION TO SNPLOTS SO CAN DELETE HERE:
+#= """
     getDxy(freqs, groupsToCalc)
 
 Calculate per-locus Dxy (pi_between) for each pair of populations.
@@ -611,7 +616,7 @@ function getDxy(freqs, groupsToCalc)
         end
     end
     return Dxy, pairwiseNames
-end
+end =#
 
 Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames)
 
@@ -644,7 +649,7 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = meanDxy
  Row │ cluster_pair  Dxy       
      │ String        Float64   
 ─────┼─────────────────────────
-   1 │ vir_lud       0.0171587
+   1 │ vir_lud       0.0171473
    2 │ vir_nit       0.0387239
    3 │ vir_troch     0.0409623
    4 │ vir_obs       0.0375541
@@ -686,21 +691,23 @@ freqs_selectedSNPs = freqs[:, selectedSNPs]
 
 # limit the number of individuals per group to plot
 
-numIndsToPlot = [10, 10, 10, 10, 10, 10]
+# numIndsToPlot = [10, 10, 10, 10, 10, 10]
+numIndsToPlot = [15, 15, 15, 15, 15, 15]
 
 genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot, genos_selected, PCAmodel.metadata)
 
 # AS TEMP FIX, CHANGE ALL FST VALUES TO 0.0:
-Fst_selectedSNPs .= 0.0
+# Fst_selectedSNPs .= 0.0
 
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+#= plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_selectedSNPs, Fst_selectedSNPs, pairwiseNamesFst,
-    genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors; plotTitle = "")
+    genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors; plotTitle = "") =#
 
-## NEED TO MAKE A VERSION OF THE ABOVE FUNCTION THAT DOES NOT DEPEND ON FST--BECAUSE SOME SNPS ARE BEING REMOVED BECAUSE FST IS NAN BECAUSE NO VARIATION.
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
+                missingFractionAllowed = missingFractionAllowed)
+
 ```
-
-
 
 # Do a PCA based on above info, on just the west side of the ring
 
@@ -784,7 +791,7 @@ display(PCAmodel.PCAfig)
 
 
 
-# Below, what I tried first here is to calculate a matrix of pairwise genetic distances and then use Principal Coordinates Analysis (Metric Multidimensional Scaling. The below works. Then I realized that it is perhaps better to stick with PCA like in the rest of the paper. So will do that above.
+# Below, what I tried first here is to calculate a matrix of pairwise genetic distances and then use Principal Coordinates Analysis (Metric Multidimensional Scaling). The below works. Then I realized that it is perhaps better to stick with PCA like in the rest of the paper. So will do that above.
 
 ```{julia}
 indGenDistances = getIndGenDistances(geno_lowIndHetStan)

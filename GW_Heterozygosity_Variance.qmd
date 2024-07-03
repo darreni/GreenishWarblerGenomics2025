@@ -4516,6 +4516,594 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
 ```
 
 
+## Tried chr 14 but not very clear--seems recombination backcrosses in ludlowi
+
+
+## Same for chr 17
+
+# Shows a pattern seen in chr 2 (and others) where ludlowi samples have some plumb haplotypes
+
+```{julia}
+# choose scaffold
+chr = "gw17"
+
+positionMin, positionMax, regionText, 
+    windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
+    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    getWindowedIndHetStanRegion(genosOnly_included, 
+                            pos_SNP_filtered, 
+                            highHetVarRegions, chr;
+                            windowSize = 500)
+
+# inspect values for mean IndHetStan per individual for that high HetVar region
+plot(meanAcrossRegionIndHetStan)
+
+# Add column to metadata containing the regionIndHetStan for this highHet region:
+command = "ind_with_metadata_included." * chr * "_regionIndHetStan = meanAcrossRegionIndHetStan"
+eval(Meta.parse(command)) # this executes the command constructed above
+ind_with_metadata_included.regionIndHetStan = meanAcrossRegionIndHetStan
+
+#names(ind_with_metadata_included)
+
+# check whether missing data related to heterozygosity (good news: not really)
+plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
+
+# PCA of all individuals:
+
+genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+
+flipPC1 = false
+flipPC2 = false
+
+PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText = regionText,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodelAll.PCAfig)
+
+# Add PC values to metadata for individuals included in PCA above:
+if flipPC1
+    PCAmodelAll.metadata.PC1 = -1 .* PCAmodelAll.values[1,:]
+else 
+    PCAmodelAll.metadata.PC1 = PCAmodelAll.values[1,:]
+end
+if flipPC2
+    PCAmodelAll.metadata.PC2 = -1 .* PCAmodelAll.values[2,:]
+else
+    PCAmodelAll.metadata.PC2 = PCAmodelAll.values[2,:]
+end
+PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
+
+# For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
+# are included in the `groups_to_plot_PCA`
+
+# choose inds with low IndHet in high HetVar region:
+indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.4) 
+
+#Plot only the lowIndHetStan individuals:
+
+f = CairoMakie.Figure();
+ax = Axis(f[1, 1],
+    title = "PC1 vs. PC2, only low heterozygosity",
+    xlabel = "Region PC1", xlabelsize = 24,
+    ylabel = "Region PC2", ylabelsize = 24,
+    autolimitaspect = 1)
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+for i in eachindex(groups_to_plot_PCA) 
+    selection = (PCAmodelAll.metadata.Fst_group .== groups_to_plot_PCA[i]) .& indSelection_lowIndHetStan
+    CairoMakie.scatter!(ax, PCAmodelAll.metadata.PC1[selection], PCAmodelAll.metadata.PC2[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
+end
+display(f)
+
+```
+
+### Save the individual colors in the metadata
+
+```{julia}
+indColors = fill("", size(PCAmodelAll.metadata, 1))
+for i in axes(PCAmodelAll.metadata, 1)
+    indColors[i] = group_colors_PCA[findfirst(groups_to_plot_PCA .== PCAmodelAll.metadata.Fst_group[i])]
+end
+PCAmodelAll.metadata.indColorLeft = indColors
+PCAmodelAll.metadata.indColorRight = indColors
+```
+
+### Plot PC1 vs. PC2:
+
+```{julia}
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "PC1 vs. PC2",
+    xlabel = "Region PC1", xlabelsize = 24,
+    ylabel = "Region PC2", ylabelsize = 24,
+    autolimitaspect = 1)
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+for i in eachindex(groups_to_plot_PCA) 
+    selection = PCAmodelAll.metadata.Fst_group .== groups_to_plot_PCA[i]
+    CairoMakie.scatter!(ax, PCAmodelAll.metadata.PC1[selection], PCAmodelAll.metadata.PC2[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
+end
+display(f)
+```
+
+### Plot PC1 vs. PC3:
+
+```{julia}
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "PC1 vs. PC3",
+    xlabel = "Region PC1", xlabelsize = 24,
+    ylabel = "Region PC3", ylabelsize = 24,
+    autolimitaspect = 1)
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+for i in eachindex(groups_to_plot_PCA) 
+    selection = PCAmodelAll.metadata.Fst_group .== groups_to_plot_PCA[i]
+    CairoMakie.scatter!(ax, PCAmodelAll.metadata.PC1[selection], PCAmodelAll.metadata.PC3[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
+end
+display(f)
+```
+
+### For chr 17, stopping with the PCA until I decide what to do with such a complex case. Interesting that ludlowi seems to have some plumb and some obs haplogroup heterozygotes.
+
+
+## Same for chr 19
+
+```{julia}
+# choose scaffold
+chr = "gw19"
+
+positionMin, positionMax, regionText, 
+    windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
+    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    getWindowedIndHetStanRegion(genosOnly_included, 
+                            pos_SNP_filtered, 
+                            highHetVarRegions, chr;
+                            windowSize = 500)
+
+# inspect values for mean IndHetStan per individual for that high HetVar region
+plot(meanAcrossRegionIndHetStan)
+
+# Add column to metadata containing the regionIndHetStan for this highHet region:
+command = "ind_with_metadata_included." * chr * "_regionIndHetStan = meanAcrossRegionIndHetStan"
+eval(Meta.parse(command)) # this executes the command constructed above
+ind_with_metadata_included.regionIndHetStan = meanAcrossRegionIndHetStan
+
+#names(ind_with_metadata_included)
+
+# check whether missing data related to heterozygosity (good news: not really)
+plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
+
+# PCA of all individuals:
+
+genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+
+flipPC1 = true
+flipPC2 = true
+
+PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText = regionText,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodelAll.PCAfig)
+
+# Add PC values to metadata for individuals included in PCA above:
+if flipPC1
+    PCAmodelAll.metadata.PC1 = -1 .* PCAmodelAll.values[1,:]
+else 
+    PCAmodelAll.metadata.PC1 = PCAmodelAll.values[1,:]
+end
+if flipPC2
+    PCAmodelAll.metadata.PC2 = -1 .* PCAmodelAll.values[2,:]
+else
+    PCAmodelAll.metadata.PC2 = PCAmodelAll.values[2,:]
+end
+PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
+
+# For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
+# are included in the `groups_to_plot_PCA`
+
+# choose inds with low IndHet in high HetVar region:
+indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.5) 
+
+#Plot only the lowIndHetStan individuals:
+
+f = CairoMakie.Figure();
+ax = Axis(f[1, 1],
+    title = "PC1 vs. PC2, only low heterozygosity",
+    xlabel = "Region PC1", xlabelsize = 24,
+    ylabel = "Region PC2", ylabelsize = 24,
+    autolimitaspect = 1)
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+for i in eachindex(groups_to_plot_PCA) 
+    selection = (PCAmodelAll.metadata.Fst_group .== groups_to_plot_PCA[i]) .& indSelection_lowIndHetStan
+    CairoMakie.scatter!(ax, PCAmodelAll.metadata.PC1[selection], PCAmodelAll.metadata.PC2[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
+end
+display(f)
+
+```
+
+### Save the individual colors in the metadata
+
+```{julia}
+indColors = fill("", size(PCAmodelAll.metadata, 1))
+for i in axes(PCAmodelAll.metadata, 1)
+    indColors[i] = group_colors_PCA[findfirst(groups_to_plot_PCA .== PCAmodelAll.metadata.Fst_group[i])]
+end
+PCAmodelAll.metadata.indColorLeft = indColors
+PCAmodelAll.metadata.indColorRight = indColors
+```
+
+### Plot PC1 vs. PC2:
+
+```{julia}
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "PC1 vs. PC2",
+    xlabel = "Region PC1", xlabelsize = 24,
+    ylabel = "Region PC2", ylabelsize = 24,
+    autolimitaspect = 1)
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+for i in eachindex(groups_to_plot_PCA) 
+    selection = PCAmodelAll.metadata.Fst_group .== groups_to_plot_PCA[i]
+    CairoMakie.scatter!(ax, PCAmodelAll.metadata.PC1[selection], PCAmodelAll.metadata.PC2[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
+end
+display(f)
+```
+
+### Plot PC1 vs. PC3:
+
+```{julia}
+f = CairoMakie.Figure()
+ax = Axis(f[1, 1],
+    title = "PC1 vs. PC3",
+    xlabel = "Region PC1", xlabelsize = 24,
+    ylabel = "Region PC3", ylabelsize = 24,
+    autolimitaspect = 1)
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+for i in eachindex(groups_to_plot_PCA) 
+    selection = PCAmodelAll.metadata.Fst_group .== groups_to_plot_PCA[i]
+    CairoMakie.scatter!(ax, PCAmodelAll.metadata.PC1[selection], PCAmodelAll.metadata.PC3[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
+end
+display(f)
+```
+
+
+### At chr 19 high HetVar region, there are 4 clear homozygous haplogroups (vir and lud separated though on PC3). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+
+```{julia}
+
+clusterNames = ["virLud",
+                "nit",
+                "trochObs",
+                "plumb"]
+
+clusterColors = ["blue",
+                "grey",
+                "yellow",
+                "red"]
+
+virLud = (PCAmodelAll.metadata.PC1 .< -4) .&
+            (2 .< PCAmodelAll.metadata.PC2) .&
+            indSelection_lowIndHetStan
+nit = (-4 .< PCAmodelAll.metadata.PC1 .< -2) .&
+        (1 .< PCAmodelAll.metadata.PC2 .< 2.5) .&
+            indSelection_lowIndHetStan
+trochObs = (-1.5 .< PCAmodelAll.metadata.PC1 .< 1.5) .&
+            (PCAmodelAll.metadata.PC2 .< -3.5) .&
+            indSelection_lowIndHetStan
+plumb = (5 .< PCAmodelAll.metadata.PC1) .& 
+            (1.5 .< PCAmodelAll.metadata.PC2) .&
+            indSelection_lowIndHetStan
+
+# check the individuals in each group
+PCAmodelAll.metadata.Fst_group[virLud]
+PCAmodelAll.metadata.Fst_group[nit]
+PCAmodelAll.metadata.Fst_group[trochObs]
+PCAmodelAll.metadata.Fst_group[plumb]
+
+clusterArray = [virLud nit trochObs plumb]
+
+# show numbers in each group
+println("The numbers in each group are $(sum(clusterArray, dims=1)) and the sum of those is $(sum(sum(clusterArray, dims=1)))")
+
+# create vectors that indicate the groups and plot order for this analysis:
+clusterMembership = fill("none", nrow(PCAmodelAll.metadata))
+plotOrder = fill(-9, nrow(PCAmodelAll.metadata))
+for i in eachindex(clusterArray[1,:])
+    clusterMembership[clusterArray[:,i]] .= clusterNames[i]
+    plotOrder[clusterArray[:,i]] .= i
+end
+
+# Calculate allele freqs and sample sizes
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_highHetVarRegion, clusterMembership, clusterNames)
+println("Calculated population allele frequencies and sample sizes")
+
+# Calculate per-site pi (within-group nucleotide distance)
+
+sitePi = getSitePi(freqs, sampleSizes)
+
+# calculate pairwise Dxy per site, using data in "freqs" and groups in "groups"
+
+Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames)
+
+Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampleSizes, clusterNames; among=false)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+
+# Now get averages of pi and Dxy for whole region:
+
+regionPiTable = DataFrame(cluster = clusterNames, pi = getRegionPi(sitePi))
+#= 4×2 DataFrame
+ Row │ cluster   pi         
+     │ String    Float64    
+─────┼──────────────────────
+   1 │ virLud    0.0144925
+   2 │ nit       0.0052608
+   3 │ trochObs  0.0150341
+   4 │ plumb     0.00320386 =#
+
+regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegionDxy(Dxy))
+#= 6×2 DataFrame
+ Row │ cluster_pair     Dxy       
+     │ String           Float64   
+─────┼────────────────────────────
+   1 │ virLud_nit       0.0291485
+   2 │ virLud_trochObs  0.0330435
+   3 │ virLud_plumb     0.0347335
+   4 │ nit_trochObs     0.0359384
+   5 │ nit_plumb        0.0373399
+   6 │ trochObs_plumb   0.0289202 =#
+
+# Make a genotype-by-individual plot using all variable loci in the region,
+missingFractionAllowed = 0.1
+# in metadata, replace `Fst_group` column with cluster info (needed for the function below):
+PCAmodelAll.metadata.original_Fst_groups = PCAmodelAll.metadata.Fst_group # store the Fst_groups in this
+PCAmodelAll.metadata.Fst_group = clusterMembership
+PCAmodelAll.metadata.original_plot_order = PCAmodelAll.metadata.plot_order # store the original plot_order in this
+PCAmodelAll.metadata.plot_order = plotOrder
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
+genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+Fst_selectedSNPs = Fst[:, selectedSNPs]
+freqs_selectedSNPs = freqs[:, selectedSNPs]
+
+# limit the number of individuals per group to plot
+numIndsToPlot = fill(15, length(clusterNames))
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorRightProvided = true)
+```
+
+### Now show a GBI plot like above, but with heterozygotes:
+
+```{julia}
+
+clusterNamesWithHets = ["virLud",
+                "virLudHet",
+                "nit",
+                "virLud_trochObs",
+                "trochObs",
+                "trochObsHet",
+                "trochObs_plumb",
+                "plumb",
+                "vir_plumb"]
+
+clusterColorsWithHets = ["blue",
+                "blue",
+                "grey",
+                "green",
+                "yellow",
+                "yellow",
+                "orange",
+                "red",
+                "purple"]
+
+virLudHet = (-8 .< PCAmodelAll.metadata.PC1 .< -4) .&
+                (1.5 .< PCAmodelAll.metadata.PC2 .< 5) .&
+                 .!indSelection_lowIndHetStan
+virLud_trochObs = (-4 .< PCAmodelAll.metadata.PC1 .< -1) .&
+                (-3.5 .< PCAmodelAll.metadata.PC2 .< 0.5) .&
+                 .!indSelection_lowIndHetStan
+trochObsHet = (-1.5 .< PCAmodelAll.metadata.PC1 .< 1.5) .&
+                (PCAmodelAll.metadata.PC2 .< -3.5) .&
+                 .!indSelection_lowIndHetStan
+trochObs_plumb = (1.5 .< PCAmodelAll.metadata.PC1 .< 5) .&
+                (-3.5 .< PCAmodelAll.metadata.PC2 .< 0) .&
+                 .!indSelection_lowIndHetStan
+vir_plumb = (-1 .< PCAmodelAll.metadata.PC1 .< 1.5) .&
+                (2 .< PCAmodelAll.metadata.PC2 .< 5) .&
+                 .!indSelection_lowIndHetStan
+
+clusterArray = [virLud virLudHet nit virLud_trochObs trochObs trochObsHet trochObs_plumb plumb vir_plumb]
+
+sum(clusterArray, dims=1)
+
+if sum(sum(clusterArray, dims=1)) == size(PCAmodelAll.metadata, 1)
+    println("Good news: Individuals included in a group matches total number of individuals")
+else 
+    println("Warning: Individuals included in a group ($(sum(sum(clusterArray, dims=1)))) do NOT match total number of individuals ($(size(PCAmodelAll.metadata, 1)))")
+end
+
+
+# check which individuals left out:
+
+sum(clusterArray, dims=2)
+
+PCAmodelAll.metadata.ind[vec(sum(clusterArray, dims=2) .== 0)]
+PCAmodelAll.metadata.PC1[vec(sum(clusterArray, dims=2) .== 0)]
+PCAmodelAll.metadata.PC2[vec(sum(clusterArray, dims=2) .== 0)]
+indSelection_lowIndHetStan[vec(sum(clusterArray, dims=2) .== 0)]
+
+# create vectors that indicate the groups and plot order for this analysis:
+clusterMembershipWithHets = fill("none", nrow(PCAmodelAll.metadata))
+plotOrderWithHets = fill(-9, nrow(PCAmodelAll.metadata))
+for i in eachindex(clusterArray[1,:])
+    clusterMembershipWithHets[clusterArray[:,i]] .= clusterNamesWithHets[i]
+    plotOrderWithHets[clusterArray[:,i]] .= i
+end
+
+# Add column to main metadata object containing the cluster membership for this highHet region:
+command = "ind_with_metadata_included." * chr * "_cluster = clusterMembershipWithHets"
+eval(Meta.parse(command)) # this executes the command constructed above
+
+# in metadata, replace `Fst_group` column with cluster info (needed for the function below):
+PCAmodelAll.metadata.Fst_group = clusterMembershipWithHets
+PCAmodelAll.metadata.plot_order = plotOrderWithHets
+
+# limit the number of individuals per group to plot
+numIndsToPlotWithHets = fill(15, length(clusterNamesWithHets))
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+### Show just the west area (without nitidus)
+
+```{julia}
+
+clusterNamesWithHetsWest = ["virLud",
+                        "virLudHet",
+                        "virLud_trochObs",
+                        "trochObs",
+                        "trochObsHet"]
+
+clusterColorsWithHetsWest = ["blue",
+                        "blue",
+                        "green",
+                        "yellow",
+                        "yellow"]
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+# Calculate allele freqs and sample sizes
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembershipWithHets, clusterNamesWithHetsWest)
+println("Calculated population allele frequencies and sample sizes")
+selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
+genos_selectedSNPs2 = genos_selectedSNPs[:, selectedSNPs]
+pos_selectedSNPs2 = pos_selectedSNPs[selectedSNPs, :]
+freqs_selectedSNPs2 = freqs[:, selectedSNPs]
+
+numIndsToPlotWithHets = fill(100, length(clusterNamesWithHetsWest))
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHetsWest, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs2, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+
+```
+
+### Show just the east area
+
+```{julia}
+
+clusterNamesWithHetsEast = ["trochObs",
+                            "trochObsHet",
+                            "trochObs_plumb",
+                            "plumb"]
+
+clusterColorsWithHetsEast = ["yellow",
+                            "yellow",
+                            "orange",
+                            "red"]
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+# Calculate allele freqs and sample sizes
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembershipWithHets, clusterNamesWithHetsEast)
+println("Calculated population allele frequencies and sample sizes")
+selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
+genos_selectedSNPs2 = genos_selectedSNPs[:, selectedSNPs]
+pos_selectedSNPs2 = pos_selectedSNPs[selectedSNPs, :]
+freqs_selectedSNPs2 = freqs[:, selectedSNPs]
+
+numIndsToPlotWithHetsEast = fill(100, length(clusterNamesWithHetsEast))
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHetsEast, numIndsToPlotWithHetsEast, 
+                                            genos_selectedSNPs2, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsEast, clusterColorsWithHetsEast;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+
+```
+
+### Show just the northern area
+
+```{julia}
+
+clusterNamesWithHetsNorth = ["virLud",
+                            "virLudHet",
+                            "vir_plumb",
+                            "plumb"]
+
+clusterColorsWithHetsNorth = ["blue",
+                            "blue",
+                            "purple",
+                            "red"]
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+# Calculate allele freqs and sample sizes
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembershipWithHets, clusterNamesWithHetsNorth)
+println("Calculated population allele frequencies and sample sizes")
+selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
+genos_selectedSNPs2 = genos_selectedSNPs[:, selectedSNPs]
+pos_selectedSNPs2 = pos_selectedSNPs[selectedSNPs, :]
+freqs_selectedSNPs2 = freqs[:, selectedSNPs]
+
+numIndsToPlotWithHets = fill(100, length(clusterNamesWithHetsNorth))
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHetsNorth, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs2, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsNorth, clusterColorsWithHetsNorth;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+
+```
+
 
 
 
@@ -4719,12 +5307,13 @@ regionHaplotypeCode_west = Dict{String, Dict{String, Int}}(
     "gw13" => Dict("virLud"=>0, "virLud_troch"=>1, "troch"=>2),
     "gw15" => Dict("virLud"=>0, "virLud_troch"=>1, "troch"=>2),
     "gw18" => Dict("virLud"=>0, "virLud_troch"=>1, "troch"=>2),
+    "gw19" => Dict("virLud"=>0, "virLudHet"=>0, "virLud_trochObs"=>1, "trochObs"=>2, "trochObsHet"=>2),
     "gw26" => Dict("virLud"=>0, "virLud_troch"=>1, "troch"=>2),
     "gw28" => Dict("virLud"=>0, "virLud_troch"=>1, "troch"=>2),
     "gwZ" => Dict("vir"=>0, "lud"=>0, "lud_troch"=>1, "troch"=>2)
 )
 
-haploblockRegions = ["gw1A", "gw3", "gw13", "gw15", "gw18", "gw26", "gw28", "gwZ"]
+haploblockRegions = ["gw1A", "gw3", "gw13", "gw15", "gw18", "gw19", "gw26", "gw28", "gwZ"]
 numHaploblockRegions = length(haploblockRegions)
 numInds = size(ind_with_metadata_included, 1)
 # create genotype object and fill with missing (-1) genotypes
@@ -4766,12 +5355,13 @@ regionHaplotypeCode_east = Dict{String, Dict{String, Int}}(
     "gw13" => Dict("obs"=>0, "plumb"=>2, "plumbHet"=>2),
     "gw15" => Dict("obs"=>0, "plumb"=>2),
     "gw18" => Dict("obs"=>0, "obs_plumb"=>1, "plumb"=>2),
+    "gw19" => Dict("trochObs"=>0, "trochObs_plumb"=>1, "plumb"=>2),
     "gw26" => Dict("obs"=>0, "obs_plumb"=>1, "plumb"=>2),
     "gw28" => Dict("obs"=>0, "obsHet"=>0, "obs_plumb"=>1, "plumb"=>2),
     "gwZ" => Dict("obs"=>0, "plumb"=>2)
 )
 
-haploblockRegions = ["gw1A", "gw3", "gw13", "gw15", "gw18", "gw26", "gw28", "gwZ"]
+haploblockRegions = ["gw1A", "gw3", "gw13", "gw15", "gw18", "gw19", "gw26", "gw28", "gwZ"]
 numHaploblockRegions = length(haploblockRegions)
 numInds = size(ind_with_metadata_included, 1)
 # create genotype object and fill with missing (-1) genotypes
@@ -4813,12 +5403,13 @@ regionHaplotypeCode_north = Dict{String, Dict{String, Int}}(
     "gw13" => Dict("virLud"=>0, "vir_plumb"=>1, "plumb"=>2, "plumbHet"=>2),
     "gw15" => Dict("virLud"=>0, "vir_plumb"=>1, "plumb"=>2),
     "gw18" => Dict("virLud"=>0, "vir_plumb"=>1, "plumb"=>2),
+    "gw19" => Dict("virLud"=>0, "virLudHet"=>0, "vir_plumb"=>1, "plumb"=>2),
     "gw26" => Dict("virLud"=>0, "vir_plumb"=>1, "plumb"=>2),
     "gw28" => Dict("virLud"=>0, "vir_plumb"=>1, "plumb"=>2),
     "gwZ" => Dict("vir"=>0, "plumb"=>2)
 )
 
-haploblockRegions = ["gw1A", "gw3", "gw13", "gw15", "gw18", "gw26", "gw28", "gwZ"]
+haploblockRegions = ["gw1A", "gw3", "gw13", "gw15", "gw18", "gw19", "gw26", "gw28", "gwZ"]
 numHaploblockRegions = length(haploblockRegions)
 numInds = size(ind_with_metadata_included, 1)
 # create genotype object and fill with missing (-1) genotypes
@@ -4846,6 +5437,7 @@ plotHaploblockSummary(genosSummary, ind_with_metadata_included,
                             indColorRightProvided = false)
 
 ```
+
 
 
 

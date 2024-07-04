@@ -5395,7 +5395,7 @@ plotHaploblockSummary(genosSummary, ind_with_metadata_included,
 
 ```{julia}
 
-# Set up a data structure to store the key to converting, for each haploblock region, 
+# Set up a data structure to store the code to converting, for each haploblock region, 
 # the cluster names to genotype integers. This is a dictiionary of dictionaries:
 regionHaplotypeCode_north = Dict{String, Dict{String, Int}}(
     "gw1A" => Dict("virLud"=>0, "vir_plumb"=>1, "plumb"=>2),
@@ -5423,8 +5423,6 @@ for i in 1:numHaploblockRegions
     end
 end
 
-# Must say I am pleased with the cleverness of above. Concise datastructure and code that does a lot. :) 
-
 plotGroupsForSummaryNorth = ["vir","plumb_vir","plumb"]
 groupColorsForSummaryNorth = ["blue","purple","red"] 
 
@@ -5437,6 +5435,290 @@ plotHaploblockSummary(genosSummary, ind_with_metadata_included,
                             indColorRightProvided = false)
 
 ```
+
+
+## Make a summary plot for the whole ring
+
+```{julia}
+
+# Set up a code converting integers to colors. 
+# These will be used for all chromosome regions below.
+
+integerToColorCodes = Dict{Int, String}(
+    1 => "blue",
+    2 => "turquoise1",
+    3 => "grey",
+    4 => "green",
+    5 => "yellow",
+    6 => "orange",
+    7 => "red",
+)
+
+# Set up a data structure to store the code to converting, for each haploblock region, 
+# the cluster names to genotype integers corresponding to colors above. This is a dictionary of dictionaries.
+# Each genotype will be encoded with a tuple representing the alleles.
+regionHaplotypeCode_all = Dict{String, Dict{String, Tuple{Int, Int}}}(
+    "gw1A" => Dict("virLud"=>(1,1), 
+                    "nit"=>(3,3),
+                    "virLud_troch"=>(1,5), 
+                    "troch"=>(5,5),
+                    "obs"=>(6,6),
+                    "plumb"=>(7,7),
+                    "vir_plumb"=>(1,7)),
+    "gw3" => Dict("virLud"=>(1,1), 
+                    "virLudHet"=>(1,1),
+                    "nit"=>(3,3),
+                    "virLud_trochObs"=>(1,5),
+                    "trochObs"=>(5,5),
+                    "trochObsHet"=>(5,5),
+                    "plumb"=>(7,7),
+                    "plumbHet"=>(7,7),
+                    "vir_plumb"=>(1,7)),
+    "gw13" => Dict("virLud"=>(1,1),
+                    "nit"=>(3,3),
+                    "virLud_troch"=>(1,5),
+                    "troch"=>(5,5),
+                    "obs"=>(6,6),
+                    "plumb"=>(7,7),
+                    "plumbHet"=>(7,7),
+                    "vir_plumb"=>(1,7)),      
+    "gw15" => Dict("virLud"=>(1,1),
+                    "nit"=>(3,3),
+                    "virLud_troch"=>(1,5),
+                    "troch"=>(5,5),
+                    "obs"=>(6,6),
+                    "plumb"=>(7,7),
+                    "vir_plumb"=>(1,7)),
+    "gw18" => Dict("virLud"=>(1,1),
+                    "nit"=>(3,3),
+                    "virLud_troch"=>(1,5),
+                    "troch"=>(5,5),
+                    "obs"=>(6,6),
+                    "obs_plumb"=>(6,7),
+                    "plumb"=>(7,7),
+                    "vir_plumb"=>(1,7)),
+    "gw19" => Dict("virLud"=>(1,1),
+                    "virLudHet"=>(1,1),
+                    "nit"=>(3,3),
+                    "virLud_trochObs"=>(1,5),
+                    "trochObs"=>(5,5),
+                    "trochObsHet"=>(5,5),
+                    "trochObs_plumb"=>(6,7),
+                    "plumb"=>(7,7),
+                    "vir_plumb"=>(1,7)),
+    "gw26" => Dict("virLud"=>(1,1),
+                    "nit"=>(3,3),
+                    "virLud_troch"=>(1,5),
+                    "troch"=>(5,5),
+                    "obs"=>(6,6),
+                    "obs_plumb"=>(6,7),
+                    "plumb"=>(7,7),
+                    "vir_plumb"=>(1,7)),
+    "gw28" => Dict("virLud"=>(1,1),
+                    "virLud_nit"=>(1,3),
+                    "nit"=>(3,3),
+                    "virLud_troch"=>(1,5),
+                    "troch"=>(5,5),
+                    "obs"=>(6,6),
+                    "obsHet"=>(6,6),
+                    "obs_plumb"=>(6,7),
+                    "plumb"=>(7,7),
+                    "vir_plumb"=>(1,7)),
+    "gwZ" => Dict("vir"=>(1,1),
+                    "nit"=>(3,3),
+                    "lud"=>(4,4),
+                    "lud_troch"=>(4,5),
+                    "troch"=>(5,5),
+                    "obs"=>(6,6),
+                    "plumb"=>(7,7))
+)
+
+haploblockRegions = ["gw1A", "gw3", "gw13", "gw15", "gw18", "gw19", "gw26", "gw28", "gwZ"]
+
+numHaploblockRegions = length(haploblockRegions)
+numInds = size(ind_with_metadata_included, 1)
+# create genotype object and fill with missing (-1) genotypes
+genosSummary = fill((-9, -9), numInds, numHaploblockRegions)
+# fill object with appropriate genotypes
+for i in 1:numHaploblockRegions
+    region = haploblockRegions[i]
+    for (key, value) in regionHaplotypeCode_all[region]
+        command = """genosSummary[ind_with_metadata_included.$(region)_cluster .== "$(key)", $i] .= ($(string(value)),)"""  # the construction at the end "protects" the tuple within a tuple, so it broadcasts correctly to each element on the left
+        eval(Meta.parse(command)) # this executes the command constructed above
+    end
+end
+
+plotGroupsForSummary_all = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
+groupColorsForSummary_all = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"] 
+
+
+"""
+    plotHaploblockSummary(integerToColorCodes::Dict{Int, String},
+                            genosSummary::Matrix{Tuple{Int64, Int64}},
+                            indMetadata,
+                            plotGroups, plotGroupColors;
+                            regionNames,
+                            indFontSize=10, figureSize=(1200, 1200),
+                            plotTitle = nothing,
+                            indColorLeftProvided = false,
+                            indColorRightProvided = false)
+
+Construct a genotype-by-individual plot, with option to filter out SNPs with too much missing data. 
+
+In this version, more than two haplotype alleles can be plotted, using colors provided according to the first argument.
+
+​# Arguments
+
+- `integerToColorCodes`: The code matching integer haploblock types to colors.
+- `genosSummary`: Matrix containing summary genotype data (individuals in rows, loci in columns), with each genotype represented by a tuple of 2 integers.
+- `indMetadata`: Matrix of metadata for individuals; must contain `Fst_group` and `plot_order` columns.
+- `plotGroups`: Vector of group names to include in plot.
+- `plotGroupColors`: Vector of plotting colors corresponding to the groups.
+- `regionNames`: Optional; Names of the genotyped regions.
+- `indFontSize`: Optional; the font size of the individual ID labels.
+- `figureSize`: Optional; the size of the figure; default is `(1200, 1200)`.  
+- `plotTitle`: Optional; default will make a title. For no title, set to `""`.
+- `indColorLeftProvided`: Optional; Default is `false`. Set to `true` if there is a column labeled `indColorLeft` in the metadata providing color of each individual for plotting on left side.
+- `indColorRightProvided`: Optional; same as above but for right side (requires `indColorRight` column in metadata).
+
+# Notes
+Returns a tuple containing:
+- the figure
+- the plotted genotypes
+- the sorted metadata matrix for the plotted individuals
+"""
+function plotHaploblockSummary(integerToColorCodes::Dict{Int, String},
+                                genosSummary::Matrix{Tuple{Int64, Int64}}, 
+                                indMetadata,
+                                plotGroups, plotGroupColors;
+                                regionNames = nothing,        
+                                indFontSize=10, figureSize=(1200, 1200),
+                                plotTitle = nothing,
+                                indColorLeftProvided = false,
+                                indColorRightProvided = false)
+
+    numRegions = size(genosSummary, 2)
+
+    genosSummary_subset = genosSummary[indMetadata.Fst_group .∈ Ref(plotGroups), :]
+    indMetadata_subset = indMetadata[indMetadata.Fst_group .∈ Ref(plotGroups), :]
+
+    # Choose sorting order by plot_order column in input metadata file
+
+    sorted_genosSummary_subset = genosSummary_subset[sortperm(indMetadata_subset.plot_order, rev=false), :]
+    numInds = size(sorted_genosSummary_subset, 1)
+    sorted_indMetadata_subset = indMetadata_subset[sortperm(indMetadata_subset.plot_order, rev=false), :]
+
+    # Set up the plot window:
+    f = CairoMakie.Figure(size=figureSize)
+
+    if isnothing(plotTitle)
+        plotTitle = "Summary of $numRegions haploblock genotypes for $numInds individuals"
+    end 
+
+    # Set up the main Axis: 
+    ax = Axis(f[1, 1],
+        title = plotTitle,
+        titlesize=30,
+        limits=(0.5 - 0.09 * (numRegions), 0.5 + 1.09 * (numRegions),
+            0.5 - 0.3 * numInds, 0.5 + numInds)
+    )
+    hidedecorations!(ax) # hide background lattice and axis labels
+    hidespines!(ax) # hide box around plot
+
+    genotypeColors = ["#3f007d", "#807dba", "#dadaeb", "grey50"]  # purple shades from colorbrewer
+
+    # plot evenly spaced by SNP order along chromosome:
+    # make top part of fig (genotypes for individuals)
+    labelCushion = numRegions / 100
+    label_x_left = 0.5 - labelCushion
+    label_x_right = 0.5 + numRegions + labelCushion
+    colorBoxCushion = 0.07 * numRegions
+    groupColorBox_x_left = 0.5 - colorBoxCushion
+    groupColorBox_x_right = 0.5 + numRegions + colorBoxCushion
+    boxWidth = 0.005 * numRegions * 2
+    groupColorBox_x_left = [-boxWidth, -boxWidth, boxWidth, boxWidth, -boxWidth] .+ groupColorBox_x_left
+    groupColorBox_x_right = [-boxWidth, -boxWidth, boxWidth, boxWidth, -boxWidth] .+ groupColorBox_x_right
+    groupColorBox_y = [0.4, -0.4, -0.4, 0.4, 0.4]
+
+    for i in 1:numInds
+        y = numInds + 1 - i  # y is location for plotting; this reverses order of plot top-bottom
+        labelText = last(split(sorted_indMetadata_subset.ID[i], "_"))  # this gets the last part of the sample ID (usually the main ID part)
+        # put sample label on left side:
+        CairoMakie.text!(label_x_left, y; text=labelText, align=(:right, :center), fontsize=indFontSize)
+        # put sample label on left side:
+        CairoMakie.text!(label_x_right, y; text=labelText, align=(:left, :center), fontsize=indFontSize)
+        if indColorLeftProvided
+            boxColorLeft = sorted_indMetadata_subset.indColorLeft[i]
+        else
+            boxColorLeft = plotGroupColors[findfirst(plotGroups .== sorted_indMetadata_subset.Fst_group[i])]
+        end
+        if indColorRightProvided
+            boxColorRight = sorted_indMetadata_subset.indColorRight[i]
+        else
+            boxColorRight = plotGroupColors[findfirst(plotGroups .== sorted_indMetadata_subset.Fst_group[i])]
+        end
+        CairoMakie.poly!(Point2f.(groupColorBox_x_left, (y .+ groupColorBox_y)), color=boxColorLeft)
+        CairoMakie.poly!(Point2f.(groupColorBox_x_right, (y .+ groupColorBox_y)), color=boxColorRight)
+    end
+
+    # generate my own plotting symbol (a rectangle)
+    box_x = [-0.45, -0.45, 0.45, 0.45, -0.45]
+    #box_x = [-0.5, -0.5, 0.5, 0.5, -0.5]
+    box_y = [0.4, -0.4, -0.4, 0.4, 0.4]
+    # generate triangles for plotting heterozygotes
+    triangle1_x = [-0.45, -0.45, 0.45, -0.45]
+    #triangle1_x = [-0.5, -0.5, 0.5, -0.5]
+    triangle1_y = [0.4, -0.4, 0.4, 0.4]
+    triangle2_x = [-0.45, 0.45, 0.45, -0.45]
+    #triangle2_x = [-0.5, 0.5, 0.5, -0.5]
+    triangle2_y = [-0.4, -0.4, 0.4, -0.4]
+    # cycle through individuals, graphing each type of genotype:
+    for i in 1:numInds
+        y = numInds + 1 - i  # y is location for plotting; this reverses order of plot top-bottom
+        #CairoMakie.lines!([0.5, numRegions + 0.5], [y, y], color="grey40") # for lines across the individual rows
+        # cycle through regions for this individual
+        for j in 1:numRegions
+            genotype = sorted_genosSummary_subset[i, j]
+            if genotype[1] == genotype[2]  # homozygous
+                CairoMakie.poly!(Point2f.((j .+ box_x), (y .+ box_y)), color=integerToColorCodes[genotype[1]])
+            else # heterozygous
+                CairoMakie.poly!(Point2f.((j .+ triangle1_x), (y .+ triangle1_y)), color=integerToColorCodes[genotype[1]])
+                CairoMakie.poly!(Point2f.((j .+ triangle2_x), (y .+ triangle2_y)), color=integerToColorCodes[genotype[2]])
+            end
+        end
+    end
+
+    if isnothing(regionNames)
+        regionNames = string.(1:numRegions)
+    end
+
+    # make labels on lower part
+    y_label = 0.5 - 0.025numInds
+    for i in 1:numRegions
+        CairoMakie.text!(i, y_label; text = regionNames[i], align=(:center, :center), fontsize=30)
+    end
+
+    display(f)
+
+    return f, sorted_genosSummary_subset, sorted_indMetadata_subset
+end
+
+
+plotHaploblockSummary(integerToColorCodes,
+                            genosSummary, 
+                            ind_with_metadata_included,
+                            plotGroupsForSummary_all, groupColorsForSummary_all;
+                            regionNames = haploblockRegions,
+                            indFontSize = 8, figureSize = (1000, 2000),
+                            plotTitle = nothing,
+                            indColorLeftProvided = false,
+                            indColorRightProvided = false)
+
+```
+
+
+
+
 
 
 

@@ -5696,11 +5696,6 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 indColorRightProvided = true)
 ```
 
-
-### START MODIFYING HERE
-
-
-
 ### Now show a GBI plot like above, but with heterozygotes:
 
 ```{julia}
@@ -5793,7 +5788,7 @@ PCAmodelAll.metadata.Fst_group = clusterMembershipWithHets
 PCAmodelAll.metadata.plot_order = plotOrderWithHets
 
 # limit the number of individuals per group to plot
-numIndsToPlotWithHets = fill(15, length(clusterNamesWithHets))
+numIndsToPlotWithHets = fill(150, length(clusterNamesWithHets))
 
 genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
                                             genos_selectedSNPs, PCAmodelAll.metadata;

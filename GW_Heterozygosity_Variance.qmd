@@ -467,7 +467,7 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
 
 flipPC1 = true
-flipPC2 = false
+flipPC2 = true
 
 PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
@@ -567,29 +567,29 @@ display(f)
 # and specify group boundaries:
 
 clusterNames = ["vir",
-                "lud",
                 "nit",
+                "lud",
                 "troch",
                 "obs",
                 "plumb"]
 
 clusterColors = ["blue",
-                "seagreen4",
                 "grey",
+                "seagreen4",
                 "yellow",
                 "orange",
                 "red"]
 
 vir = (PCAmodelAll.metadata.PC1 .< -4.5) .& 
         (3 .< PCAmodelAll.metadata.PC2) .&
-        (-1 .< PCAmodelAll.metadata.PC3) .& 
-        indSelection_lowIndHetStan
-lud = (PCAmodelAll.metadata.PC1 .< -4.5) .& 
-        (3 .< PCAmodelAll.metadata.PC2) .& 
         (PCAmodelAll.metadata.PC3 .< -2) .& 
         indSelection_lowIndHetStan
 nit = (-4 .< PCAmodelAll.metadata.PC1 .< -2) .& 
         (1 .< PCAmodelAll.metadata.PC2 .< 3) .&
+        indSelection_lowIndHetStan
+lud = (PCAmodelAll.metadata.PC1 .< -4.5) .& 
+        (3 .< PCAmodelAll.metadata.PC2) .& 
+        (1.5 .< PCAmodelAll.metadata.PC3) .& 
         indSelection_lowIndHetStan
 troch = (PCAmodelAll.metadata.PC2 .< -5) .& 
         indSelection_lowIndHetStan
@@ -601,13 +601,13 @@ plumb = (5 .< PCAmodelAll.metadata.PC1) .&
 
 # check the individuals in each group
 PCAmodelAll.metadata.Fst_group[vir]
-PCAmodelAll.metadata.Fst_group[lud]
 PCAmodelAll.metadata.Fst_group[nit] # note there are two nitidus with nearly identical values
+PCAmodelAll.metadata.Fst_group[lud]
 PCAmodelAll.metadata.Fst_group[troch]
 PCAmodelAll.metadata.Fst_group[obs]
 PCAmodelAll.metadata.Fst_group[plumb]
 
-clusterArray = [vir lud nit troch obs plumb]
+clusterArray = [vir nit lud troch obs plumb]
 
 # show numbers in each group
 println("The numbers in each group are $(sum(clusterArray, dims=1)) and the sum of those is $(sum(sum(clusterArray, dims=1)))")
@@ -684,9 +684,9 @@ regionPiTable = DataFrame(cluster = clusterNames, pi = getRegionPi(sitePi))
  Row │ cluster  pi         
      │ String   Float64    
 ─────┼─────────────────────
-   1 │ vir      0.00743411
-   2 │ lud      0.00794828
-   3 │ nit      0.0035094
+   1 │ vir      0.00706945
+   2 │ nit      0.0035094
+   3 │ lud      0.00794828
    4 │ troch    0.00968743
    5 │ obs      0.0112686
    6 │ plumb    0.0104236 =#
@@ -697,20 +697,20 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegi
  Row │ cluster_pair  Dxy       
      │ String        Float64   
 ─────┼─────────────────────────
-   1 │ vir_lud       0.0171867
-   2 │ vir_nit       0.038808
-   3 │ vir_troch     0.0410321
-   4 │ vir_obs       0.0375054
-   5 │ vir_plumb     0.0466822
-   6 │ lud_nit       0.0365198
-   7 │ lud_troch     0.038968
-   8 │ lud_obs       0.0354195
-   9 │ lud_plumb     0.0445131
-  10 │ nit_troch     0.0464045
-  11 │ nit_obs       0.0427296
-  12 │ nit_plumb     0.0524538
+   1 │ vir_nit       0.0388124
+   2 │ vir_lud       0.0173121
+   3 │ vir_troch     0.0410345
+   4 │ vir_obs       0.037509
+   5 │ vir_plumb     0.0466843
+   6 │ nit_lud       0.0365198
+   7 │ nit_troch     0.0464045
+   8 │ nit_obs       0.0427296
+   9 │ nit_plumb     0.0524538
+  10 │ lud_troch     0.038968
+  11 │ lud_obs       0.0354195
+  12 │ lud_plumb     0.0445131
   13 │ troch_obs     0.0265615
-  14 │ troch_plumb   0.0404279
+  14 │ troch_plumb   0.0404278
   15 │ obs_plumb     0.0365139 =#
 
 # It seems the distances are not very consistent with a bifurcating tree,
@@ -721,7 +721,9 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegi
 # Make a genotype-by-individual plot using all variable loci in the region,
 missingFractionAllowed = 0.1
 # in metadata, replace `Fst_group` column with cluster info (needed for the function below):
+PCAmodelAll.metadata.original_Fst_groups = PCAmodelAll.metadata.Fst_group # store the Fst_groups in this
 PCAmodelAll.metadata.Fst_group = clusterMembership
+PCAmodelAll.metadata.original_plot_order = PCAmodelAll.metadata.plot_order # store the original plot_order in this
 PCAmodelAll.metadata.plot_order = plotOrder
 
 # limit the SNPs to those with variants greater than 50% in 
@@ -752,6 +754,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
 ```{julia}
 
 clusterNamesWithHets = ["vir",
+                        "vir_lud",
                         "nit",
                         "lud",
                         "lud_troch",
@@ -760,6 +763,7 @@ clusterNamesWithHets = ["vir",
                         "plumb"]
 
 clusterColorsWithHets = ["blue",
+                        "lightseagreen",
                         "grey",
                         "green",
                         "yellowgreen",
@@ -767,11 +771,14 @@ clusterColorsWithHets = ["blue",
                         "orange",
                         "red"]
 
+vir_lud = (PCAmodelAll.metadata.PC1 .< -4.5) .& 
+        (3 .< PCAmodelAll.metadata.PC2) .&
+        (0 .< PCAmodelAll.metadata.PC3 .< 1) # Note this one has lowIndHetStan but is mix of vir and lud
 lud_troch = (-5 .< PCAmodelAll.metadata.PC1 .< -1) .&
                 (-3 .< PCAmodelAll.metadata.PC2 .< 1) .&
                  .!indSelection_lowIndHetStan
 
-clusterArray = [vir nit lud lud_troch troch obs plumb]
+clusterArray = [vir vir_lud nit lud lud_troch troch obs plumb]
 
 sum(clusterArray, dims=1)
 
@@ -810,6 +817,44 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 indColorLeftProvided = false,
                 indColorRightProvided = true)
 ```
+
+### show GBI plot according to original groups and plot order
+
+```{julia}
+#PCAmodelAll.metadata.Fst_group = PCAmodelAll.metadata.original_Fst_group
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+### show same but with all individuals
+
+```{julia}
+#PCAmodelAll.metadata.Fst_group = PCAmodelAll.metadata.original_Fst_group
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+# Set no limit (or high limit anyway) on the number of individuals per group to plot
+numIndsToPlotWithHets = fill(1000, length(clusterNamesWithHets))
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
 
 ### Show just the west area (without nitidus)
 
@@ -963,6 +1008,66 @@ PCAmodel = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included,
 
 display(PCAmodel.PCAfig)
 ```
+
+
+### Show PCA for just the western haploblocks of the ring, for just chr Z
+
+```{julia}
+
+ind_with_metadata_included_temp = copy(ind_with_metadata_included)
+
+# Leave out the individuals that don't have western haplogroup genotypes
+hapGroups_to_plot_PCA_westside = ["vir","vir_lud", "nit", "lud"]
+selection = map(in(hapGroups_to_plot_PCA_westside), clusterMembershipWithHets)
+ind_with_metadata_included_temp.Fst_group[.!selection] .= "ignore" # write over the group name so function below won't plot that individual
+
+groups_to_plot_PCA_westside = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
+group_colors_PCA_westside = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow"]
+
+flipPC1 = true
+flipPC2 = true
+
+PCAmodelHapWest = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included_temp, 
+            groups_to_plot_PCA_westside, group_colors_PCA_westside; 
+            sampleSet = "greenish warblers west haps", regionText = regionText,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodelHapWest.PCAfig)
+```
+
+### Show PCA for just the eastern haploblocks of the ring, for just chr Z
+
+```{julia}
+
+ind_with_metadata_included_temp = copy(ind_with_metadata_included)
+
+# Leave out the individuals that don't have western haplogroup genotypes
+hapGroups_to_plot_PCA_eastside = ["troch", "obs", "plumb"]
+selection = map(in(hapGroups_to_plot_PCA_eastside), clusterMembershipWithHets)
+ind_with_metadata_included_temp.Fst_group[.!selection] .= "ignore" # write over the group name so function below won't plot that individual
+
+groups_to_plot_PCA_eastside = ["troch_LN","troch_EM","obs","plumb","plumb_vir","plumb_BJ"]
+group_colors_PCA_eastside = ["yellow","gold","orange","red","purple","pink"];
+
+flipPC1 = true
+flipPC2 = true
+
+PCAmodelHapEast = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included_temp, 
+            groups_to_plot_PCA_eastside, group_colors_PCA_eastside; 
+            sampleSet = "greenish warblers east haps", regionText = regionText,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodelHapEast.PCAfig)
+```
+
 
 
 ### Do a PCA based on a same-size region elsewhere on the Z (with low HetVar):
@@ -3190,7 +3295,7 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
 
-flipPC1 = false
+flipPC1 = true
 flipPC2 = true
 
 PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 

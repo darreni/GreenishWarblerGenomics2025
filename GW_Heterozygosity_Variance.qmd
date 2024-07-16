@@ -1239,7 +1239,7 @@ display(f)
 ```
 
 
-### At chr 15 high HetVar region, there are only 5 clear haplogroups. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 15 high HetVar region, there are only 5 clear haplogroups (PC3 does not distinguish vir and lud). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -1671,7 +1671,7 @@ end
 display(f)
 ```
 
-### At chr 28 high HetVar region, there are only 4-5 clear haplogroups (yellow and orange are close). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 28 high HetVar region, there are only 5 clear haplogroups (yellow and orange are close). Vir and lud don't distinguish along PC3, as nitidus varies there. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -2132,7 +2132,7 @@ end
 display(f)
 ```
 
-## At chr 26 high HetVar region, there are only 5 clear haplogroups (one green is somewhat away). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+## At chr 26 high HetVar region, there are only 5 clear haplogroups (one green is somewhat away). Vir and lud vary along PC3 but cannot be clearly grouped. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 # Inspect chromosome 26 PCA of low IndHet (< 1.5) individuals,
@@ -2578,7 +2578,7 @@ display(f)
 ```
 
 
-### At chr 1A high HetVar region, there are only 5 clear haplogroups. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 1A high HetVar region, there are only 5 clear haplogroups (checked that vir and lud don't form distinct groups on PC3). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -3406,7 +3406,7 @@ display(f)
 ```
 
 
-### At chr 3 high HetVar region, there are only 4 clear haplogroups (vir and lud separated though on PC3). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 3 high HetVar region, there are only 4 clear haplogroups (vir and lud separated though on PC3, but not in a clean way that I can distinguish clearly). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -3420,7 +3420,7 @@ clusterColors = ["blue",
                 "yellow",
                 "red"]
 
-virLud = (PCAmodelAll.metadata.PC1 .< -4) .& 
+virLud = (PCAmodelAll.metadata.PC1 .< -4) .&
             indSelection_lowIndHetStan
 nit = (-4 .< PCAmodelAll.metadata.PC1 .< -2) .&
             indSelection_lowIndHetStan
@@ -3507,7 +3507,7 @@ Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
 # limit the number of individuals per group to plot
-numIndsToPlot = [15, 15, 15, 15, 15, 15]
+numIndsToPlot = fill(15, length(clusterNames))
 
 genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot, 
                                             genos_selectedSNPs, PCAmodelAll.metadata;
@@ -3860,7 +3860,7 @@ display(f)
 ```
 
 
-### At chr 18 high HetVar region, there are 5 clear haplogroups (vir and lud separated though on PC3). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 18 high HetVar region, there are 5 clear haplogroups (vir and lud separated though on PC3, though not clearly enough to indicate as different in summary plot). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -4312,26 +4312,32 @@ display(f)
 ```
 
 
-### At chr 13 high HetVar region, there are 5 clear haplogroups (vir and lud separated though on PC3). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 13 high HetVar region, there are 6 clear haplogroups (vir and lud separated cleanly on PC3, with one hetero between them). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
-clusterNames = ["virLud",
+clusterNames = ["vir",
                 "nit",
+                "lud",
                 "troch",
                 "obs",
                 "plumb"]
 
 clusterColors = ["blue",
                 "grey",
+                "green",
                 "yellow",
                 "orange",
                 "red"]
 
-virLud = (PCAmodelAll.metadata.PC1 .< -4) .& 
+vir = (PCAmodelAll.metadata.PC1 .< -4) .&
+        (2 .< PCAmodelAll.metadata.PC3) .& 
             indSelection_lowIndHetStan
 nit = (-4 .< PCAmodelAll.metadata.PC1 .< -1) .&
         (2.5 .< PCAmodelAll.metadata.PC2 .< 3.5) .&
+            indSelection_lowIndHetStan
+lud = (PCAmodelAll.metadata.PC1 .< -5) .&
+        (PCAmodelAll.metadata.PC3 .< -2) .& 
             indSelection_lowIndHetStan
 troch = (-2 .< PCAmodelAll.metadata.PC1 .< 0) .&
             (PCAmodelAll.metadata.PC2 .< -5.5) .&
@@ -4344,13 +4350,14 @@ plumb = (6 .< PCAmodelAll.metadata.PC1) .&
             indSelection_lowIndHetStan
 
 # check the individuals in each group
-PCAmodelAll.metadata.Fst_group[virLud]
+PCAmodelAll.metadata.Fst_group[vir]
 PCAmodelAll.metadata.Fst_group[nit]
+PCAmodelAll.metadata.Fst_group[lud]
 PCAmodelAll.metadata.Fst_group[troch]
 PCAmodelAll.metadata.Fst_group[obs]
 PCAmodelAll.metadata.Fst_group[plumb]
 
-clusterArray = [virLud nit troch obs plumb]
+clusterArray = [vir nit lud troch obs plumb]
 
 # show numbers in each group
 println("The numbers in each group are $(sum(clusterArray, dims=1)) and the sum of those is $(sum(sum(clusterArray, dims=1)))")
@@ -4380,31 +4387,37 @@ Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampl
 # Now get averages of pi and Dxy for whole region:
 
 regionPiTable = DataFrame(cluster = clusterNames, pi = getRegionPi(sitePi))
-#= 5×2 DataFrame
+#= 6×2 DataFrame
  Row │ cluster  pi         
      │ String   Float64    
 ─────┼─────────────────────
-   1 │ virLud   0.0136027
+   1 │ vir      0.00875059
    2 │ nit      0.00517962
-   3 │ troch    0.00565913
-   4 │ obs      0.0090813
-   5 │ plumb    0.00929977 =#
+   3 │ lud      0.00819617
+   4 │ troch    0.00565913
+   5 │ obs      0.0090813
+   6 │ plumb    0.00929977 =#
 
 regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegionDxy(Dxy))
-#= 10×2 DataFrame
+#= 15×2 DataFrame
  Row │ cluster_pair  Dxy       
      │ String        Float64   
 ─────┼─────────────────────────
-   1 │ virLud_nit    0.0366549
-   2 │ virLud_troch  0.0299154
-   3 │ virLud_obs    0.028858
-   4 │ virLud_plumb  0.0387627
-   5 │ nit_troch     0.0437711
-   6 │ nit_obs       0.0424561
-   7 │ nit_plumb     0.0482994
-   8 │ troch_obs     0.0124742
-   9 │ troch_plumb   0.0313941
-  10 │ obs_plumb     0.0300717 =#
+   1 │ vir_nit       0.035675
+   2 │ vir_lud       0.0188542
+   3 │ vir_troch     0.0297034
+   4 │ vir_obs       0.028434
+   5 │ vir_plumb     0.0382774
+   6 │ nit_lud       0.0377189
+   7 │ nit_troch     0.0437711
+   8 │ nit_obs       0.0424561
+   9 │ nit_plumb     0.0482994
+  10 │ lud_troch     0.0303352
+  11 │ lud_obs       0.0294719
+  12 │ lud_plumb     0.0394332
+  13 │ troch_obs     0.0124742
+  14 │ troch_plumb   0.0313941
+  15 │ obs_plumb     0.0300717 =#
 
 # Make a genotype-by-individual plot using all variable loci in the region,
 missingFractionAllowed = 0.1
@@ -4441,9 +4454,11 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
 
 ```{julia}
 
-clusterNamesWithHets = ["virLud",
+clusterNamesWithHets = ["vir",
+                "vir_lud",
                 "nit",
-                "virLud_troch",
+                "lud",
+                "lud_troch",
                 "troch",
                 "obs",
                 "plumb",
@@ -4451,15 +4466,19 @@ clusterNamesWithHets = ["virLud",
                 "vir_plumb"]
 
 clusterColorsWithHets = ["blue",
+                "seagreen",
                 "grey",
                 "green",
+                "green2",
                 "yellow",
                 "orange",
                 "red",
                 "red",
                 "purple"]
 
-virLud_troch = (-5 .< PCAmodelAll.metadata.PC1 .< -2) .&
+vir_lud = (PCAmodelAll.metadata.PC1 .< -5) .&
+            (-1 .< PCAmodelAll.metadata.PC3 .< 1)
+lud_troch = (-5 .< PCAmodelAll.metadata.PC1 .< -2) .&
                 (-3.5 .< PCAmodelAll.metadata.PC2 .< 0) .&
                  .!indSelection_lowIndHetStan
 plumbHet = (7 .< PCAmodelAll.metadata.PC1) .& 
@@ -4469,7 +4488,7 @@ vir_plumb = (1 .< PCAmodelAll.metadata.PC1 .< 4) .&
                 (2 .< PCAmodelAll.metadata.PC2 .< 5) .&
                  .!indSelection_lowIndHetStan
 
-clusterArray = [virLud nit virLud_troch troch obs plumb plumbHet vir_plumb]
+clusterArray = [vir vir_lud nit lud lud_troch troch obs plumb plumbHet vir_plumb]
 
 sum(clusterArray, dims=1)
 
@@ -4523,12 +4542,16 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
 
 ```{julia}
 
-clusterNamesWithHetsWest = ["virLud",
-                        "virLud_troch",
+clusterNamesWithHetsWest = ["vir",
+                        "vir_lud",
+                        "lud",
+                        "lud_troch",
                         "troch"]
 
 clusterColorsWithHetsWest = ["blue",
+                        "seagreen",
                         "green",
+                        "green2",
                         "yellow"]
 
 # limit the SNPs to those with variants greater than 50% in 
@@ -4599,7 +4622,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
 
 ```{julia}
 
-clusterNamesWithHetsNorth = ["virLud",
+clusterNamesWithHetsNorth = ["vir",
                             "vir_plumb",
                             "plumb",
                             "plumbHet"]
@@ -5001,7 +5024,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 indColorRightProvided = true)
 ```
 
-### Chr 17 above shows interesting pattern with plumb haplotype more widespread--found in ludlowi, and the obscuratus pattern complex with recombination
+### Chr 17 above shows interesting pattern with plumb haplotype more widespread--found in ludlowi, and the obscuratus pattern complex with recombination. I checked chr 17 carefully in the summary plot, and it looks good.
 
 
 ## Same for chr 19
@@ -5131,7 +5154,7 @@ display(f)
 ```
 
 
-### At chr 19 high HetVar region, there are 4 clear homozygous haplogroups (vir and lud separated though on PC3). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 19 high HetVar region, there are 4 clear homozygous haplogroups (vir and lud separated though on PC3, but not clearly enough to show in summary plot). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -5588,7 +5611,7 @@ display(f)
 ```
 
 
-### At chr 4A high HetVar region, there are 4 clear haplogroups. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 4A high HetVar region, there are 4 clear haplogroups (no discernment of lud or obs on PC3, which is driven by nitidus). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -6097,7 +6120,7 @@ display(f)
 ```
 
 
-### At chr 20 high HetVar region, there are 6 clear haplogroups. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 20 high HetVar region, there are 6 clear haplogroups (with vir and lud clearly different on PC3). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -6483,9 +6506,105 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
 
 
 
+
+
+
+
+## Try chr 22 
+
+```{julia}
+# choose scaffold
+chr = "gw27"
+
+positionMin, positionMax, regionText, 
+    windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
+    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    getWindowedIndHetStanRegion(genosOnly_included, 
+                            pos_SNP_filtered, 
+                            highHetVarRegions, chr;
+                            windowSize = 500)
+
+# inspect values for mean IndHetStan per individual for that high HetVar region
+plot(meanAcrossRegionIndHetStan)
+
+# Add column to metadata containing the regionIndHetStan for this highHet region:
+command = "ind_with_metadata_included." * chr * "_regionIndHetStan = meanAcrossRegionIndHetStan"
+eval(Meta.parse(command)) # this executes the command constructed above
+ind_with_metadata_included.regionIndHetStan = meanAcrossRegionIndHetStan
+
+#names(ind_with_metadata_included)
+
+# check whether missing data related to heterozygosity (good news: not really)
+plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
+
+# PCA of all individuals:
+
+genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+
+flipPC1 = false
+flipPC2 = true
+
+PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText = regionText,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodelAll.PCAfig)
+
+# Add PC values to metadata for individuals included in PCA above:
+if flipPC1
+    PCAmodelAll.metadata.PC1 = -1 .* PCAmodelAll.values[1,:]
+else 
+    PCAmodelAll.metadata.PC1 = PCAmodelAll.values[1,:]
+end
+if flipPC2
+    PCAmodelAll.metadata.PC2 = -1 .* PCAmodelAll.values[2,:]
+else
+    PCAmodelAll.metadata.PC2 = PCAmodelAll.values[2,:]
+end
+PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
+
+# For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
+# are included in the `groups_to_plot_PCA`
+
+# choose inds with low IndHet in high HetVar region:
+indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.4) 
+
+#Plot only the lowIndHetStan individuals:
+
+f = CairoMakie.Figure();
+ax = Axis(f[1, 1],
+    title = "PC1 vs. PC2, only low heterozygosity",
+    xlabel = "Region PC1", xlabelsize = 24,
+    ylabel = "Region PC2", ylabelsize = 24,
+    autolimitaspect = 1)
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+for i in eachindex(groups_to_plot_PCA) 
+    selection = (PCAmodelAll.metadata.Fst_group .== groups_to_plot_PCA[i]) .& indSelection_lowIndHetStan
+    CairoMakie.scatter!(ax, PCAmodelAll.metadata.PC1[selection], PCAmodelAll.metadata.PC2[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
+end
+display(f)
+```
+
+
+
+
+
+
+
+
+
+
 ## Tried chr 1 but some unclean distinguishing of ludlowi clusters (no wide sharing of plumb)
+## Included chr 1A
 ## Tried chr 2 but some unclean distinguishing of ludlowi clusters (with some sharing of plumb)
+## Included chr 3
 ## Tried chr 4 but not clean separation of high vs. low IndHet
+## Included chr 4A
 ## Tried chr 5 but not clean separation of high vs. low IndHet
 ## Tried chr 6 but not clean separation of high vs. low IndHet
 ## Tried chr 7 but not clean separation of high vs. low IndHet, recomb in ludlowi
@@ -6495,8 +6614,19 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
 ## Tried chr 11 and has potential, and shows an obs with two plumb types, but ludlowi not cleanly distinguished into types
 ## Tried chr 12 but not a very clear separation of high vs. low IndHet (shows a lot of sharing of plumb haps in ludlowi)
 ## Tried chr 14 but not clean separation of high vs. low IndHet, recomb in ludlowi
+## Included chr 15
+## No chr 16
 ## Tried chr 23 but not a very clear separation of high vs. low IndHet 
-
+## Included chr 17, chr 18, chr 19, chr 20
+## Tried chr 21 but not a very clear separation of high vs. low IndHet
+## Tried chr 22 but not a very clear separation of high vs. low IndHet. Lud is all over the place.
+## Tried chr 23 and almost included, but a few inds would be tough to categorize. Similar pattern as some others. Not a very clear separation of high vs. low IndHet.
+## Tried chr 24 but not a very clear separation of high vs. low IndHet.
+## Tried chr 25 but not a very clear separation of high vs. low IndHet, and hard to categorize a lot of inds.
+## Included chr 26
+## Tried chr 27 but not a very clear separation of high vs. low IndHet.
+## Included chr 28
+## Included chr Z
 
 
 
@@ -6866,9 +6996,11 @@ regionHaplotypeCode_all = Dict{String, Dict{String, Tuple{Int, Int}}}(
                     "obsPlumb"=>(7,7),
                     "obsPlumbHet"=>(7,7),
                     "virLud_obsPlumb"=>(1,7)),
-    "gw13" => Dict("virLud"=>(1,1),
+    "gw13" => Dict("vir"=>(1,1),
+                    "vir_lud"=>(1,4),
                     "nit"=>(3,3),
-                    "virLud_troch"=>(1,5),
+                    "lud"=>(4,4),
+                    "lud_troch"=>(4,5),
                     "troch"=>(5,5),
                     "obs"=>(6,6),
                     "plumb"=>(7,7),
@@ -7109,7 +7241,7 @@ function plotHaploblockSummary(integerToColorCodes::Dict{Int, String},
     # make labels on lower part
     y_label = 0.5 - 0.025numInds
     for i in 1:numRegions
-        CairoMakie.text!(i, y_label; text = regionNames[i], align=(:center, :center), fontsize=30)
+        CairoMakie.text!(i, y_label; text = regionNames[i], align=(:center, :center), fontsize=24)
     end
 
     display(f)

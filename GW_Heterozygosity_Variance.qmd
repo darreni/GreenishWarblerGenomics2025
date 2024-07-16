@@ -467,7 +467,7 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
 
 flipPC1 = true
-flipPC2 = true
+flipPC2 = false
 
 PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
@@ -582,14 +582,14 @@ clusterColors = ["blue",
 
 vir = (PCAmodelAll.metadata.PC1 .< -4.5) .& 
         (3 .< PCAmodelAll.metadata.PC2) .&
-        (PCAmodelAll.metadata.PC3 .< -2) .& 
+        (PCAmodelAll.metadata.PC3 .> 2) .& 
         indSelection_lowIndHetStan
 nit = (-4 .< PCAmodelAll.metadata.PC1 .< -2) .& 
         (1 .< PCAmodelAll.metadata.PC2 .< 3) .&
         indSelection_lowIndHetStan
 lud = (PCAmodelAll.metadata.PC1 .< -4.5) .& 
         (3 .< PCAmodelAll.metadata.PC2) .& 
-        (1.5 .< PCAmodelAll.metadata.PC3) .& 
+        (PCAmodelAll.metadata.PC3 .< -2) .& 
         indSelection_lowIndHetStan
 troch = (PCAmodelAll.metadata.PC2 .< -5) .& 
         indSelection_lowIndHetStan
@@ -773,7 +773,7 @@ clusterColorsWithHets = ["blue",
 
 vir_lud = (PCAmodelAll.metadata.PC1 .< -4.5) .& 
         (3 .< PCAmodelAll.metadata.PC2) .&
-        (0 .< PCAmodelAll.metadata.PC3 .< 1) # Note this one has lowIndHetStan but is mix of vir and lud
+        (-1 .< PCAmodelAll.metadata.PC3 .< 0) # Note this one has lowIndHetStan but is mix of vir and lud
 lud_troch = (-5 .< PCAmodelAll.metadata.PC1 .< -1) .&
                 (-3 .< PCAmodelAll.metadata.PC2 .< 1) .&
                  .!indSelection_lowIndHetStan
@@ -787,6 +787,15 @@ if sum(sum(clusterArray, dims=1)) == size(PCAmodelAll.metadata, 1)
 else 
     println("Warning: Individuals included in a group ($(sum(sum(clusterArray, dims=1)))) do NOT match total number of individuals ($(size(PCAmodelAll.metadata, 1)))")
 end
+
+# check which individuals left out:
+
+sum(clusterArray, dims=2)
+
+PCAmodelAll.metadata.ind[vec(sum(clusterArray, dims=2) .== 0)]
+PCAmodelAll.metadata.PC1[vec(sum(clusterArray, dims=2) .== 0)]
+PCAmodelAll.metadata.PC2[vec(sum(clusterArray, dims=2) .== 0)]
+indSelection_lowIndHetStan[vec(sum(clusterArray, dims=2) .== 0)]
 
 # create vectors that indicate the groups and plot order for this analysis:
 clusterMembershipWithHets = fill("none", nrow(PCAmodelAll.metadata))
@@ -821,7 +830,6 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
 ### show GBI plot according to original groups and plot order
 
 ```{julia}
-#PCAmodelAll.metadata.Fst_group = PCAmodelAll.metadata.original_Fst_group
 PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
 
 genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
@@ -838,7 +846,6 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
 ### show same but with all individuals
 
 ```{julia}
-#PCAmodelAll.metadata.Fst_group = PCAmodelAll.metadata.original_Fst_group
 PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
 
 # Set no limit (or high limit anyway) on the number of individuals per group to plot
@@ -3303,7 +3310,7 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
 
-flipPC1 = true
+flipPC1 = false
 flipPC2 = true
 
 PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
@@ -4209,7 +4216,7 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
 
-flipPC1 = false
+flipPC1 = true
 flipPC2 = true
 
 PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
@@ -5788,7 +5795,7 @@ PCAmodelAll.metadata.Fst_group = clusterMembershipWithHets
 PCAmodelAll.metadata.plot_order = plotOrderWithHets
 
 # limit the number of individuals per group to plot
-numIndsToPlotWithHets = fill(150, length(clusterNamesWithHets))
+numIndsToPlotWithHets = fill(15, length(clusterNamesWithHets))
 
 genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
                                             genos_selectedSNPs, PCAmodelAll.metadata;
@@ -5800,6 +5807,43 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 indColorLeftProvided = false,
                 indColorRightProvided = true)
 ```
+
+### show GBI plot according to original groups and plot order
+
+```{julia}
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+### show same but with all individuals
+
+```{julia}
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+# Set no limit (or high limit anyway) on the number of individuals per group to plot
+numIndsToPlotWithHets = fill(1000, length(clusterNamesWithHets))
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+
 
 ### Show just the west area (without nitidus)
 
@@ -5926,8 +5970,6 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 indColorRightProvided = true)
 
 ```
-
-#### Now produce all-individual GBI around ring! DO THIS !!!!!!!!!!
 
 #### Chr 4A shows really remarkable patterns. Absolutely must be selective sweeps.
 
@@ -6294,6 +6336,16 @@ regionHaplotypeCode_all = Dict{String, Dict{String, Tuple{Int, Int}}}(
                     "plumb"=>(7,7),
                     "plumbHet"=>(7,7),
                     "vir_plumb"=>(1,7)),
+    "gw4A" => Dict("virLud"=>(1,1),
+                    "virLudHet"=>(1,1),
+                    "nit"=>(3,3),
+                    "virLud_troch"=>(1,5),
+                    "troch"=>(5,5),
+                    "trochHet"=>(5,5),
+                    "troch_obsPlumb"=>(5,7),
+                    "obsPlumb"=>(7,7),
+                    "obsPlumbHet"=>(7,7),
+                    "virLud_obsPlumb"=>(1,7)),
     "gw13" => Dict("virLud"=>(1,1),
                     "nit"=>(3,3),
                     "virLud_troch"=>(1,5),
@@ -6365,7 +6417,7 @@ regionHaplotypeCode_all = Dict{String, Dict{String, Tuple{Int, Int}}}(
                     "plumb"=>(7,7))
 )
 
-haploblockRegions = ["gw1A", "gw3", "gw13", "gw15", "gw17", "gw18", "gw19", "gw26", "gw28", "gwZ"]
+haploblockRegions = ["gw1A", "gw3", "gw4A", "gw13", "gw15", "gw17", "gw18", "gw19", "gw26", "gw28", "gwZ"]
 
 numHaploblockRegions = length(haploblockRegions)
 numInds = size(ind_with_metadata_included, 1)

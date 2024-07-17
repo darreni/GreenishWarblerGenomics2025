@@ -1885,6 +1885,112 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 indColorRightProvided = true)
 ```
 
+### show GBI plot according to original groups and plot order
+
+```{julia}
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+### show same but with all individuals
+
+```{julia}
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+# Set no limit (or high limit anyway) on the number of individuals per group to plot
+numIndsToPlotWithHets = fill(1000, length(clusterNamesWithHets))
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+### show same but with only vir and plumb pops
+
+```{julia}
+
+includeTheseClusters = ["virLud", "plumb"] # these are the haplotype clusters to include in the choice below of SNPs to show
+
+# Calculate allele freqs and sample sizes
+freqs_local, sampleSizes_local = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembership, includeTheseClusters)
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+selectedSNPs = (vec(maximum(freqs_local, dims=1)) .> 0.5) .& (vec(minimum(freqs_local, dims=1)) .< 0.5)
+genosForGBI = genos_selectedSNPs[:, selectedSNPs]
+posForGBI = pos_selectedSNPs[selectedSNPs, :]
+freqsForGBI = freqs_local[:, selectedSNPs]
+
+plotGroups = ["vir", "plumb", "plumb_vir"] # these are the original Fst_groups
+plotGroupColors = ["blue", "red", "purple"]
+
+metadataForGBI = copy(PCAmodelAll.metadata)
+
+metadataForGBI.Fst_group = metadataForGBI.original_Fst_groups
+
+plotGenotypeByIndividual(regionInfo, posForGBI,
+                genosForGBI, metadataForGBI, freqsForGBI, plotGroups, plotGroupColors;
+                missingFractionAllowed = missingFractionAllowed)
+```
+
+### show same but with only vir lud troch pops
+
+```{julia}
+
+includeTheseClusters = ["virLud", "troch"] # these are the haplotype clusters to include in the choice below of SNPs to show
+
+# Calculate allele freqs and sample sizes
+freqs_local, sampleSizes_local = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembership, includeTheseClusters)
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+selectedSNPs = (vec(maximum(freqs_local, dims=1)) .> 0.5) .& (vec(minimum(freqs_local, dims=1)) .< 0.5)
+genosForGBI = genos_selectedSNPs[:, selectedSNPs]
+posForGBI = pos_selectedSNPs[selectedSNPs, :]
+freqsForGBI = freqs_local[:, selectedSNPs]
+
+plotGroups = ["vir", "plumb", "plumb_vir"] # these are the original Fst_groups
+plotGroupColors = ["blue", "red", "purple"]
+
+metadataForGBI = copy(PCAmodelAll.metadata)
+metadataForGBI.Fst_group = metadataForGBI.original_Fst_groups
+
+plotGroups = ["vir", "vir_S", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML", "troch_west", "troch_LN"]
+plotGroupColors = ["blue","turquoise1", "seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow"]
+
+# Set no limit (or high limit anyway) on the number of individuals per group to plot
+numIndsToPlotWithHets = fill(10, length(plotGroups))
+
+genosForGBI_limited, indMetadataforGBI_limited = limitIndsToPlot(plotGroups,
+                                            numIndsToPlotWithHets, 
+                                            genosForGBI, metadataForGBI;
+                                            sortByMissing = false)
+
+plotGenotypeByIndividual(regionInfo, posForGBI,
+                genosForGBI_limited, indMetadataforGBI_limited, freqsForGBI, plotGroups, plotGroupColors;
+                missingFractionAllowed = missingFractionAllowed)
+```
+
+
 
 ## Show just the west area (without nitidus)
 
@@ -2144,7 +2250,7 @@ clusterNames = ["virLud",
                 "obs",
                 "plumb"]
 
-clusterColors = ["green",
+clusterColors = ["blue",
                 "grey",
                 "yellow",
                 "orange",
@@ -2330,8 +2436,72 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 indColorRightProvided = true)
 ```
 
+### show GBI plot according to original groups and plot order
 
-## Show just the west area (without nitidus)
+```{julia}
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+### show same but with all individuals
+
+```{julia}
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+# Set no limit (or high limit anyway) on the number of individuals per group to plot
+numIndsToPlotWithHets = fill(1000, length(clusterNamesWithHets))
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+### show same but with only vir and plumb pops
+
+```{julia}
+
+includeTheseClusters = ["virLud", "plumb"] # these are the haplotype clusters to include in the choice below of SNPs to show
+
+# Calculate allele freqs and sample sizes
+freqs_local, sampleSizes_local = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembership, includeTheseClusters)
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+selectedSNPs = (vec(maximum(freqs_local, dims=1)) .> 0.5) .& (vec(minimum(freqs_local, dims=1)) .< 0.5)
+genosForGBI = genos_selectedSNPs[:, selectedSNPs]
+posForGBI = pos_selectedSNPs[selectedSNPs, :]
+freqsForGBI = freqs_local[:, selectedSNPs]
+
+plotGroups = ["vir", "plumb", "plumb_vir"] # these are the original Fst_groups
+plotGroupColors = ["blue", "red", "purple"]
+
+metadataForGBI = copy(PCAmodelAll.metadata)
+
+metadataForGBI.Fst_group = metadataForGBI.original_Fst_groups
+
+plotGenotypeByIndividual(regionInfo, posForGBI,
+                genosForGBI, metadataForGBI, freqsForGBI, plotGroups, plotGroupColors;
+                missingFractionAllowed = missingFractionAllowed)
+```
+
+## Show just the west clusters (without nitidus)
 
 ```{julia}
 
@@ -3893,7 +4063,8 @@ plumb = (4 .< PCAmodelAll.metadata.PC1) .&
 # check the individuals in each group
 PCAmodelAll.metadata.Fst_group[virLud]
 PCAmodelAll.metadata.Fst_group[nit]
-PCAmodelAll.metadata.Fst_group[trochObs]
+PCAmodelAll.metadata.Fst_group[troch]
+PCAmodelAll.metadata.Fst_group[obs]
 PCAmodelAll.metadata.Fst_group[plumb]
 
 clusterArray = [virLud nit troch obs plumb]
@@ -4067,6 +4238,73 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 indColorLeftProvided = false,
                 indColorRightProvided = true)
 ```
+
+
+### show GBI plot according to original groups and plot order
+
+```{julia}
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+### show same but with all individuals
+
+```{julia}
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+# Set no limit (or high limit anyway) on the number of individuals per group to plot
+numIndsToPlotWithHets = fill(1000, length(clusterNamesWithHets))
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+### show same but with only vir and plumb pops
+
+```{julia}
+
+includeTheseClusters = ["virLud", "plumb"] # these are the haplotype clusters to include in the choice below of SNPs to show
+
+# Calculate allele freqs and sample sizes
+freqs_local, sampleSizes_local = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembership, includeTheseClusters)
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+selectedSNPs = (vec(maximum(freqs_local, dims=1)) .> 0.5) .& (vec(minimum(freqs_local, dims=1)) .< 0.5)
+genosForGBI = genos_selectedSNPs[:, selectedSNPs]
+posForGBI = pos_selectedSNPs[selectedSNPs, :]
+freqsForGBI = freqs_local[:, selectedSNPs]
+
+plotGroups = ["vir", "plumb", "plumb_vir"] # these are the original Fst_groups
+plotGroupColors = ["blue", "red", "purple"]
+
+metadataForGBI = copy(PCAmodelAll.metadata)
+
+metadataForGBI.Fst_group = metadataForGBI.original_Fst_groups
+
+plotGenotypeByIndividual(regionInfo, posForGBI,
+                genosForGBI, metadataForGBI, freqsForGBI, plotGroups, plotGroupColors;
+                missingFractionAllowed = missingFractionAllowed)
+```
+
 
 ### Show just the west area (without nitidus)
 
@@ -4537,6 +4775,73 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 indColorLeftProvided = false,
                 indColorRightProvided = true)
 ```
+
+### show GBI plot according to original groups and plot order
+
+```{julia}
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+### show same but with all individuals
+
+```{julia}
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+# Set no limit (or high limit anyway) on the number of individuals per group to plot
+numIndsToPlotWithHets = fill(1000, length(clusterNamesWithHets))
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+### show same but with only vir and plumb pops
+
+```{julia}
+
+includeTheseClusters = ["vir", "plumb"] # these are the haplotype clusters to include in the choice below of SNPs to show
+
+# Calculate allele freqs and sample sizes
+freqs_local, sampleSizes_local = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembership, includeTheseClusters)
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+selectedSNPs = (vec(maximum(freqs_local, dims=1)) .> 0.5) .& (vec(minimum(freqs_local, dims=1)) .< 0.5)
+genosForGBI = genos_selectedSNPs[:, selectedSNPs]
+posForGBI = pos_selectedSNPs[selectedSNPs, :]
+freqsForGBI = freqs_local[:, selectedSNPs]
+
+plotGroups = ["vir", "plumb", "plumb_vir"] # these are the original Fst_groups
+plotGroupColors = ["blue", "red", "purple"]
+
+metadataForGBI = copy(PCAmodelAll.metadata)
+
+metadataForGBI.Fst_group = metadataForGBI.original_Fst_groups
+
+plotGenotypeByIndividual(regionInfo, posForGBI,
+                genosForGBI, metadataForGBI, freqsForGBI, plotGroups, plotGroupColors;
+                missingFractionAllowed = missingFractionAllowed)
+```
+
+
 
 ### Show just the west area (without nitidus)
 
@@ -5358,6 +5663,110 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 indColorLeftProvided = false,
                 indColorRightProvided = true)
 ```
+
+### show GBI plot according to original groups and plot order
+
+```{julia}
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+### show same but with all individuals
+
+```{julia}
+PCAmodelAll.metadata.plot_order = PCAmodelAll.metadata.original_plot_order
+
+# Set no limit (or high limit anyway) on the number of individuals per group to plot
+numIndsToPlotWithHets = fill(1000, length(clusterNamesWithHets))
+
+genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
+                                            genos_selectedSNPs, PCAmodelAll.metadata;
+                                            sortByMissing = true)
+
+plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+                genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
+                missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = false,
+                indColorRightProvided = true)
+```
+
+### show same but with only vir and plumb pops
+
+```{julia}
+
+includeTheseClusters = ["virLud", "plumb"] # these are the haplotype clusters to include in the choice below of SNPs to show
+
+# Calculate allele freqs and sample sizes
+freqs_local, sampleSizes_local = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembership, includeTheseClusters)
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+selectedSNPs = (vec(maximum(freqs_local, dims=1)) .> 0.5) .& (vec(minimum(freqs_local, dims=1)) .< 0.5)
+genosForGBI = genos_selectedSNPs[:, selectedSNPs]
+posForGBI = pos_selectedSNPs[selectedSNPs, :]
+freqsForGBI = freqs_local[:, selectedSNPs]
+
+plotGroups = ["vir", "plumb", "plumb_vir"] # these are the original Fst_groups
+plotGroupColors = ["blue", "red", "purple"]
+
+metadataForGBI = copy(PCAmodelAll.metadata)
+
+metadataForGBI.Fst_group = metadataForGBI.original_Fst_groups
+
+plotGenotypeByIndividual(regionInfo, posForGBI,
+                genosForGBI, metadataForGBI, freqsForGBI, plotGroups, plotGroupColors;
+                missingFractionAllowed = missingFractionAllowed)
+```
+
+### show same but with only vir lud troch pops
+
+```{julia}
+
+includeTheseClusters = ["virLud", "trochObs"] # these are the haplotype clusters to include in the choice below of SNPs to show
+
+# Calculate allele freqs and sample sizes
+freqs_local, sampleSizes_local = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembership, includeTheseClusters)
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+selectedSNPs = (vec(maximum(freqs_local, dims=1)) .> 0.5) .& (vec(minimum(freqs_local, dims=1)) .< 0.5)
+genosForGBI = genos_selectedSNPs[:, selectedSNPs]
+posForGBI = pos_selectedSNPs[selectedSNPs, :]
+freqsForGBI = freqs_local[:, selectedSNPs]
+
+metadataForGBI = copy(PCAmodelAll.metadata)
+metadataForGBI.Fst_group = metadataForGBI.original_Fst_groups
+
+plotGroups = ["vir", "vir_S", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML", "troch_west", "troch_LN"]
+plotGroupColors = ["blue","turquoise1", "seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow"]
+
+# Set no limit (or high limit anyway) on the number of individuals per group to plot
+numIndsToPlotWithHets = fill(10, length(plotGroups))
+
+genosForGBI_limited, indMetadataforGBI_limited = limitIndsToPlot(plotGroups,
+                                            numIndsToPlotWithHets, 
+                                            genosForGBI, metadataForGBI;
+                                            sortByMissing = false)
+
+plotGenotypeByIndividual(regionInfo, posForGBI,
+                genosForGBI_limited, indMetadataforGBI_limited, freqsForGBI, plotGroups, plotGroupColors;
+                missingFractionAllowed = missingFractionAllowed)
+```
+
+
 
 ### Show just the west area (without nitidus)
 

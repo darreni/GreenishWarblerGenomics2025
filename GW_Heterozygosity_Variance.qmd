@@ -1083,7 +1083,7 @@ display(PCAmodelHapEast.PCAfig)
 # get length of region
 lengthHighHetVarRegion = positionMax - positionMin
 
-leftLocus = 10_000_000 # start at very left side, or 10 Mb in
+leftLocus = 1_000_000 # start at 1 Mb from left side
 rightLocus = leftLocus + lengthHighHetVarRegion
 regionText_lowHetVarRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
 
@@ -1990,6 +1990,57 @@ plotGenotypeByIndividual(regionInfo, posForGBI,
                 missingFractionAllowed = missingFractionAllowed)
 ```
 
+### show same but with only troch plumb pops
+
+```{julia}
+
+includeTheseClusters = ["troch", "obs", "plumb"] # these are the haplotype clusters to include in the choice below of SNPs to show
+
+# Calculate allele freqs and sample sizes
+freqs_local, sampleSizes_local = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembership, includeTheseClusters)
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+selectedSNPs = (vec(maximum(freqs_local, dims=1)) .> 0.5) .& (vec(minimum(freqs_local, dims=1)) .< 0.5)
+genosForGBI = genos_selectedSNPs[:, selectedSNPs]
+posForGBI = pos_selectedSNPs[selectedSNPs, :]
+freqsForGBI = freqs_local[:, selectedSNPs]
+
+metadataForGBI = copy(PCAmodelAll.metadata)
+metadataForGBI.Fst_group = metadataForGBI.original_Fst_groups
+
+# remove individuals that have vir haplotypes, as this could otherwise be mistaken for introgression from obscuratus:
+
+removeTheseInds = ["GW_Armando_plate1_JF24G02", # gw19 hetero from plumb 
+                    "GW_Armando_plate1_JF07G03", # gw19 hetero from plumb
+                    "GW_Armando_plate1_JF12G02", # gw19 hetero from plumb
+                    "GW_Armando_plate1_JF09G01"] # gw28 is hetero from plumb 
+selection = map(in(removeTheseInds), metadataForGBI.ind)
+metadataForGBI = metadataForGBI[.!selection, :]
+genosForGBI = genosForGBI[.!selection, :]
+
+plotGroups = ["troch_LN","troch_EM","obs","plumb_BJ","plumb"]
+plotGroupColors = ["yellow","gold","orange","pink","red"]
+
+# Set  limit on the number of individuals per group to plot
+numIndsToPlotWithHets = fill(15, length(plotGroups))
+
+# metadataForGBI[metadataForGBI.Fst_group .== "plumb", :]
+
+genosForGBI_limited, indMetadataforGBI_limited = limitIndsToPlot(plotGroups,
+                                            numIndsToPlotWithHets, 
+                                            genosForGBI, metadataForGBI;
+                                            sortByMissing = false)
+
+# indMetadataforGBI_limited[indMetadataforGBI_limited.Fst_group .== "plumb", :]
+
+plotGenotypeByIndividual(regionInfo, posForGBI,
+                genosForGBI_limited, indMetadataforGBI_limited, freqsForGBI, plotGroups, plotGroupColors;
+                missingFractionAllowed = missingFractionAllowed)
+```
+
 
 
 ## Show just the west area (without nitidus)
@@ -2617,6 +2668,40 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 indColorRightProvided = true)
 
 ```
+
+### Do a PCA based on a same-size region elsewhere on gw26 (with low HetVar):
+
+```{julia}
+# get length of region
+lengthHighHetVarRegion = positionMax - positionMin
+
+leftLocus = 1_000_000 # start at 1 Mb from left side
+rightLocus = leftLocus + lengthHighHetVarRegion
+regionText_lowHetVarRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
+
+lociSelection = (leftLocus .<= pos_region.position .<= rightLocus)
+genotypes_lowHetVarRegion = genotypes_region[:, lociSelection]
+
+# impute missing genotypes:
+
+genotypes_lowHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genotypes_lowHetVarRegion))
+
+flipPC1 = true
+flipPC2 = true
+
+PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText = regionText_lowHetVarRegion,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodel.PCAfig)
+```
+
+
 
 
 ## Do similar as above but for chr 1A:
@@ -4963,6 +5048,40 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
 
 ```
 
+### Do a PCA based on a same-size region elsewhere on gw13 (with low HetVar):
+
+```{julia}
+# get length of region
+lengthHighHetVarRegion = positionMax - positionMin
+
+leftLocus = 1_000_000 # start at 1 Mb from left side
+rightLocus = leftLocus + lengthHighHetVarRegion
+regionText_lowHetVarRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
+
+lociSelection = (leftLocus .<= pos_region.position .<= rightLocus)
+genotypes_lowHetVarRegion = genotypes_region[:, lociSelection]
+
+# impute missing genotypes:
+
+genotypes_lowHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genotypes_lowHetVarRegion))
+
+flipPC1 = true
+flipPC2 = true
+
+PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText = regionText_lowHetVarRegion,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodel.PCAfig)
+```
+
+
+
 
 ## Tried chr 14 but not very clear--seems recombination backcrosses in ludlowi
 
@@ -5690,7 +5809,7 @@ numIndsToPlotWithHets = fill(1000, length(clusterNamesWithHets))
 
 genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsToPlotWithHets, 
                                             genos_selectedSNPs, PCAmodelAll.metadata;
-                                            sortByMissing = true)
+                                            sortByMissing = false)
 
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
@@ -5765,6 +5884,58 @@ plotGenotypeByIndividual(regionInfo, posForGBI,
                 genosForGBI_limited, indMetadataforGBI_limited, freqsForGBI, plotGroups, plotGroupColors;
                 missingFractionAllowed = missingFractionAllowed)
 ```
+
+### show same but with only troch plumb pops
+
+```{julia}
+
+includeTheseClusters = ["trochObs", "plumb"] # these are the haplotype clusters to include in the choice below of SNPs to show
+
+# Calculate allele freqs and sample sizes
+freqs_local, sampleSizes_local = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembership, includeTheseClusters)
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+selectedSNPs = (vec(maximum(freqs_local, dims=1)) .> 0.5) .& (vec(minimum(freqs_local, dims=1)) .< 0.5)
+genosForGBI = genos_selectedSNPs[:, selectedSNPs]
+posForGBI = pos_selectedSNPs[selectedSNPs, :]
+freqsForGBI = freqs_local[:, selectedSNPs]
+
+metadataForGBI = copy(PCAmodelAll.metadata)
+metadataForGBI.Fst_group = metadataForGBI.original_Fst_groups
+
+# remove individuals that have vir haplotypes, as this could otherwise be mistaken for introgression from obscuratus:
+
+removeTheseInds = ["GW_Armando_plate1_JF24G02", # gw19 hetero from plumb 
+                    "GW_Armando_plate1_JF07G03", # gw19 hetero from plumb
+                    "GW_Armando_plate1_JF12G02", # gw19 hetero from plumb
+                    "GW_Armando_plate1_JF09G01"] # gw28 is hetero from plumb  
+selection = map(in(removeTheseInds), metadataForGBI.ind)
+metadataForGBI = metadataForGBI[.!selection, :]
+genosForGBI = genosForGBI[.!selection, :]
+
+plotGroups = ["troch_LN","troch_EM","obs","plumb_BJ","plumb"]
+plotGroupColors = ["yellow","gold","orange","pink","red"]
+
+# Set  limit on the number of individuals per group to plot
+numIndsToPlotWithHets = fill(15, length(plotGroups))
+
+# metadataForGBI[metadataForGBI.Fst_group .== "plumb", :]
+
+genosForGBI_limited, indMetadataforGBI_limited = limitIndsToPlot(plotGroups,
+                                            numIndsToPlotWithHets, 
+                                            genosForGBI, metadataForGBI;
+                                            sortByMissing = false)
+
+# indMetadataforGBI_limited[indMetadataforGBI_limited.Fst_group .== "plumb", :]
+
+plotGenotypeByIndividual(regionInfo, posForGBI,
+                genosForGBI_limited, indMetadataforGBI_limited, freqsForGBI, plotGroups, plotGroupColors;
+                missingFractionAllowed = missingFractionAllowed)
+```
+
 
 
 
@@ -6273,6 +6444,83 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 indColorRightProvided = true)
 ```
 
+### show same but with only vir and plumb pops
+
+```{julia}
+
+includeTheseClusters = ["virLud", "obsPlumb"] # these are the haplotype clusters to include in the choice below of SNPs to show
+
+# Calculate allele freqs and sample sizes
+freqs_local, sampleSizes_local = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembership, includeTheseClusters)
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+selectedSNPs = (vec(maximum(freqs_local, dims=1)) .> 0.5) .& (vec(minimum(freqs_local, dims=1)) .< 0.5)
+genosForGBI = genos_selectedSNPs[:, selectedSNPs]
+posForGBI = pos_selectedSNPs[selectedSNPs, :]
+freqsForGBI = freqs_local[:, selectedSNPs]
+
+plotGroups = ["vir", "plumb", "plumb_vir"] # these are the original Fst_groups
+plotGroupColors = ["blue", "red", "purple"]
+
+metadataForGBI = copy(PCAmodelAll.metadata)
+
+metadataForGBI.Fst_group = metadataForGBI.original_Fst_groups
+
+plotGenotypeByIndividual(regionInfo, posForGBI,
+                genosForGBI, metadataForGBI, freqsForGBI, plotGroups, plotGroupColors;
+                missingFractionAllowed = missingFractionAllowed)
+```
+
+### show same but whole ring (but not nit)
+
+```{julia}
+
+includeTheseClusters = ["virLud",
+                        "troch",
+                        "obsPlumb"] # these are the haplotype clusters to include in the choice below of SNPs to show
+
+# Calculate allele freqs and sample sizes
+freqs_local, sampleSizes_local = getFreqsAndSampleSizes(genos_selectedSNPs, clusterMembership, includeTheseClusters)
+
+# limit the SNPs to those with variants greater than 50% in 
+# at least one pop, and less than 50% in at least one pop.
+# (So for each column in `freqs`, the maximum should be > 0.5 
+# and the minimum should be < 0.5)
+selectedSNPs = (vec(maximum(freqs_local, dims=1)) .> 0.5) .& (vec(minimum(freqs_local, dims=1)) .< 0.5)
+genosForGBI = genos_selectedSNPs[:, selectedSNPs]
+posForGBI = pos_selectedSNPs[selectedSNPs, :]
+freqsForGBI = freqs_local[:, selectedSNPs]
+
+metadataForGBI = copy(PCAmodelAll.metadata)
+metadataForGBI.Fst_group = metadataForGBI.original_Fst_groups
+
+# plotGroups = ["vir","vir_S","lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
+# plotGroupColors = ["blue","turquoise1","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"]
+
+plotGroups = ["vir","vir_S","lud_PK","lud_KS","lud_central","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
+plotGroupColors = ["blue","turquoise1","seagreen4","seagreen3","seagreen2","yellow","gold","orange", "pink","red","purple"]
+
+# Set  limit on the number of individuals per group to plot
+numIndsToPlotWithHets = [10, 5, 5, 2, 10, 10, 1, 4, 3, 10, 1] # maximum number of individuals to plot from each group
+#numIndsToPlotWithHets = fill(100, length(plotGroups))
+
+# metadataForGBI[metadataForGBI.Fst_group .== "plumb", :]
+
+genosForGBI_limited, indMetadataforGBI_limited = limitIndsToPlot(plotGroups,
+                                            numIndsToPlotWithHets, 
+                                            genosForGBI, metadataForGBI;
+                                            sortByMissing = false)
+
+# indMetadataforGBI_limited[indMetadataforGBI_limited.Fst_group .== "plumb", :]
+
+plotGenotypeByIndividual(regionInfo, posForGBI,
+                genosForGBI_limited, indMetadataforGBI_limited, freqsForGBI, plotGroups, plotGroupColors;
+                missingFractionAllowed = missingFractionAllowed)
+```
+
 
 
 ### Show just the west area (without nitidus)
@@ -6400,6 +6648,42 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 indColorRightProvided = true)
 
 ```
+
+### Do a PCA based on a same-size region elsewhere on gw4A (with low HetVar):
+
+```{julia}
+# get length of region
+lengthHighHetVarRegion = positionMax - positionMin
+
+# because the region is on the left side of chr 4A, will put the non-interesting region on the right side:
+rightLocus = scaffold_lengths["gw4A"] - 1_000_000
+leftLocus = rightLocus - lengthHighHetVarRegion
+
+regionText_lowHetVarRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
+
+lociSelection = (leftLocus .<= pos_region.position .<= rightLocus)
+genotypes_lowHetVarRegion = genotypes_region[:, lociSelection]
+
+# impute missing genotypes:
+
+genotypes_lowHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genotypes_lowHetVarRegion))
+
+flipPC1 = true
+flipPC2 = true
+
+PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText = regionText_lowHetVarRegion,
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("Region PC1"), yLabelText = string("Region PC2"),
+            showPlot = false)
+
+display(PCAmodel.PCAfig)
+```
+
+
 
 #### Chr 4A shows really remarkable patterns. Absolutely must be selective sweeps.
 

@@ -572,7 +572,7 @@ regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=s
 #### Now actually make the plot
 
 ```{julia}
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
@@ -586,7 +586,7 @@ end
 ```{julia}
 chr = "gw26"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst,
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
 if false  # set to true to save plot
@@ -629,7 +629,7 @@ chr = "gw26"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) 
 
 #### Now actually make the plot
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
 if false  # set to true to save plot
@@ -645,7 +645,7 @@ chr = "gw28"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) 
 
 #### Now actually make the plot
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
 if false  # set to true to save plot
@@ -695,7 +695,7 @@ ind_with_metadata_included = ind_with_metadata_included[selection,:]
 genosOnly_included = genosOnly_included[selection,:]
 
 #### Now actually make the plot
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
 if false  # set to true to save plot
@@ -735,7 +735,7 @@ println("Calculated Fst values")
 chr = "gw28"
 regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
     missingFractionAllowed, regionInfo,
     pos_SNP_filtered, Fst, pairwiseNamesFst, 
     genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
@@ -758,7 +758,7 @@ Loop through each scaffold and produce GBI plot. (Making inactive because alread
 for i in 1:length(scaffolds_to_plot)
     chr = scaffolds_to_plot[i]
     regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-    plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+    plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
         missingFractionAllowed, regionInfo,
         pos_SNP_filtered, Fst, pairwiseNamesFst, 
         genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
@@ -897,153 +897,6 @@ end
 ```
 
 
-
-####################################
-
-## Produce Fst plot across genome
-
-Adding this on Nov. 20th--requiring writing new Julia code in SNPlots.jl.
-
-#### Calculate allele freqs and sample sizes (use column Fst_group)
-```{julia}
-groups = ["vir","troch_LN","plumb","plumb_vir"]
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_ind_SNP_ind_filtered, ind_with_metadata_indFiltered.Fst_group, groups)
-println("Calculated population allele frequencies and sample sizes")
-```
-
-#### calculate Fst for each SNP
-```{julia}
-Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
-println("Calculated Fst values")
-```
-
-#### specific scaffolds to consider in analyses (based on length cutoff)
-```{julia}
-scaffolds_to_consider = vec(["gw2",
-                            "gw1",
-                            "gw3",
-                            "gwZ",
-                            "gw1A",
-                            "gw4",
-                            "gw5",
-                            "gw7",
-                            "gw6",
-                            "gw8",
-                            "gw9",
-                            "gw11",
-                            "gw12",
-                            "gw10",
-                            "gw13",
-                            "gw14",
-                            "gw18",
-                            "gw20",
-                            "gw15",
-                            "gw1B",
-                            "gws100",
-                            "gw17",
-                            "gw19",
-                            "gws101",
-                            "gw4A",
-                            "gw21",
-                            "gw26",
-                            "gws102",
-                            "gw23",
-                            "gw25",
-                            "gws103",
-                            "gw22",
-                            "gws104",
-                            "gw28",
-                            "gw27",
-                            "gw24",
-                            "gws105",
-                            "gws106",
-                            "gws107",
-                            "gws108",
-                            "gws109",
-                            "gws110",
-                            "gws112"]);
-```
-
-# Make list of main scaffolds to include in Fst plot across genome:
-
-```{julia}
-scaffolds_for_Fst = "gw" .* string.(vcat(1, "1A", 2:4, "4A", 5:15, 17:28, "Z"))
-```
-
-vcat(1, "1A", 2:4, "4A", 5:15, 17:28)
-
-
-
-#### calculate windowed Fst
-
-This is calculated according to Weir&Cockerham1984 (with sample size and pop number correction), calculated as windowed numerator over windowed denominator, in whole windows starting on left side of chromosome.
-
-```{julia}
-
-windowSize = 500
-
-# calculate windowed Fst across all scaffolds:
-
-windowed_pos_all = DataFrame(chrom = String[], mean_position = Float64[])
-windowed_Fst_all = Array{Float32, 2}(undef, size(FstNumerator, 1), 0)
-for chrom in scaffolds_for_Fst
-    regionText = string("chr", chrom)
-    loci_selection = (pos_SNP_filtered.chrom .== chrom)
-    pos_region = pos_SNP_filtered[loci_selection, :]
-    FstNumerator_region = FstNumerator[:, loci_selection]
-    FstDenominator_region = FstDenominator[:, loci_selection]
-    windowedPos, windowedFst = getWindowedFst(FstNumerator_region, FstDenominator_region, pos_region, windowSize)
-    windowed_pos_chrom = DataFrame(chrom = repeat([chrom], length(windowedPos)), mean_position = windowedPos)
-    windowed_pos_all = vcat(windowed_pos_all, windowed_pos_chrom)
-    windowed_Fst_all = hcat(windowed_Fst_all, windowedFst)
-end
-
-# The below is just a test plot, showing nothing useful really (as it overlaps all chromosomes onto one x axis):
-#plot(windowed_pos_all.mean_position, windowed_Fst_all[1,:])
-```
-
-The above has produced windowed Fst values across the whole genome, for each population comparison. These are stored in `windowed_Fst_all` and the location info is stored in `windowed_pos_all`.
-
-Now make a plot of windowed Fst across all scaffolds:
-
-```{julia}
-
-scaffolds_to_plot = scaffolds_for_Fst
-
-groupsToPlotFst = ["vir_troch_LN", "troch_LN_plumb", "vir_plumb"]
-groupColorsFst = ["green3", "orange", "purple"]
- 
-figHandle_GenomeFst3 = plotGenomeFst(scaffolds_to_plot, 
-                                    windowed_Fst_all,
-                                    pairwiseNamesFst,
-                                    windowed_pos_all,
-                                    groupsToPlotFst,
-                                    groupColorsFst;
-                                    lineTransparency = 0.8,
-                                    fillTransparency = 0.2,
-                                    figureSize=(1200, 1200))
-
-
-```
-
-Now do one with just the vir_plumb connection
-```{julia}
-groupsToPlotFst = ["vir_plumb"]
-groupColorsFst = ["purple"]
-
-figHandle_GenomeFst1 = plotGenomeFst(scaffolds_to_plot, 
-                                    windowed_Fst_all,
-                                    pairwiseNamesFst,
-                                    windowed_pos_all,
-                                    groupsToPlotFst,
-                                    groupColorsFst;
-                                    lineTransparency = 0.8,
-                                    fillTransparency = 0.2,
-                                    figureSize=(1200, 800))
-```
-
-
-
 # Make GBI plots showing just west individuals:
 
 ```{julia}
@@ -1068,7 +921,7 @@ scaffolds_to_plot = ["gw1"]
 for i in 1:length(scaffolds_to_plot)
     chr = scaffolds_to_plot[i]
     regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-    plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+    plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
         missingFractionAllowed, regionInfo,
         pos_SNP_filtered, Fst, pairwiseNamesFst, 
         genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
@@ -1092,7 +945,7 @@ plotGroupColors = ["yellow", "gold", "orange", "pink", "red"]
 group1 = "troch_LN"   # these groups will determine the color used in the graph
 group2 = "plumb"
 groupsToCompare = "Fst_among" #"vir_plumb" 
-Fst_cutoff = 0.6
+Fst_cutoff = 0.8
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
 # Calculate allele freqs and sample sizes (use column Fst_group)
@@ -1105,7 +958,7 @@ println("Calculated Fst values")
 for i in 1:length(scaffolds_to_plot)
     chr = scaffolds_to_plot[i]
     regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-    plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+    plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
         missingFractionAllowed, regionInfo,
         pos_SNP_filtered, Fst, pairwiseNamesFst, 
         genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 

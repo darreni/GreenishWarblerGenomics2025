@@ -7956,6 +7956,141 @@ plotHaploblockSummary(integerToColorCodes,
 ```
 
 
+#########################
+EDIT / REVISE THIS PART BELOW TO PROPERLY INCORPORATE THE Z CHROM FILTERING
+
+
+## Produce Fst plot across genome
+
+#### Calculate allele freqs and sample sizes (use column Fst_group)
+```{julia}
+groups = ["vir","troch_LN","plumb","plumb_vir"]
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_included, ind_with_metadata_included.Fst_group, groups)
+println("Calculated population allele frequencies and sample sizes")
+```
+
+#### calculate Fst for each SNP
+```{julia}
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+println("Calculated Fst values")
+```
+
+#### Make list of main scaffolds to include in Fst plot across genome:
+
+```{julia}
+scaffolds_for_Fst = "gw" .* string.(vcat(1, "1A", 2:4, "4A", 5:15, 17:28, "Z"))
+```
+
+#### calculate windowed Fst
+
+This is calculated according to Weir&Cockerham1984 (with sample size and pop number correction), calculated as windowed numerator over windowed denominator, in whole windows starting on left side of chromosome.
+
+```{julia}
+
+windowSize = 500
+
+# calculate windowed Fst across all scaffolds:
+
+windowed_pos_all = DataFrame(chrom = String[], mean_position = Float64[])
+windowed_Fst_all = Array{Float32, 2}(undef, size(FstNumerator, 1), 0)
+for chrom in scaffolds_for_Fst
+    regionText = string("chr", chrom)
+    loci_selection = (pos_SNP_filtered.chrom .== chrom)
+    pos_region = pos_SNP_filtered[loci_selection, :]
+    FstNumerator_region = FstNumerator[:, loci_selection]
+    FstDenominator_region = FstDenominator[:, loci_selection]
+    windowedPos, windowedFst = getWindowedFst(FstNumerator_region, FstDenominator_region, pos_region, windowSize)
+    windowed_pos_chrom = DataFrame(chrom = repeat([chrom], length(windowedPos)), mean_position = windowedPos)
+    windowed_pos_all = vcat(windowed_pos_all, windowed_pos_chrom)
+    windowed_Fst_all = hcat(windowed_Fst_all, windowedFst)
+end
+
+# The below is just a test plot, showing nothing useful really (as it overlaps all chromosomes onto one x axis):
+#plot(windowed_pos_all.mean_position, windowed_Fst_all[1,:])
+```
+
+The above has produced windowed Fst values across the whole genome, for each population comparison. These are stored in `windowed_Fst_all` and the location info is stored in `windowed_pos_all`.
+
+Now make a plot of windowed Fst across all scaffolds:
+
+```{julia}
+
+scaffolds_to_plot = scaffolds_for_Fst
+
+groupsToPlotFst = ["vir_troch_LN", "troch_LN_plumb", "vir_plumb"]
+groupColorsFst = ["green3", "orange", "purple"]
+ 
+figHandle_GenomeFst3 = plotGenomeFst(scaffolds_to_plot, 
+                                    windowed_Fst_all,
+                                    pairwiseNamesFst,
+                                    windowed_pos_all,
+                                    groupsToPlotFst,
+                                    groupColorsFst;
+                                    lineTransparency = 0.8,
+                                    fillTransparency = 0.2,
+                                    figureSize=(1200, 1200))
+```
+
+Now do one with just the vir_plumb connection
+```{julia}
+groupsToPlotFst = ["vir_plumb"]
+groupColorsFst = ["purple"]
+
+figHandle_GenomeFst1 = plotGenomeFst(scaffolds_to_plot, 
+                                    windowed_Fst_all,
+                                    pairwiseNamesFst,
+                                    windowed_pos_all,
+                                    groupsToPlotFst,
+                                    groupColorsFst;
+                                    lineTransparency = 0.8,
+                                    fillTransparency = 0.2,
+                                    figureSize=(1200, 800))
+```
+
+## Plot ViSHet vs. Fst
+
+```{julia}
+
+groupsToCompareUsingFst = "vir_plumb"
+FstRow = findfirst(pairwiseNamesFst .== groupsToCompareUsingFst)
+windowedFstValues = windowed_Fst_all[FstRow, :]
+#plot(windowedFstValues, windowed_HetVariance_all)
+
+fillOpacity = 0.3
+lineOpacity = 0.8
+
+f = Figure()
+ax = Axis(f[1, 1],
+    xlabel = "windowed Fst", xlabelsize = 24,
+    ylabel = "windowed VisHet", ylabelsize = 24)
+# hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+plot!(ax, windowedFstValues, windowed_HetVariance_all,
+    marker = :circle, color = ("black", fillOpacity), markersize = 8, strokewidth=0.5, strokecolor = ("black", lineOpacity))
+
+display(f)
+
+hist(windowedFstValues)
+
+hist(windowed_HetVariance_all)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

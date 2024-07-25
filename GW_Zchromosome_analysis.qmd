@@ -302,13 +302,13 @@ genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, num
 chr = "gwZ"
 regionInfo = chooseChrRegion(pos_SNP_filtered_chZcleaned, chr; positionMin=1, positionMax=scaffold_lengths[chr])
 
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 
 # Now plot without title:
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;
     plotTitle = "");
@@ -342,7 +342,7 @@ println("Calculated Fst values")
 chr = "gwZ"
 regionInfo = chooseChrRegion(pos_SNP_filtered_chZcleaned, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, 
+plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
     missingFractionAllowed, regionInfo,
     pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned, freqs, 
@@ -381,13 +381,13 @@ genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, num
 chr = "gwZ"
 regionInfo = chooseChrRegion(pos_SNP_filtered_chZcleaned, chr; positionMin=1, positionMax=scaffold_lengths[chr])
 
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 
 # Now plot without title:
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;
     plotTitle = "");
@@ -444,13 +444,13 @@ genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, num
 chr = "gwZ"
 regionInfo = chooseChrRegion(pos_SNP_filtered_chZcleaned, chr; positionMin=1, positionMax=scaffold_lengths[chr])
 
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 
 # Now plot without title:
-plotInfo = plotGenotypeByIndividual(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;
     plotTitle = "");

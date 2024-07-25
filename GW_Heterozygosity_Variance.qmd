@@ -6292,7 +6292,7 @@ Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
 # limit the number of individuals per group to plot
-numIndsToPlot = fill(15, length(clusterNames))
+numIndsToPlot = fill(150, length(clusterNames))
 
 genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot, 
                                             genos_selectedSNPs, PCAmodelAll.metadata;
@@ -8076,11 +8076,77 @@ hist(windowed_HetVariance_all)
 ```
 
 
+## Examine chromosome 4A Large HaploBlock Region (LHBR) with invariant sites included
 
+Before running below, I need to change format of 012NA file to # Before running below, changed 012NA file back into 012minus1 file, using commands like below,  so can be read as integer:
 
+```zsh
+cat /Users/darrenirwin/GW_data_from_cedar_Feb2024/GW2022_cedar/infoSites_vcfs/GW2022_all4plates.genotypes.allSites.chrgw4A.infoSites.max2allele_noindel.maxmiss60.MQ20.lowHet.tab.012NA | sed 's/NA/-1/g' > /Users/darrenirwin/GW_data_from_cedar_Feb2024/GW2022_cedar/infoSites_vcfs/GW2022_all4plates.genotypes.allSites.chrgw4A.infoSites.max2allele_noindel.maxmiss60.MQ20.lowHet.tab.012minus1
+```
 
+```{julia}
+baseName = "/Users/darrenirwin/GW_data_from_cedar_Feb2024/GW2022_cedar/infoSites_vcfs/GW2022_all4plates.genotypes.allSites.chrgw4A.infoSites.max2allele_noindel.maxmiss60.MQ20.lowHet.tab"
+# load metadata
+metadata_chr4A = DataFrame(CSV.File(metadataFile)) # the CSV.File function interprets the correct delimiter
+num_metadata_cols_chr4A = ncol(metadata_chr4A)
+num_individuals_chr4A = nrow(metadata_chr4A) 
+# read in individual names for this dataset
+individuals_file_name_chr4A = string(baseName, ".012.indv")
+ind_chr4A = DataFrame(CSV.File(individuals_file_name_chr4A; header=["ind"], types=[String])) 
+indNum_chr4A = size(ind_chr4A, 1) # number of individuals
+if num_individuals_chr4A != indNum_chr4A
+    println("WARNING: number of rows in metadata file different than number of individuals in .indv file")
+end
+# read in position data for this dataset
+position_file_name_chr4A = string(baseName, ".012.pos")
+pos_chr4A = DataFrame(CSV.File(position_file_name_chr4A; header=["chrom", "position"], types=[String, Int]))
+# read in genotype data
+genotype_file_name_chr4A = string(baseName, ".012minus1") 
+@time if 1 <= indNum <= 127   
+    geno_chr4A = readdlm(genotype_file_name_chr4A, '\t', Int8, '\n'); # this has been sped up dramatically, by first converting "NA" to -1
+elseif 128 <= indNum <= 32767
+    geno_chr4A = readdlm(genotype_file_name_chr4A, '\t', Int16, '\n'); # this needed for first column, which is number of individual; Int16 not much slower on import than Int8
+else
+    print("Error: Number of individuals in .indv appears outside of range from 1 to 32767")
+end
+loci_count_chr4A = size(geno_chr4A, 2) - 1   # because the first column is not a SNP (just a count from zero)
+print(string("Read in genotypic data at ", loci_count_chr4A," loci for ", indNum_chr4A, " individuals. \n"))
+```
 
+### Check that individuals are same in genotype data and metadata 
+```{julia}
+ind_with_metadata_chr4A = hcat(ind_chr4A, metadata_chr4A)
+println(ind_with_metadata_chr4A)
+println()  # prints a line break 
+if isequal(ind_with_metadata_chr4A.ind, ind_with_metadata_chr4A.ID)
+    println("GOOD NEWS: names of individuals in metadata file and genotype ind file match perfectly.")
+else
+    println("WARNING: names of individuals in metadata file and genotype ind file do not completely match.")
+end
+```
 
+### Polish a few individual names (to match those in other metadata object above, and make more readable graphs):
+
+```{julia}
+
+ind_with_metadata_chr4A.ind = correctNames(ind_with_metadata_chr4A.ind)
+
+ind_with_metadata_chr4A.ID = correctNames(ind_with_metadata_chr4A.ID)
+
+```
+
+### Filter to just the individuals also included in the analysis of LHBRs above
+
+```{julia}
+
+selection = map(in(ind_with_metadata_included.ind), ind_with_metadata_chr4A.ind)
+
+ind_with_metadata_chr4A_included = ind_with_metadata_chr4A[selection, :]
+
+# select just the included individuals, and ignore first column
+geno_chr4A_included = geno_chr4A[selection, 2:end]
+
+```
 
 
 

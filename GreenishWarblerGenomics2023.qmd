@@ -207,8 +207,7 @@ end
 # read in position data for this dataset
 position_file_name = string(baseName, filenameTextMiddle, missingGenotypeThreshold, filenameTextEnd, ".012.pos")
 pos_whole_genome = DataFrame(CSV.File(position_file_name; header=["chrom", "position"], types=[String, Int]))
-# read in genotype data
-column_names = ["null"; string.("c.", pos_whole_genome.chrom, ".", pos_whole_genome.position)]    
+# read in genotype data 
 genotype_file_name = string(baseName, filenameTextMiddle, missingGenotypeThreshold, filenameTextEnd, ".012minus1") 
 @time if 1 <= indNum <= 127   
     geno = readdlm(genotype_file_name, '\t', Int8, '\n'); # this has been sped up dramatically, by first converting "NA" to -1

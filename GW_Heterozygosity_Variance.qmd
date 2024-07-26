@@ -6068,7 +6068,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
 
 ```{julia}
 # choose scaffold
-chr = "gw4A"
+chr = "gw3"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
@@ -6649,14 +6649,14 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
 
 ```
 
-### Do a PCA based on a same-size region elsewhere on gw4A (with low HetVar):
+### Do a PCA based on a same-size region elsewhere on gw3 (with low HetVar):
 
 ```{julia}
 # get length of region
 lengthHighHetVarRegion = positionMax - positionMin
 
 # because the region is on the left side of chr 4A, will put the non-interesting region on the right side:
-rightLocus = scaffold_lengths["gw4A"] - 1_000_000
+rightLocus = scaffold_lengths["gw3"] - 1_000_000
 leftLocus = rightLocus - lengthHighHetVarRegion
 
 regionText_lowHetVarRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
@@ -7679,7 +7679,7 @@ regionHaplotypeCode_all = Dict{String, Dict{String, Tuple{Int, Int}}}(
                     "plumb"=>(7,7),
                     "plumbHet"=>(7,7),
                     "vir_plumb"=>(1,7)),
-    "gw4A" => Dict("virLud"=>(1,1),
+    "gw3" => Dict("virLud"=>(1,1),
                     "virLudHet"=>(1,1),
                     "nit"=>(3,3),
                     "virLud_troch"=>(1,5),
@@ -7772,7 +7772,7 @@ regionHaplotypeCode_all = Dict{String, Dict{String, Tuple{Int, Int}}}(
                     "plumb"=>(7,7))
 )
 
-haploblockRegions = ["gw1A", "gw3", "gw4A", "gw13", "gw15", "gw17", "gw18", "gw19", "gw20","gw26", "gw28", "gwZ"]
+haploblockRegions = ["gw1A", "gw3", "gw3", "gw13", "gw15", "gw17", "gw18", "gw19", "gw20","gw26", "gw28", "gwZ"]
 
 numHaploblockRegions = length(haploblockRegions)
 numInds = size(ind_with_metadata_included, 1)
@@ -8161,7 +8161,7 @@ clusterNames_gw4A = ["virLud",
                 "troch",
                 "obsPlumb"]
 
-# get boundaries of gw4A LHBR:
+# get boundaries of gw3 LHBR:
 
 chr = "gw4A"
 positionMin_chr4A_LHBR, positionMax_chr4A_LHBR, regionText, 
@@ -8172,7 +8172,7 @@ positionMin_chr4A_LHBR, positionMax_chr4A_LHBR, regionText,
                                                     highHetVarRegions, chr;
                                                     windowSize = 500)
 
-# select the loci within the gw4A LHBR:
+# select the loci within the gw3 LHBR:
 selection = (positionMin_chr4A_LHBR .<= pos_chr4A.position .<= positionMax_chr4A_LHBR) 
 
 geno_chr4A_included_LHBR = geno_chr4A_included[:, selection]
@@ -8180,8 +8180,7 @@ geno_chr4A_included_LHBR = geno_chr4A_included[:, selection]
 pos_chr4A_LHBR = pos_chr4A[selection, :]
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(geno_chr4A_included_LHBR, indClusterMembership_gw4A, clusterNames_gw4A)
-println("Calculated population allele frequencies and sample sizes")
+freqs, sampleSizes = getFreqsAndSampleSizes(geno_chr4A_included_LHBR, indClusterMembership_gw3, clusterNames_gw3)
 
 # Calculate per-site pi (within-group nucleotide distance)
 sitePi = getSitePi(freqs, sampleSizes)
@@ -8189,10 +8188,10 @@ sitePi = getSitePi(freqs, sampleSizes)
 # calculate pairwise Dxy per site, using data in "freqs" and groups in "groups"
 Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames)
 
-Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampleSizes, clusterNames; among=false)
+Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampleSizes, clusterNames_gw4A; among=false)
 
 # Now get averages of pi and Dxy for whole region:
-regionPiTable = DataFrame(cluster = clusterNames, pi = getRegionPi(sitePi))
+regionPiTable = DataFrame(cluster = clusterNames_gw4A, pi = getRegionPi(sitePi))
 #= 4×2 DataFrame
  Row │ cluster   pi          
      │ String    Float64     
@@ -8216,12 +8215,250 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegi
 
 ```
 
+Wow, that is an amazing difference between pi within the obsPlumb haplotype and Dxy between that and others (roughly 10x).
+
+### Calculate pi and Dxy outside of the chr 4A LHBR (grouped by the LHBR homozygous groups)
+
+```{julia}
+
+# select the loci outside of the gw3 LHBR:
+selection = .!(positionMin_chr4A_LHBR .<= pos_chr4A.position .<= positionMax_chr4A_LHBR) 
+
+geno_chr4A_included_nonLHBR = geno_chr4A_included[:, selection]
+
+pos_chr4A_nonLHBR = pos_chr4A[selection, :]
+
+# Calculate allele freqs and sample sizes
+freqs, sampleSizes = getFreqsAndSampleSizes(geno_chr4A_included_nonLHBR, indClusterMembership_gw3, clusterNames_gw3)
+
+# Calculate per-site pi (within-group nucleotide distance)
+sitePi = getSitePi(freqs, sampleSizes)
+
+# calculate pairwise Dxy per site, using data in "freqs" and groups in "groups"
+Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames_gw3)
+
+Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampleSizes, clusterNames_gw3; among=false)
+
+# Now get averages of pi and Dxy for whole region:
+regionPiTable = DataFrame(cluster = clusterNames_gw3, pi = getRegionPi(sitePi))
+#= 4×2 DataFrame
+ Row │ cluster   pi         
+     │ String    Float64    
+─────┼──────────────────────
+   1 │ virLud    0.0041321
+   2 │ nit       0.00196343
+   3 │ troch     0.00551821
+   4 │ obsPlumb  0.0055897 =#
+
+regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegionDxy(Dxy))
+#= 6×2 DataFrame
+ Row │ cluster_pair     Dxy        
+     │ String           Float64    
+─────┼─────────────────────────────
+   1 │ virLud_nit       0.00440681
+   2 │ virLud_troch     0.0055599
+   3 │ virLud_obsPlumb  0.00556595
+   4 │ nit_troch        0.00520058
+   5 │ nit_obsPlumb     0.00548082
+   6 │ troch_obsPlumb   0.00601295 =#
+```
+
+Remarkable differences between pi and Dxy in the gw4A LHBR, and between LHBR and non-LHBR part of that chromosome!
+
+Do same with chr 3, which also shows 3 clear haplotype groups, but a very different biogeographic pattern than 4A: 
 
 
 
 
 
 
+## Examine chromosome 3 Large HaploBlock Region (LHBR) with invariant sites included
+
+Before running below, I need to change format of 012NA file to # Before running below, changed 012NA file back into 012minus1 file, using commands like below,  so can be read as integer:
+
+```zsh
+cat /Users/darrenirwin/GW_data_from_cedar_Feb2024/GW2022_cedar/infoSites_vcfs/GW2022_all4plates.genotypes.allSites.chrgw3.infoSites.max2allele_noindel.maxmiss60.MQ20.lowHet.tab.012NA | sed 's/NA/-1/g' > /Users/darrenirwin/GW_data_from_cedar_Feb2024/GW2022_cedar/infoSites_vcfs/GW2022_all4plates.genotypes.allSites.chrgw3.infoSites.max2allele_noindel.maxmiss60.MQ20.lowHet.tab.012minus1
+```
+
+```{julia}
+baseName = "/Users/darrenirwin/GW_data_from_cedar_Feb2024/GW2022_cedar/infoSites_vcfs/GW2022_all4plates.genotypes.allSites.chrgw3.infoSites.max2allele_noindel.maxmiss60.MQ20.lowHet.tab"
+# load metadata
+metadata_chr3 = DataFrame(CSV.File(metadataFile)) # the CSV.File function interprets the correct delimiter
+num_metadata_cols_chr3 = ncol(metadata_chr3)
+num_individuals_chr3 = nrow(metadata_chr3) 
+# read in individual names for this dataset
+individuals_file_name_chr3 = string(baseName, ".012.indv")
+ind_chr3 = DataFrame(CSV.File(individuals_file_name_chr3; header=["ind"], types=[String])) 
+indNum_chr3 = size(ind_chr3, 1) # number of individuals
+if num_individuals_chr3 != indNum_chr3
+    println("WARNING: number of rows in metadata file different than number of individuals in .indv file")
+end
+# read in position data for this dataset
+position_file_name_chr3 = string(baseName, ".012.pos")
+pos_chr3 = DataFrame(CSV.File(position_file_name_chr3; header=["chrom", "position"], types=[String, Int]))
+# read in genotype data
+genotype_file_name_chr3 = string(baseName, ".012minus1") 
+@time if 1 <= indNum <= 127   
+    geno_chr3 = readdlm(genotype_file_name_chr3, '\t', Int8, '\n'); # this has been sped up dramatically, by first converting "NA" to -1
+elseif 128 <= indNum <= 32767
+    geno_chr3 = readdlm(genotype_file_name_chr3, '\t', Int16, '\n'); # this needed for first column, which is number of individual; Int16 not much slower on import than Int8
+else
+    print("Error: Number of individuals in .indv appears outside of range from 1 to 32767")
+end
+loci_count_chr3 = size(geno_chr3, 2) - 1   # because the first column is not a SNP (just a count from zero)
+print(string("Read in genotypic data at ", loci_count_chr3," loci for ", indNum_chr3, " individuals. \n"))
+```
+
+### Check that individuals are same in genotype data and metadata 
+```{julia}
+ind_with_metadata_chr3 = hcat(ind_chr3, metadata_chr3)
+println(ind_with_metadata_chr3)
+println()  # prints a line break 
+if isequal(ind_with_metadata_chr3.ind, ind_with_metadata_chr3.ID)
+    println("GOOD NEWS: names of individuals in metadata file and genotype ind file match perfectly.")
+else
+    println("WARNING: names of individuals in metadata file and genotype ind file do not completely match.")
+end
+```
+
+### Polish a few individual names (to match those in other metadata object above, and make more readable graphs):
+
+```{julia}
+
+ind_with_metadata_chr3.ind = correctNames(ind_with_metadata_chr3.ind)
+
+ind_with_metadata_chr3.ID = correctNames(ind_with_metadata_chr3.ID)
+
+```
+
+### Filter to just the individuals also included in the analysis of LHBRs above
+
+```{julia}
+
+selection = map(in(ind_with_metadata_included.ind), ind_with_metadata_chr3.ind)
+
+ind_with_metadata_chr3_included = ind_with_metadata_chr3[selection, :]
+
+# select genotypes of just the included individuals, and ignore first column
+geno_chr3_included = geno_chr3[selection, 2:end]
+
+#
+println(ind_with_metadata_included.gw3_cluster)
+
+```
+
+### Look up the chr 3 individual membership in homozygous clusters, and calculate pi and Dxy
+
+```{julia}
+indClusterMembership_gw3 = ind_with_metadata_included.gw3_cluster
+
+clusterNames_gw3 = ["virLud",
+                    "nit",
+                    "trochObs",
+                    "plumb"]
+
+# get boundaries of gw3 LHBR:
+
+chr = "gw3"
+positionMin_chr3_LHBR, positionMax_chr3_LHBR, regionText, 
+    windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
+    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+                        getWindowedIndHetStanRegion(genosOnly_included, 
+                                                    pos_SNP_filtered, 
+                                                    highHetVarRegions, chr;
+                                                    windowSize = 500)
+
+# select the loci within the gw3 LHBR:
+selection = (positionMin_chr3_LHBR .<= pos_chr3.position .<= positionMax_chr3_LHBR) 
+
+geno_chr3_included_LHBR = geno_chr3_included[:, selection]
+
+pos_chr3_LHBR = pos_chr3[selection, :]
+
+# Calculate allele freqs and sample sizes
+freqs, sampleSizes = getFreqsAndSampleSizes(geno_chr3_included_LHBR, indClusterMembership_gw3, clusterNames_gw3)
+
+# Calculate per-site pi (within-group nucleotide distance)
+sitePi = getSitePi(freqs, sampleSizes)
+
+# calculate pairwise Dxy per site, using data in "freqs" and groups in "groups"
+Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames)
+
+Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampleSizes, clusterNames_gw3; among=false)
+
+# Now get averages of pi and Dxy for whole region:
+regionPiTable = DataFrame(cluster = clusterNames_gw3, pi = getRegionPi(sitePi))
+#= 4×2 DataFrame
+ Row │ cluster   pi          
+     │ String    Float64     
+─────┼───────────────────────
+   1 │ virLud    0.0012486
+   2 │ nit       0.000697639
+   3 │ trochObs  0.00136251
+   4 │ plumb     0.00111764 =#
+
+regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegionDxy(Dxy))
+#= 6×2 DataFrame
+ Row │ cluster_pair     Dxy        
+     │ String           Float64    
+─────┼─────────────────────────────
+   1 │ virLud_nit       0.0026694
+   2 │ virLud_troch     0.00354486
+   3 │ virLud_obsPlumb  0.00398499
+   4 │ nit_troch        0.00335481
+   5 │ nit_obsPlumb     0.00400019
+   6 │ troch_obsPlumb   0.00328016 =#
+
+```
+
+### Calculate pi and Dxy outside of the chr 3 LHBR (grouped by the LHBR homozygous groups)
+
+```{julia}
+
+# select the loci outside of the gw3 LHBR:
+selection = .!(positionMin_chr3_LHBR .<= pos_chr3.position .<= positionMax_chr3_LHBR) 
+
+geno_chr3_included_nonLHBR = geno_chr3_included[:, selection]
+
+pos_chr3_nonLHBR = pos_chr3[selection, :]
+
+# Calculate allele freqs and sample sizes
+freqs, sampleSizes = getFreqsAndSampleSizes(geno_chr3_included_nonLHBR, indClusterMembership_gw3, clusterNames_gw3)
+
+# Calculate per-site pi (within-group nucleotide distance)
+sitePi = getSitePi(freqs, sampleSizes)
+
+# calculate pairwise Dxy per site, using data in "freqs" and groups in "groups"
+Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames_gw3)
+
+Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampleSizes, clusterNames_gw3; among=false)
+
+# Now get averages of pi and Dxy for whole region:
+regionPiTable = DataFrame(cluster = clusterNames_gw3, pi = getRegionPi(sitePi))
+#= 4×2 DataFrame
+ Row │ cluster   pi         
+     │ String    Float64    
+─────┼──────────────────────
+   1 │ virLud    0.00456714
+   2 │ nit       0.00161186
+   3 │ trochObs  0.00568622
+   4 │ plumb     0.00554501 =#
+
+regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegionDxy(Dxy))
+#= 6×2 DataFrame
+ Row │ cluster_pair     Dxy        
+     │ String           Float64    
+─────┼─────────────────────────────
+   1 │ virLud_nit       0.00439336
+   2 │ virLud_trochObs  0.0059857
+   3 │ virLud_plumb     0.00660034
+   4 │ nit_trochObs     0.00548855
+   5 │ nit_plumb        0.00608182
+   6 │ trochObs_plumb   0.00652593 =#
+
+```
+
+Really neat results above. More diversity at chr 3 LHBR than at 4A.
 
 
 

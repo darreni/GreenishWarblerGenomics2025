@@ -8143,11 +8143,78 @@ selection = map(in(ind_with_metadata_included.ind), ind_with_metadata_chr4A.ind)
 
 ind_with_metadata_chr4A_included = ind_with_metadata_chr4A[selection, :]
 
-# select just the included individuals, and ignore first column
+# select genotypes of just the included individuals, and ignore first column
 geno_chr4A_included = geno_chr4A[selection, 2:end]
+
+#
+println(ind_with_metadata_included.gw4A_cluster)
 
 ```
 
+### Look up the chr4A individual membership in homozygous clusters, and calculate pi and Dxy
+
+```{julia}
+indClusterMembership_gw4A = ind_with_metadata_included.gw4A_cluster
+
+clusterNames_gw4A = ["virLud",
+                "nit",
+                "troch",
+                "obsPlumb"]
+
+# get boundaries of gw4A LHBR:
+
+chr = "gw4A"
+positionMin_chr4A_LHBR, positionMax_chr4A_LHBR, regionText, 
+    windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
+    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+                        getWindowedIndHetStanRegion(genosOnly_included, 
+                                                    pos_SNP_filtered, 
+                                                    highHetVarRegions, chr;
+                                                    windowSize = 500)
+
+# select the loci within the gw4A LHBR:
+selection = (positionMin_chr4A_LHBR .<= pos_chr4A.position .<= positionMax_chr4A_LHBR) 
+
+geno_chr4A_included_LHBR = geno_chr4A_included[:, selection]
+
+pos_chr4A_LHBR = pos_chr4A[selection, :]
+
+# Calculate allele freqs and sample sizes
+freqs, sampleSizes = getFreqsAndSampleSizes(geno_chr4A_included_LHBR, indClusterMembership_gw4A, clusterNames_gw4A)
+println("Calculated population allele frequencies and sample sizes")
+
+# Calculate per-site pi (within-group nucleotide distance)
+sitePi = getSitePi(freqs, sampleSizes)
+
+# calculate pairwise Dxy per site, using data in "freqs" and groups in "groups"
+Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames)
+
+Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampleSizes, clusterNames; among=false)
+
+# Now get averages of pi and Dxy for whole region:
+regionPiTable = DataFrame(cluster = clusterNames, pi = getRegionPi(sitePi))
+#= 4×2 DataFrame
+ Row │ cluster   pi          
+     │ String    Float64     
+─────┼───────────────────────
+   1 │ virLud    0.000956575
+   2 │ nit       0.000332204
+   3 │ troch     0.000613901
+   4 │ obsPlumb  0.000261819 =#
+
+regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegionDxy(Dxy))
+#= 6×2 DataFrame
+ Row │ cluster_pair     Dxy        
+     │ String           Float64    
+─────┼─────────────────────────────
+   1 │ virLud_nit       0.00325609
+   2 │ virLud_troch     0.0031813
+   3 │ virLud_obsPlumb  0.00241666
+   4 │ nit_troch        0.00286634
+   5 │ nit_obsPlumb     0.00249507
+   6 │ troch_obsPlumb   0.00305931 =#
+
+```
 
 
 

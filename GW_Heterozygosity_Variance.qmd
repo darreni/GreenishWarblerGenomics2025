@@ -3762,7 +3762,7 @@ Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
 # limit the number of individuals per group to plot
-numIndsToPlot = fill(15, length(clusterNames))
+numIndsToPlot = fill(150, length(clusterNames))
 
 genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot, 
                                             genos_selectedSNPs, PCAmodelAll.metadata;
@@ -8161,7 +8161,7 @@ clusterNames_gw4A = ["virLud",
                 "troch",
                 "obsPlumb"]
 
-# get boundaries of gw3 LHBR:
+# get boundaries of gw4A LHBR:
 
 chr = "gw4A"
 positionMin_chr4A_LHBR, positionMax_chr4A_LHBR, regionText, 
@@ -8172,7 +8172,7 @@ positionMin_chr4A_LHBR, positionMax_chr4A_LHBR, regionText,
                                                     highHetVarRegions, chr;
                                                     windowSize = 500)
 
-# select the loci within the gw3 LHBR:
+# select the loci within the gw4A LHBR:
 selection = (positionMin_chr4A_LHBR .<= pos_chr4A.position .<= positionMax_chr4A_LHBR) 
 
 geno_chr4A_included_LHBR = geno_chr4A_included[:, selection]
@@ -8180,7 +8180,7 @@ geno_chr4A_included_LHBR = geno_chr4A_included[:, selection]
 pos_chr4A_LHBR = pos_chr4A[selection, :]
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(geno_chr4A_included_LHBR, indClusterMembership_gw3, clusterNames_gw3)
+freqs, sampleSizes = getFreqsAndSampleSizes(geno_chr4A_included_LHBR, indClusterMembership_gw4A, clusterNames_gw4A)
 
 # Calculate per-site pi (within-group nucleotide distance)
 sitePi = getSitePi(freqs, sampleSizes)
@@ -8213,6 +8213,13 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegi
    5 │ nit_obsPlumb     0.00249507
    6 │ troch_obsPlumb   0.00305931 =#
 
+# Drawing phylogeny (in Illustrator) based on above, between three major groups.
+# Ignoring nit, the most recent connection is between virLud and obsPlumb (0.00241666).
+# For deeper branch length, am using: 
+# Calculation for average Dxy between troch and (virLud, obsPlumb):
+(0.0031813 + 0.00305931) / 2
+# 0.003120305
+
 ```
 
 Wow, that is an amazing difference between pi within the obsPlumb haplotype and Dxy between that and others (roughly 10x).
@@ -8221,7 +8228,7 @@ Wow, that is an amazing difference between pi within the obsPlumb haplotype and 
 
 ```{julia}
 
-# select the loci outside of the gw3 LHBR:
+# select the loci outside of the gw4A LHBR:
 selection = .!(positionMin_chr4A_LHBR .<= pos_chr4A.position .<= positionMax_chr4A_LHBR) 
 
 geno_chr4A_included_nonLHBR = geno_chr4A_included[:, selection]
@@ -8229,18 +8236,18 @@ geno_chr4A_included_nonLHBR = geno_chr4A_included[:, selection]
 pos_chr4A_nonLHBR = pos_chr4A[selection, :]
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(geno_chr4A_included_nonLHBR, indClusterMembership_gw3, clusterNames_gw3)
+freqs, sampleSizes = getFreqsAndSampleSizes(geno_chr4A_included_nonLHBR, indClusterMembership_gw4A, clusterNames_gw4A)
 
 # Calculate per-site pi (within-group nucleotide distance)
 sitePi = getSitePi(freqs, sampleSizes)
 
 # calculate pairwise Dxy per site, using data in "freqs" and groups in "groups"
-Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames_gw3)
+Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames_gw4A)
 
-Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampleSizes, clusterNames_gw3; among=false)
+Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampleSizes, clusterNames_gw4A; among=false)
 
 # Now get averages of pi and Dxy for whole region:
-regionPiTable = DataFrame(cluster = clusterNames_gw3, pi = getRegionPi(sitePi))
+regionPiTable = DataFrame(cluster = clusterNames_gw4A, pi = getRegionPi(sitePi))
 #= 4×2 DataFrame
  Row │ cluster   pi         
      │ String    Float64    
@@ -8261,6 +8268,13 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegi
    4 │ nit_troch        0.00520058
    5 │ nit_obsPlumb     0.00548082
    6 │ troch_obsPlumb   0.00601295 =#
+
+# Drawing phylogeny (in Illustrator) based on above, between three major groups.
+# In this case, the virLud_troch is the lower Dxy so am connecting those more recently.
+# For deeper brancha length, using this:
+# Calculation of average distance between obsPlumb and (virLud, troch)
+(0.00556595 + 0.00601295) / 2
+# 0.00578945
 ```
 
 Remarkable differences between pi and Dxy in the gw4A LHBR, and between LHBR and non-LHBR part of that chromosome!
@@ -8403,18 +8417,24 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegi
      │ String           Float64    
 ─────┼─────────────────────────────
    1 │ virLud_nit       0.0026694
-   2 │ virLud_troch     0.00354486
-   3 │ virLud_obsPlumb  0.00398499
-   4 │ nit_troch        0.00335481
-   5 │ nit_obsPlumb     0.00400019
-   6 │ troch_obsPlumb   0.00328016 =#
+   2 │ virLud_trochObs  0.00354486
+   3 │ virLud_plumb     0.00398499
+   4 │ nit_trochObs     0.00335481
+   5 │ nit_plumb        0.00400019
+   6 │ trochObs_plumb   0.00328016 =#
+
+# Drawing phylogeny (in Illustrator) based on above, between three major groups.
+# Lowest Dxy is between trochObs and plumb (0.00328016).
+# Calculation of deepest split, an average of virLud diff with (trochObs, plumb):
+(0.00354486 + 0.00398499) / 2
+# 0.003764925
+
 
 ```
 
 ### Calculate pi and Dxy outside of the chr 3 LHBR (grouped by the LHBR homozygous groups)
 
 ```{julia}
-
 # select the loci outside of the gw3 LHBR:
 selection = .!(positionMin_chr3_LHBR .<= pos_chr3.position .<= positionMax_chr3_LHBR) 
 
@@ -8455,6 +8475,12 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegi
    4 │ nit_trochObs     0.00548855
    5 │ nit_plumb        0.00608182
    6 │ trochObs_plumb   0.00652593 =#
+
+# Drawing phylogeny (in Illustrator) based on above, between three major groups.
+# Lowest Dxy is between virLud and trochObs (0.0059857).
+# Calculation of deepest split, an average of plumb diff with (virLud, trochObs):
+(0.00660034 + 0.00652593) / 2
+# 0.006563135
 
 ```
 

@@ -407,7 +407,9 @@ push!(chromosomes_to_include, "gw1A", "gw4A", "gwZ")  # add two other scaffolds
 
 #### Imputation using KNN
 
-```{julia}
+Did this and saved files, so inactivated this cell for now:
+
+```julia
 for i in eachindex(chromosomes_to_include)
     chrom = chromosomes_to_include[i]
     regionText = string("chr", chrom, "nonLHBR")
@@ -421,46 +423,73 @@ for i in eachindex(chromosomes_to_include)
 end
 ```
 
-
-
-
-
-
-
-
-# PCA of all individuals (IMPUTING ALL AT ONCE--SHOULD PROBABLY CHANGE TO CHR-BY-CHR):
+Load saved imputed data for each chromosome (the non-LHBR part):
 
 ```{julia}
-genos_nonLHBR_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genosOnly_included_nonLHBR))
+# initialize data structures
+genos_imputed_loaded = Matrix{Union{Missing, Float32}}(undef, nrow(ind_with_metadata_indFiltered), 0)
+pos_SNP_loaded = DataFrame(chrom = String[], position = Int64[])
+for i in eachindex(chromosomes_to_include)
+    chrom = chromosomes_to_include[i]
+    regionText = string("chr", chrom, "nonLHBR")
+    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+    imputed_genos_one_chr = load(filename, "imputed_genos")
+    genos_imputed_loaded = hcat(genos_imputed_loaded, imputed_genos_one_chr)
+    if ind_with_metadata_indFiltered.ind != load(filename, "ind_with_metadata_indFiltered")[:, :ind]
+        println("""Warning: "ind" columns in loaded data and memory data don't match.""")
+    end
+    pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_nonLHBR_region")
+    pos_SNP_loaded = vcat(pos_SNP_loaded, pos_SNP_filtered_region)
+    println(string("Loaded ",filename))
+    println(string(regionText, ": ", size(imputed_genos_one_chr,2), " SNPs from ", size(imputed_genos_one_chr,1), " individuals"))
+end
+```
 
+Now do the PCA:
+
+```{julia}
 flipPC1 = true
-flipPC2 = false
+flipPC2 = true
+PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered, 
+        groups_to_plot_PCA, group_colors_PCA; 
+        sampleSet = "greenish warblers", regionText = "non-LHBR wholeGenome",
+        flip1 = flipPC1, flip2 = flipPC2,
+        lineOpacity = 0.7, fillOpacity = 0.6,
+        symbolSize = 14, showTitle = false)
+totalObservationVariance = var(PCA_wholeGenome.model) 
+PC1_variance, PC2_variance = principalvars(PCA_wholeGenome.model)[1:2]
+PC1_prop_variance = PC1_variance / totalObservationVariance
+PC2_prop_variance = PC2_variance / totalObservationVariance
+println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
+PC2 explains ", 100*PC2_prop_variance, "%.")
+```
 
-PCAmodelAll = plotPCA(genos_nonLHBR_imputed, ind_with_metadata_included, 
-            groups_to_plot_PCA, group_colors_PCA; 
-            sampleSet = "greenish warblers", regionText = "non-LHBR whole genome",
-            flip1 = flipPC1, flip2 = flipPC2,
-            lineOpacity = 0.7, fillOpacity = 0.6,
-            symbolSize = 14, showTitle = true,
-            xLabelText = string("PC1"), yLabelText = string("PC2"),
-            showPlot = false)
+The above looks quite similar to the whole-genome PCA including the LHBRs.
 
-display(PCAmodelAll.PCAfig)
+#### Do non_LHBR for a specific chromosome:
 
-
+```{julia}
+selection = pos_SNP_loaded.chrom .== "gw4A"
+pos_SNP_loaded_oneChr = pos_SNP_loaded[selection, :]
+genos_imputed_loaded_oneChr = genos_imputed_loaded[:, selection]
+flipPC1 = true
+flipPC2 = true
+PCA_oneChr = plotPCA(genos_imputed_loaded_oneChr, ind_with_metadata_indFiltered, 
+        groups_to_plot_PCA, group_colors_PCA; 
+        sampleSet = "greenish warblers", regionText = "non-LHBR wholeGenome",
+        flip1 = flipPC1, flip2 = flipPC2,
+        lineOpacity = 0.7, fillOpacity = 0.6,
+        symbolSize = 14, showTitle = false)
+totalObservationVariance = var(PCA_oneChr.model) 
+PC1_variance, PC2_variance = principalvars(PCA_oneChr.model)[1:2]
+PC1_prop_variance = PC1_variance / totalObservationVariance
+PC2_prop_variance = PC2_variance / totalObservationVariance
+println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
+PC2 explains ", 100*PC2_prop_variance, "%.")
 
 ```
 
-
-
-
-
-
-
-
-
-
-
+There is a whole lot of signal for population structure in the non-LHBR regions--maybe not suprising given there are high-Fst regions with low ViSHet.
 
 
 ## Choose low-het individuals in a high HetVar region

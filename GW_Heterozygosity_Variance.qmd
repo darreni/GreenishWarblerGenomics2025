@@ -377,6 +377,92 @@ plotGenomeHetVariance(scaffolds_to_plot,
 
 ```
 
+
+## Make a PCA based on all non-LHBRs (that is, outside of the identified Large HaploBlock Regions):
+
+#### First remove the LHBR regions
+
+```{julia}
+# cycle through the LHBRs, determining the SNPs within each to remove from the dataset:
+lociToRemove = fill(false, nrow(pos_SNP_filtered))
+for i in eachrow(highHetVarRegions) 
+    display(i.regionChrom)
+    display(i.regionStart)
+    lociWithinThisLHBR = (pos_SNP_filtered.chrom .== i.regionChrom) .&& 
+                    (pos_SNP_filtered.position .>= i.regionStart) .&&
+                    (pos_SNP_filtered.position .<= i.regionEnd)
+    lociToRemove = lociToRemove .|| lociWithinThisLHBR
+end
+# now actually remove them:
+genosOnly_included_nonLHBR = genosOnly_included[:, .!lociToRemove]
+pos_SNP_filtered_nonLHBR = pos_SNP_filtered[.!lociToRemove, :]
+```
+
+#### Make list of scaffolds to include in the whole-genome non_LHBR PCA:
+
+```{julia}
+chromosomes_to_include = "gw" .* string.(vcat(28:-1:17, 15:-1:1))
+push!(chromosomes_to_include, "gw1A", "gw4A", "gwZ")  # add two other scaffolds
+```
+
+#### Imputation using KNN
+
+```{julia}
+for i in eachindex(chromosomes_to_include)
+    chrom = chromosomes_to_include[i]
+    regionText = string("chr", chrom, "nonLHBR")
+    loci_selection = (pos_SNP_filtered_nonLHBR.chrom .== chrom)
+    pos_SNP_filtered_nonLHBR_region = pos_SNP_filtered_nonLHBR[loci_selection,:]
+    genosOnly_nonLHBR_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_included_nonLHBR[:,loci_selection])
+    @time imputed_genos = Impute.knn(genosOnly_nonLHBR_region_for_imputing; k=1, dims=:rows)
+    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+    jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_nonLHBR_region)
+    println(string(regionText, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_nonLHBR_region, 1)," SNPs and ", size(genosOnly_nonLHBR_region_for_imputing, 1)," filtered individuals, in file $filename"))
+end
+```
+
+
+
+
+
+
+
+
+# PCA of all individuals (IMPUTING ALL AT ONCE--SHOULD PROBABLY CHANGE TO CHR-BY-CHR):
+
+```{julia}
+genos_nonLHBR_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genosOnly_included_nonLHBR))
+
+flipPC1 = true
+flipPC2 = false
+
+PCAmodelAll = plotPCA(genos_nonLHBR_imputed, ind_with_metadata_included, 
+            groups_to_plot_PCA, group_colors_PCA; 
+            sampleSet = "greenish warblers", regionText = "non-LHBR whole genome",
+            flip1 = flipPC1, flip2 = flipPC2,
+            lineOpacity = 0.7, fillOpacity = 0.6,
+            symbolSize = 14, showTitle = true,
+            xLabelText = string("PC1"), yLabelText = string("PC2"),
+            showPlot = false)
+
+display(PCAmodelAll.PCAfig)
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Choose low-het individuals in a high HetVar region
 
 Now that we have high HetVar regions indicated, we can automate the choosing of essential homozygous individuals in those regions. Below I will do this for chrZ (and later chr15 and chr18).

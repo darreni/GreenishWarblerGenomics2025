@@ -55,8 +55,14 @@ ind_with_metadata_indFiltered.sex = ind_with_metadata_indFiltered_chrgwZ_cleaned
 
 ```
 
+## switch plot order to ring_km, and set nitidus (set to -2500 km) and the Siberian hybrid (set to 5000 km) plot order:
 
-
+```{julia}
+ind_with_metadata_indFiltered.original_plot_order = ind_with_metadata_indFiltered.plot_order
+ind_with_metadata_indFiltered.plot_order = ind_with_metadata_indFiltered.ring_km
+ind_with_metadata_indFiltered.plot_order[ind_with_metadata_indFiltered.Fst_group .== "nit"] .= -2500
+ind_with_metadata_indFiltered.plot_order[ind_with_metadata_indFiltered.Fst_group .== "plumb_vir"] .= 5000
+```
 
 ## Prepare data for Genotype-by-individual plots and PCA
 
@@ -328,7 +334,7 @@ function plotGenomeHetVariance(scaffolds_to_plot,
     numRows = length(scaffoldInRow)
     # make one axis object per row:
     axs = [Axis(f[i, 1], limits=(0, bpPerRow,
-            0, 2.3), ylabel = "HetVar") for i in 1:numRows]
+            -0.45, 2.0), ylabel = "ViSHet") for i in 1:numRows]
     for i in 1:numRows
         hidexdecorations!(axs[i]) #hide background lattice and axis labels
         hidespines!(axs[i], :t, :r, :b) # hide box around plot
@@ -345,7 +351,7 @@ function plotGenomeHetVariance(scaffolds_to_plot,
             windowed_pos_selected = view(windowed_pos_all.mean_position, selection)
             windowed_HetVariance_selected = view(windowed_HetVariance_all, selection)
             if length(windowed_pos_selected) > 0  # only plot if there is data for that scaffold        
-                text!(axs[rowNum], scaffoldBpStartInRow[rowNum][orderNum] + 0.005bpPerRow, 2.1; text=scaffoldName, align=(:left, :center), fontsize=20)
+                text!(axs[rowNum], scaffoldBpStartInRow[rowNum][orderNum] + 0.005bpPerRow, -0.2; text=scaffoldName, align=(:left, :center), fontsize=20)
                 xx = vcat(first(windowed_pos_selected), windowed_pos_selected, last(windowed_pos_selected)) .+ scaffoldBpStartInRow[rowNum][orderNum]
                 yy = vcat(0, windowed_HetVariance_selected, 0)
                 poly!(axs[rowNum], Point2f.(xx, yy), color = (fillColor, fillTransparency), strokecolor = (fillColor, lineTransparency), strokewidth = 1)
@@ -382,7 +388,7 @@ plotGenomeHetVariance(scaffolds_to_plot,
 
 #### First remove the LHBR regions
 
-```{julia}
+```julia
 # cycle through the LHBRs, determining the SNPs within each to remove from the dataset:
 lociToRemove = fill(false, nrow(pos_SNP_filtered))
 for i in eachrow(highHetVarRegions) 
@@ -400,7 +406,7 @@ pos_SNP_filtered_nonLHBR = pos_SNP_filtered[.!lociToRemove, :]
 
 #### Make list of scaffolds to include in the whole-genome non_LHBR PCA:
 
-```{julia}
+```julia
 chromosomes_to_include = "gw" .* string.(vcat(28:-1:17, 15:-1:1))
 push!(chromosomes_to_include, "gw1A", "gw4A", "gwZ")  # add two other scaffolds
 ```
@@ -425,7 +431,7 @@ end
 
 Load saved imputed data for each chromosome (the non-LHBR part):
 
-```{julia}
+```julia
 # initialize data structures
 genos_imputed_loaded = Matrix{Union{Missing, Float32}}(undef, nrow(ind_with_metadata_indFiltered), 0)
 pos_SNP_loaded = DataFrame(chrom = String[], position = Int64[])
@@ -445,9 +451,9 @@ for i in eachindex(chromosomes_to_include)
 end
 ```
 
-Now do the PCA:
+Now do the PCA for non_LHBR parts of genome:
 
-```{julia}
+```julia
 flipPC1 = true
 flipPC2 = true
 PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered, 
@@ -468,7 +474,7 @@ The above looks quite similar to the whole-genome PCA including the LHBRs.
 
 #### Do non_LHBR for a specific chromosome:
 
-```{julia}
+```julia
 selection = pos_SNP_loaded.chrom .== "gw4A"
 pos_SNP_loaded_oneChr = pos_SNP_loaded[selection, :]
 genos_imputed_loaded_oneChr = genos_imputed_loaded[:, selection]
@@ -3881,11 +3887,18 @@ numIndsToPlot = fill(150, length(clusterNames))
 
 genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot, 
                                             genos_selectedSNPs, PCAmodelAll.metadata;
-                                            sortByMissing = true)
+                                            sortByMissing = false)
+
+# sort based on original_plot_order, and then together with function below will arrange individuals in population order within clusters:
+sortOrder = sortperm(indMetadataforGBI.original_plot_order, rev=false)
+indMetadataforGBI = indMetadataforGBI[sortOrder, :]
+genosForGBI = genosForGBI[sortOrder, :]
 
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
+                indFontSize=6, figureSize=(800, 1800),
                 missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = true,
                 indColorRightProvided = true)
 ```
 
@@ -5331,30 +5344,23 @@ display(f)
 
 ```{julia}
 
-clusterNames = ["vir",
+clusterNames = ["virLud",
                 "nit",
-                "lud",
                 "troch",
                 "obs",
                 "plumb"]
 
 clusterColors = ["blue",
                 "grey",
-                "green",
                 "yellow",
                 "orange",
                 "red"]
 
-vir = (PCAmodelAll.metadata.PC1 .< -6.5) .&
+virLud = (PCAmodelAll.metadata.PC1 .< -6.5) .&
             (0.5 .< PCAmodelAll.metadata.PC2 .< 4) .&
-            (0 .< PCAmodelAll.metadata.PC3) .&
             indSelection_lowIndHetStan
 nit = (-6 .< PCAmodelAll.metadata.PC1 .< -4.5) .&
         (0.5 .< PCAmodelAll.metadata.PC2 .< 1.5) .&
-            indSelection_lowIndHetStan
-lud = (PCAmodelAll.metadata.PC1 .< -6.5) .&
-            (0.5 .< PCAmodelAll.metadata.PC2 .< 4) .&
-            (PCAmodelAll.metadata.PC3 .< 0) .&
             indSelection_lowIndHetStan
 troch = (2 .< PCAmodelAll.metadata.PC1 .< 4.5) .&
             (PCAmodelAll.metadata.PC2 .< -4) .&
@@ -5369,12 +5375,11 @@ plumb = (3.5 .< PCAmodelAll.metadata.PC1) .&
 # check the individuals in each group
 PCAmodelAll.metadata.Fst_group[virLud]
 PCAmodelAll.metadata.Fst_group[nit]
-PCAmodelAll.metadata.Fst_group[lud]
 PCAmodelAll.metadata.Fst_group[troch]
 PCAmodelAll.metadata.Fst_group[obs]
 PCAmodelAll.metadata.Fst_group[plumb]
 
-clusterArray = [vir nit lud troch obs plumb]
+clusterArray = [virLud nit troch obs plumb]
 
 # show numbers in each group
 println("The numbers in each group are $(sum(clusterArray, dims=1)) and the sum of those is $(sum(sum(clusterArray, dims=1)))")
@@ -5404,37 +5409,31 @@ Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampl
 # Now get averages of pi and Dxy for whole region:
 
 regionPiTable = DataFrame(cluster = clusterNames, pi = getRegionPi(sitePi))
-#= 6×2 DataFrame
+#= 5×2 DataFrame
  Row │ cluster  pi         
      │ String   Float64    
 ─────┼─────────────────────
-   1 │ vir      0.0103774
+   1 │ virLud   0.0116354
    2 │ nit      0.0010142
-   3 │ lud      0.00873934
-   4 │ troch    0.00706002
-   5 │ obs      0.0162496
-   6 │ plumb    0.00402182 =#
+   3 │ troch    0.00706002
+   4 │ obs      0.0162496
+   5 │ plumb    0.00402182 =#
 
 regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegionDxy(Dxy))
-#= 15×2 DataFrame
+#= 10×2 DataFrame
  Row │ cluster_pair  Dxy       
      │ String        Float64   
 ─────┼─────────────────────────
-   1 │ vir_nit       0.0230516
-   2 │ vir_lud       0.0137261
-   3 │ vir_troch     0.0345623
-   4 │ vir_obs       0.0343802
-   5 │ vir_plumb     0.0369935
-   6 │ nit_lud       0.0200072
-   7 │ nit_troch     0.0339931
-   8 │ nit_obs       0.0337221
-   9 │ nit_plumb     0.036556
-  10 │ lud_troch     0.0314598
-  11 │ lud_obs       0.0312961
-  12 │ lud_plumb     0.0339024
-  13 │ troch_obs     0.0201926
-  14 │ troch_plumb   0.0240156
-  15 │ obs_plumb     0.0195389 =#
+   1 │ virLud_nit    0.021495
+   2 │ virLud_troch  0.0329751
+   3 │ virLud_obs    0.0328026
+   4 │ virLud_plumb  0.0354124
+   5 │ nit_troch     0.0339931
+   6 │ nit_obs       0.0337221
+   7 │ nit_plumb     0.036556
+   8 │ troch_obs     0.0201926
+   9 │ troch_plumb   0.0240156
+  10 │ obs_plumb     0.0195389 =#
 
 # Make a genotype-by-individual plot using all variable loci in the region,
 missingFractionAllowed = 0.1
@@ -5471,13 +5470,11 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
 
 ```{julia}
 
-clusterNamesWithHets = ["vir",
+clusterNamesWithHets = ["virLud",
                         "nit",
-                        "lud",
-                        "vir_troch",
-                        "lud_troch",
+                        "virLud_troch",
                         "troch",
-                        "lud_obs",
+                        "virLud_obs",
                         "obs",
                         "troch_plumb",
                         "plumb",
@@ -5486,8 +5483,6 @@ clusterNamesWithHets = ["vir",
 clusterColorsWithHets = ["blue",
                         "grey",
                         "green",
-                        "green1",
-                        "green2",
                         "yellow",
                         "olive",
                         "orange",
@@ -5495,15 +5490,10 @@ clusterColorsWithHets = ["blue",
                         "red",
                         "purple"]
 
-vir_troch = (-5 .< PCAmodelAll.metadata.PC1 .< 0) .&
+virLud_troch = (-5 .< PCAmodelAll.metadata.PC1 .< 0) .&
                 (-4 .< PCAmodelAll.metadata.PC2 .< -0.7) .&
-                (0.5 .< PCAmodelAll.metadata.PC3 .< 2)
                  .!indSelection_lowIndHetStan
-lud_troch = (-5 .< PCAmodelAll.metadata.PC1 .< 0) .&
-                (-4 .< PCAmodelAll.metadata.PC2 .< -0.7) .&
-                (-2.5 .< PCAmodelAll.metadata.PC3 .< 0.5)
-                 .!indSelection_lowIndHetStan
-lud_obs = (-3 .< PCAmodelAll.metadata.PC1 .< -1) .&
+virLud_obs = (-3 .< PCAmodelAll.metadata.PC1 .< -1) .&
                 (-0.5 .< PCAmodelAll.metadata.PC2 .< 0) .&
                  .!indSelection_lowIndHetStan
 troch_plumb = (1.5 .< PCAmodelAll.metadata.PC1 .< 5.5) .&
@@ -5513,7 +5503,7 @@ vir_plumb = (-2.5 .< PCAmodelAll.metadata.PC1 .< 1) .&
                 (2 .< PCAmodelAll.metadata.PC2 .< 5) .&
                  .!indSelection_lowIndHetStan
 
-clusterArray = [vir nit lud vir_troch lud_troch troch lud_obs obs troch_plumb plumb vir_plumb]
+clusterArray = [virLud nit virLud_troch troch virLud_obs obs troch_plumb plumb vir_plumb]
 
 sum(clusterArray, dims=1)
 
@@ -6183,7 +6173,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
 
 ```{julia}
 # choose scaffold
-chr = "gw3"
+chr = "gw4A"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
@@ -6411,11 +6401,18 @@ numIndsToPlot = fill(150, length(clusterNames))
 
 genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot, 
                                             genos_selectedSNPs, PCAmodelAll.metadata;
-                                            sortByMissing = true)
+                                            sortByMissing = false)
+
+# sort based on original_plot_order, and then together with function below will arrange individuals in population order within clusters:
+sortOrder = sortperm(indMetadataforGBI.original_plot_order, rev=false)
+indMetadataforGBI = indMetadataforGBI[sortOrder, :]
+genosForGBI = genosForGBI[sortOrder, :]
 
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
+                indFontSize=6, figureSize=(800, 1800),
                 missingFractionAllowed = missingFractionAllowed,
+                indColorLeftProvided = true,
                 indColorRightProvided = true)
 ```
 
@@ -6764,14 +6761,14 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
 
 ```
 
-### Do a PCA based on a same-size region elsewhere on gw3 (with low HetVar):
+### Do a PCA based on a same-size region elsewhere on gw4A (with low HetVar):
 
 ```{julia}
 # get length of region
 lengthHighHetVarRegion = positionMax - positionMin
 
 # because the region is on the left side of chr 4A, will put the non-interesting region on the right side:
-rightLocus = scaffold_lengths["gw3"] - 1_000_000
+rightLocus = scaffold_lengths["gw4A"] - 1_000_000
 leftLocus = rightLocus - lengthHighHetVarRegion
 
 regionText_lowHetVarRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
@@ -7794,7 +7791,7 @@ regionHaplotypeCode_all = Dict{String, Dict{String, Tuple{Int, Int}}}(
                     "plumb"=>(7,7),
                     "plumbHet"=>(7,7),
                     "vir_plumb"=>(1,7)),
-    "gw3" => Dict("virLud"=>(1,1),
+    "gw4A" => Dict("virLud"=>(1,1),
                     "virLudHet"=>(1,1),
                     "nit"=>(3,3),
                     "virLud_troch"=>(1,5),
@@ -7821,13 +7818,11 @@ regionHaplotypeCode_all = Dict{String, Dict{String, Tuple{Int, Int}}}(
                     "obs"=>(6,6),
                     "plumb"=>(7,7),
                     "vir_plumb"=>(1,7)),
-    "gw17" => Dict("vir"=>(1,1),
+    "gw17" => Dict("virLud"=>(1,1),
                     "nit"=>(3,3),
-                    "lud"=>(4,4),
-                    "vir_troch"=>(1,5),
-                    "lud_troch"=>(4,5),
+                    "virLud_troch"=>(1,5),
                     "troch"=>(5,5),
-                    "lud_obs"=>(4,6),
+                    "virLud_obs"=>(1,6),
                     "obs"=>(6,6),
                     "troch_plumb"=>(5,7),
                     "plumb"=>(7,7),
@@ -7887,7 +7882,7 @@ regionHaplotypeCode_all = Dict{String, Dict{String, Tuple{Int, Int}}}(
                     "plumb"=>(7,7))
 )
 
-haploblockRegions = ["gw1A", "gw3", "gw3", "gw13", "gw15", "gw17", "gw18", "gw19", "gw20","gw26", "gw28", "gwZ"]
+haploblockRegions = ["gwZ", "gw1A", "gw3", "gw4A", "gw13", "gw15", "gw17", "gw18", "gw19", "gw20","gw26", "gw28"]
 
 numHaploblockRegions = length(haploblockRegions)
 numInds = size(ind_with_metadata_included, 1)
@@ -8202,6 +8197,7 @@ cat /Users/darrenirwin/GW_data_from_cedar_Feb2024/GW2022_cedar/infoSites_vcfs/GW
 ```{julia}
 baseName = "/Users/darrenirwin/GW_data_from_cedar_Feb2024/GW2022_cedar/infoSites_vcfs/GW2022_all4plates.genotypes.allSites.chrgw4A.infoSites.max2allele_noindel.maxmiss60.MQ20.lowHet.tab"
 # load metadata
+cd(dataDirectory)
 metadata_chr4A = DataFrame(CSV.File(metadataFile)) # the CSV.File function interprets the correct delimiter
 num_metadata_cols_chr4A = ncol(metadata_chr4A)
 num_individuals_chr4A = nrow(metadata_chr4A) 
@@ -8217,9 +8213,9 @@ position_file_name_chr4A = string(baseName, ".012.pos")
 pos_chr4A = DataFrame(CSV.File(position_file_name_chr4A; header=["chrom", "position"], types=[String, Int]))
 # read in genotype data
 genotype_file_name_chr4A = string(baseName, ".012minus1") 
-@time if 1 <= indNum <= 127   
+@time if 1 <= indNum_chr4A <= 127   
     geno_chr4A = readdlm(genotype_file_name_chr4A, '\t', Int8, '\n'); # this has been sped up dramatically, by first converting "NA" to -1
-elseif 128 <= indNum <= 32767
+elseif 128 <= indNum_chr4A <= 32767
     geno_chr4A = readdlm(genotype_file_name_chr4A, '\t', Int16, '\n'); # this needed for first column, which is number of individual; Int16 not much slower on import than Int8
 else
     print("Error: Number of individuals in .indv appears outside of range from 1 to 32767")
@@ -8412,6 +8408,7 @@ cat /Users/darrenirwin/GW_data_from_cedar_Feb2024/GW2022_cedar/infoSites_vcfs/GW
 ```{julia}
 baseName = "/Users/darrenirwin/GW_data_from_cedar_Feb2024/GW2022_cedar/infoSites_vcfs/GW2022_all4plates.genotypes.allSites.chrgw3.infoSites.max2allele_noindel.maxmiss60.MQ20.lowHet.tab"
 # load metadata
+cd(dataDirectory)
 metadata_chr3 = DataFrame(CSV.File(metadataFile)) # the CSV.File function interprets the correct delimiter
 num_metadata_cols_chr3 = ncol(metadata_chr3)
 num_individuals_chr3 = nrow(metadata_chr3) 
@@ -8427,9 +8424,9 @@ position_file_name_chr3 = string(baseName, ".012.pos")
 pos_chr3 = DataFrame(CSV.File(position_file_name_chr3; header=["chrom", "position"], types=[String, Int]))
 # read in genotype data
 genotype_file_name_chr3 = string(baseName, ".012minus1") 
-@time if 1 <= indNum <= 127   
+@time if 1 <= indNum_chr3 <= 127   
     geno_chr3 = readdlm(genotype_file_name_chr3, '\t', Int8, '\n'); # this has been sped up dramatically, by first converting "NA" to -1
-elseif 128 <= indNum <= 32767
+elseif 128 <= indNum_chr3 <= 32767
     geno_chr3 = readdlm(genotype_file_name_chr3, '\t', Int16, '\n'); # this needed for first column, which is number of individual; Int16 not much slower on import than Int8
 else
     print("Error: Number of individuals in .indv appears outside of range from 1 to 32767")
@@ -8511,7 +8508,7 @@ freqs, sampleSizes = getFreqsAndSampleSizes(geno_chr3_included_LHBR, indClusterM
 sitePi = getSitePi(freqs, sampleSizes)
 
 # calculate pairwise Dxy per site, using data in "freqs" and groups in "groups"
-Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames)
+Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames_gw3)
 
 Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampleSizes, clusterNames_gw3; among=false)
 
@@ -8525,6 +8522,8 @@ regionPiTable = DataFrame(cluster = clusterNames_gw3, pi = getRegionPi(sitePi))
    2 │ nit       0.000697639
    3 │ trochObs  0.00136251
    4 │ plumb     0.00111764 =#
+
+# for paper, calculating 
 
 regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegionDxy(Dxy))
 #= 6×2 DataFrame
@@ -8543,7 +8542,6 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegi
 # Calculation of deepest split, an average of virLud diff with (trochObs, plumb):
 (0.00354486 + 0.00398499) / 2
 # 0.003764925
-
 
 ```
 
@@ -8579,6 +8577,24 @@ regionPiTable = DataFrame(cluster = clusterNames_gw3, pi = getRegionPi(sitePi))
    3 │ trochObs  0.00568622
    4 │ plumb     0.00554501 =#
 
+# average pi among three major groups:
+(0.00456714 + 0.00568622 + 0.00554501) / 3
+# 0.005266123
+
+#ratio of pi outside to within LHBR:
+0.00456714 / 0.0012486
+# 3.6578087457952906
+
+0.00568622 / 0.00136251
+# 4.173341847032315
+
+0.00554501 / 0.00111764
+# 4.961356071722558
+
+((0.00456714 / 0.0012486) + (0.00568622 / 0.00136251) + (0.00554501 / 0.00111764)) / 3
+# 4.264168888183388
+
+
 regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegionDxy(Dxy))
 #= 6×2 DataFrame
  Row │ cluster_pair     Dxy        
@@ -8596,6 +8612,9 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegi
 # Calculation of deepest split, an average of plumb diff with (virLud, trochObs):
 (0.00660034 + 0.00652593) / 2
 # 0.006563135
+
+((0.00354486 / 0.0059857) + (0.00328016 / 0.00652593) + (0.00398499 / 0.00660034)) / 3
+# 0.5662038652462132
 
 ```
 

@@ -267,6 +267,26 @@ while i <= lastWindow # eachindex(windowed_pos_all[:,1])
     end 
     i
 end
+highHetVarRegions
+```
+
+## Determine fraction of genome that has high ViSHet
+
+```{julia}
+# get total length of high ViSHet regions 
+sum_highHetVarRegions = sum(highHetVarRegions.regionEnd .- highHetVarRegions.regionStart)
+
+# get total lengths of all scaffolds
+sum_scaffold_lengths = 0 
+for scaffold_name in scaffolds_to_plot
+    println(scaffold_name)
+    sum_scaffold_lengths += scaffold_lengths[scaffold_name]
+end
+sum_scaffold_lengths
+
+# calculate percent of genome in high ViSHet regions
+percentGenomeHighViSHet = 100 * sum_highHetVarRegions / sum_scaffold_lengths
+println("The percent of the genome in high ViSHet regions is $percentGenomeHighViSHet")
 ```
 
 
@@ -285,13 +305,13 @@ function plotGenomeHetVariance(scaffolds_to_plot,
                                 regionsToPlot = [])
     
     # get sizes of chromosomes (note this actually isn't the true length, just the mean position of the rightmost window):
-    scaffold_lengths = repeat([-1], length(scaffolds_to_plot))	# vector of Int64
+    scaffoldLengths = repeat([-1], length(scaffolds_to_plot))	# vector of Int64
     for i in 1:length(scaffolds_to_plot)
         selection = windowed_pos_all.chrom .== scaffolds_to_plot[i]
         if sum(selection) == 0
-            scaffold_lengths[i] = 0
+            scaffoldLengths[i] = 0
         else
-            scaffold_lengths[i] = round(Int, maximum(windowed_pos_all.mean_position[selection]))
+            scaffoldLengths[i] = round(Int, maximum(windowed_pos_all.mean_position[selection]))
         end
     end
 
@@ -314,13 +334,13 @@ function plotGenomeHetVariance(scaffolds_to_plot,
         # look through chromosomes and find some to go in this row
         for i in 1:length(scaffolds_to_plot)
             # if not plotted and short enough, add to row:
-            if scaffoldPlottedAlready[i] .== false .&& scaffold_lengths[i] .<= remainingRowLength
+            if scaffoldPlottedAlready[i] .== false .&& scaffoldLengths[i] .<= remainingRowLength
                 push!(scaffoldInRow[row], scaffolds_to_plot[i])
                 push!(scaffoldBpStartInRow[row], bpStart)
-                remainingRowLength = remainingRowLength - scaffold_lengths[i] - bpGapBetweenScaffolds
+                remainingRowLength = remainingRowLength - scaffoldLengths[i] - bpGapBetweenScaffolds
                 scaffoldPlottedAlready[i] = true
                 placeInRow += 1
-                bpStart = bpStart + scaffold_lengths[i] + bpGapBetweenScaffolds
+                bpStart = bpStart + scaffoldLengths[i] + bpGapBetweenScaffolds
             end	
         end
         row += 1
@@ -345,7 +365,7 @@ function plotGenomeHetVariance(scaffolds_to_plot,
         nextPlotShiftBP = 0
         for orderNum in 1:numScaffoldsInRow 
             scaffoldName = scaffoldInRow[rowNum][orderNum]
-            plotBpLength = scaffold_lengths[findfirst(scaffolds_to_plot .== scaffoldName)]
+            plotBpLength = scaffoldLengths[findfirst(scaffolds_to_plot .== scaffoldName)]
             # select one scaffold from the whole genome:
             selection = windowed_pos_all.chrom .== scaffoldName 
             windowed_pos_selected = view(windowed_pos_all.mean_position, selection)
@@ -8312,6 +8332,10 @@ regionPiTable = DataFrame(cluster = clusterNames_gw4A, pi = getRegionPi(sitePi))
    3 │ troch     0.000613901
    4 │ obsPlumb  0.000261819 =#
 
+# average pi (for chr 4A LHBR) among three major groups:
+(0.000956575 + 0.000613901 + 0.000261819) / 3
+# 0.000610765
+
 regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegionDxy(Dxy))
 #= 6×2 DataFrame
  Row │ cluster_pair     Dxy        
@@ -8323,6 +8347,10 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegi
    4 │ nit_troch        0.00286634
    5 │ nit_obsPlumb     0.00249507
    6 │ troch_obsPlumb   0.00305931 =#
+
+# average Dxy (for chr 4A LHBR) among three major groups:
+(0.0031813 + 0.00241666 + 0.00305931) / 3
+# 0.0028857566666666674
 
 # Drawing phylogeny (in Illustrator) based on above, between three major groups.
 # Ignoring nit, the most recent connection is between virLud and obsPlumb (0.00241666).
@@ -8368,6 +8396,26 @@ regionPiTable = DataFrame(cluster = clusterNames_gw4A, pi = getRegionPi(sitePi))
    3 │ troch     0.00551821
    4 │ obsPlumb  0.0055897 =#
 
+# average pi (for chr 4A NOT in LHBR) among three major groups:
+(0.0041321 + 0.00551821 + 0.0055897) / 3
+# 0.005080003333333333
+
+#ratio of average pi outside to average pi within chr 4A LHBR:
+0.005080003333333333 / 0.000610765
+# 8.317443424776032
+
+# percent lower that average pi is within compared to outside LHBR:
+100 * (8.317443424776032 - 1) / 8.317443424776032
+# 87.97707481819238
+
+# for obsPlumb haplotype, ratio of pi outside to pi within chr 4A LHBR:
+0.0055897 / 0.000261819
+# 21.349481893980194
+
+# percent lower that pi of obsPlumb haplotype is within vs. outside of HLBR:
+100 * (21.349481893980194 - 1) / 21.349481893980194
+# 95.31604558384171
+
 regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegionDxy(Dxy))
 #= 6×2 DataFrame
  Row │ cluster_pair     Dxy        
@@ -8379,6 +8427,18 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegi
    4 │ nit_troch        0.00520058
    5 │ nit_obsPlumb     0.00548082
    6 │ troch_obsPlumb   0.00601295 =#
+
+# average Dxy (for OUTSIDE of chr 4A LHBR) among three major groups:
+(0.0055599 + 0.00556595 + 0.00601295) / 3
+# 0.005712933333333333
+
+#ratio of average Dxy outside to average Dxy within chr 4A LHBR among 3 major groups:
+0.005712933333333333 / 0.0028857566666666674
+# 1.9797002981309344
+
+# percent lower that average Dxy is within compared to outside LHBR:
+100 * (1.9797002981309344 - 1) / 1.9797002981309344
+# 49.487303661866626
 
 # Drawing phylogeny (in Illustrator) based on above, between three major groups.
 # In this case, the virLud_troch is the lower Dxy so am connecting those more recently.
@@ -8512,7 +8572,7 @@ Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames_gw3)
 
 Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampleSizes, clusterNames_gw3; among=false)
 
-# Now get averages of pi and Dxy for whole region:
+# Now get averages of pi and Dxy for chr 3 LHBR:
 regionPiTable = DataFrame(cluster = clusterNames_gw3, pi = getRegionPi(sitePi))
 #= 4×2 DataFrame
  Row │ cluster   pi          
@@ -8523,7 +8583,9 @@ regionPiTable = DataFrame(cluster = clusterNames_gw3, pi = getRegionPi(sitePi))
    3 │ trochObs  0.00136251
    4 │ plumb     0.00111764 =#
 
-# for paper, calculating 
+# average pi (for chr 3 LHBR) among three major groups:
+(0.0012486 + 0.00136251 + 0.00111764) / 3
+# 0.0012429166
 
 regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegionDxy(Dxy))
 #= 6×2 DataFrame
@@ -8536,6 +8598,10 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegi
    4 │ nit_trochObs     0.00335481
    5 │ nit_plumb        0.00400019
    6 │ trochObs_plumb   0.00328016 =#
+
+# average Dxy (for chr 3 LHBR) among three major groups:
+(0.00354486 + 0.00398499 + 0.00328016) / 3
+# 0.0036033366666666663
 
 # Drawing phylogeny (in Illustrator) based on above, between three major groups.
 # Lowest Dxy is between trochObs and plumb (0.00328016).
@@ -8577,9 +8643,17 @@ regionPiTable = DataFrame(cluster = clusterNames_gw3, pi = getRegionPi(sitePi))
    3 │ trochObs  0.00568622
    4 │ plumb     0.00554501 =#
 
-# average pi among three major groups:
+# average pi (for chr 3 NOT in LHBR) among three major groups:
 (0.00456714 + 0.00568622 + 0.00554501) / 3
 # 0.005266123
+
+#ratio of average pi outside to average pi within chr 3 LHBR:
+0.005266123 / 0.0012429166
+# 4.236907769998406
+
+# percent lower that average pi is within compared to outside LHBR:
+100 * (4.2369078 - 1) / 4.2369078
+# 76.39788149272448
 
 #ratio of pi outside to within LHBR:
 0.00456714 / 0.0012486
@@ -8606,6 +8680,18 @@ regionDxyTable = DataFrame(cluster_pair = pairwiseDxyClusterNames, Dxy = getRegi
    4 │ nit_trochObs     0.00548855
    5 │ nit_plumb        0.00608182
    6 │ trochObs_plumb   0.00652593 =#
+
+# average Dxy (for OUTSIDE of chr 3 LHBR) among three major groups:
+(0.0059857 + 0.00660034 + 0.00652593) / 3
+# 0.006370656666666666
+
+#ratio of average Dxy outside to average Dxy within LHBR among 3 major groups:
+0.006370656666666666 / 0.0036033366666666663
+# 1.76798818872508
+
+# percent lower that average Dxy is within compared to outside LHBR:
+100 * (1.76798818872508 - 1) / 1.76798818872508
+# 43.43853616346196
 
 # Drawing phylogeny (in Illustrator) based on above, between three major groups.
 # Lowest Dxy is between virLud and trochObs (0.0059857).

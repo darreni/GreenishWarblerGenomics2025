@@ -237,12 +237,12 @@ genotypes_gwZ_SNPfiltered_with_missing = Matrix{Union{Missing, Float32}}(genotyp
 # change "-1" to "missing":
 genotypes_gwZ_SNPfiltered_with_missing[genotypes_gwZ_SNPfiltered_with_missing .== -1] .= missing;
 regionText = "chrgwZ_cleaned"
-filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+filename = string(baseName, tagName, regionText, ".SVDimputedMissing.jld2")
 # to do the imputing, do this by setting to true:
 cd(dataDirectory)
-do_imputing = false
+do_imputing = true
 if do_imputing
-    @time imputed_genos = Impute.knn(genotypes_gwZ_SNPfiltered_with_missing; k=1, dims=:rows)
+    @time imputed_genos = Impute.svd(genotypes_gwZ_SNPfiltered_with_missing)
     # took 46 sec
     jldsave(filename; imputed_genos, ind_with_metadata_indFiltered = ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region = pos_SNP_filtered_gwZ_SNPfiltered)
     imputed_genos_chrZcleaned = imputed_genos

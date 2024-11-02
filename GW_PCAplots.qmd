@@ -1,5 +1,5 @@
 ---
-title: "Greenish Warbler Z-chromosome analysis"
+title: "Greenish Warbler PCA plots"
 author: "Darren Irwin"
 date: "9/10/2023"
 execute:
@@ -56,7 +56,7 @@ pos_SNP_loaded = DataFrame(chrom = String[], position = Int64[])
 for i in eachindex(scaffolds_to_include)
     chrom = scaffolds_to_include[i]
     regionText = string("chr", chrom)
-    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+    filename = string(baseName, tagName, regionText, ".SVDimputedMissing.jld2")
     imputed_genos_one_chr = load(filename, "imputed_genos")
     genos_imputed_loaded = hcat(genos_imputed_loaded, imputed_genos_one_chr)
     if ind_with_metadata_indFiltered.ind != load(filename, "ind_with_metadata_indFiltered")[:, :ind]
@@ -67,8 +67,8 @@ for i in eachindex(scaffolds_to_include)
     # println(string("Loaded ",filename))
     # println(string(regionText, ": ", size(imputed_genos_one_chr,2), " SNPs from ", size(imputed_genos_one_chr,1), " individuals"))
 end
-flipPC1 = true
-flipPC2 = true
+flipPC1 = false
+flipPC2 = false
 PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered, 
         groups_to_plot_PCA, group_colors_PCA; 
         sampleSet = "greenish warblers", regionText = "wholeGenome",
@@ -96,8 +96,8 @@ catch
     println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
 end
 
-if false  #set to true to save
-    save("Figure_1b_from_Julia.png", PCA_wholeGenome.PCAfig, px_per_unit = 2.0)
+if true  #set to true to save
+    save("Figure1B_PCAwholeGenome_fromJulia.png", PCA_wholeGenome.PCAfig, px_per_unit = 2.0)
 end
 ```
 
@@ -125,8 +125,8 @@ CairoMakie.scatter!(refGenome_location, refGenomePCAposition[1], marker = :diamo
 cd(dataDirectory)
 display(f)
 
-if false  #set to true to save
-    save("Figure_1c_from_Julia.png", f, px_per_unit = 2.0)
+if true  #set to true to save
+    save("Figure1C_PCAwholeGenomeAroundRing_fromJulia.png", f, px_per_unit = 2.0)
 end
 ```
 

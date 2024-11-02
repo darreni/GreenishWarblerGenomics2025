@@ -302,7 +302,8 @@ function plotGenomeHetVariance(scaffolds_to_plot,
                                 fillTransparency = 0.2,
                                 figureSize = (1200, 1200),
                                 plotRegions = false,
-                                regionsToPlot = [])
+                                regionsToPlot = [],
+                                regionColor = "red")
     
     # get sizes of chromosomes (note this actually isn't the true length, just the mean position of the rightmost window):
     scaffoldLengths = repeat([-1], length(scaffolds_to_plot))	# vector of Int64
@@ -381,17 +382,18 @@ function plotGenomeHetVariance(scaffolds_to_plot,
                     for i in eachindex(regionsToPlot_thisScaffold.regionStart)
                         xValues = [regionsToPlot_thisScaffold.regionStart[i], regionsToPlot_thisScaffold.regionEnd[i]] .+ scaffoldBpStartInRow[rowNum][orderNum]
                         yValues = [0.05, 0.05]
-                        lines!(axs[rowNum], xValues, yValues, color="red", linewidth=10)
+                        lines!(axs[rowNum], xValues, yValues, color=regionColor, linewidth=10)
                     end
                 end
             end
         end
     end
     display(f)
+    return f
 end
 
 
-plotGenomeHetVariance(scaffolds_to_plot, 
+fig2 = plotGenomeHetVariance(scaffolds_to_plot, 
                         windowed_HetVariance_all,
                         windowed_pos_all;
                         fillColor = "purple",
@@ -399,7 +401,13 @@ plotGenomeHetVariance(scaffolds_to_plot,
                         fillTransparency = 0.2,
                         figureSize=(1200, 1200),
                         plotRegions = true,
-                        regionsToPlot = highHetVarRegions)
+                        regionsToPlot = highHetVarRegions,
+                        regionColor = "magenta")
+if true  # set to true to save plot
+    filename = "Figure2_ViSHet_allGenome_fromJulia.png"
+    save(filename, fig2, px_per_unit = 2.0)
+    println("Saved ", filename)
+end 
 
 ```
 
@@ -408,7 +416,7 @@ plotGenomeHetVariance(scaffolds_to_plot,
 
 #### First remove the LHBR regions
 
-```julia
+```{julia}
 # cycle through the LHBRs, determining the SNPs within each to remove from the dataset:
 lociToRemove = fill(false, nrow(pos_SNP_filtered))
 for i in eachrow(highHetVarRegions) 
@@ -426,14 +434,14 @@ pos_SNP_filtered_nonLHBR = pos_SNP_filtered[.!lociToRemove, :]
 
 #### Make list of scaffolds to include in the whole-genome non_LHBR PCA:
 
-```julia
+```{julia}
 chromosomes_to_include = "gw" .* string.(vcat(28:-1:17, 15:-1:1))
 push!(chromosomes_to_include, "gw1A", "gw4A", "gwZ")  # add two other scaffolds
 ```
 
-#### Imputation using KNN
+#### Imputation using SVD
 
-Did this and saved files, so inactivated this cell for now:
+Did this on 1Nov2024 and saved files, so inactivated this cell for now (takes about 0.5 to 6 min per scaffold):
 
 ```julia
 for i in eachindex(chromosomes_to_include)
@@ -442,8 +450,8 @@ for i in eachindex(chromosomes_to_include)
     loci_selection = (pos_SNP_filtered_nonLHBR.chrom .== chrom)
     pos_SNP_filtered_nonLHBR_region = pos_SNP_filtered_nonLHBR[loci_selection,:]
     genosOnly_nonLHBR_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_included_nonLHBR[:,loci_selection])
-    @time imputed_genos = Impute.knn(genosOnly_nonLHBR_region_for_imputing; k=1, dims=:rows)
-    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+    @time imputed_genos = Impute.svd(genosOnly_nonLHBR_region_for_imputing)
+    filename = string(baseName, tagName, regionText, ".SVDimputedMissing.jld2")
     jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_nonLHBR_region)
     println(string(regionText, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_nonLHBR_region, 1)," SNPs and ", size(genosOnly_nonLHBR_region_for_imputing, 1)," filtered individuals, in file $filename"))
 end
@@ -451,14 +459,14 @@ end
 
 Load saved imputed data for each chromosome (the non-LHBR part):
 
-```julia
+```{julia}
 # initialize data structures
 genos_imputed_loaded = Matrix{Union{Missing, Float32}}(undef, nrow(ind_with_metadata_indFiltered), 0)
 pos_SNP_loaded = DataFrame(chrom = String[], position = Int64[])
 for i in eachindex(chromosomes_to_include)
     chrom = chromosomes_to_include[i]
     regionText = string("chr", chrom, "nonLHBR")
-    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+    filename = string(baseName, tagName, regionText, ".SVDimputedMissing.jld2")
     imputed_genos_one_chr = load(filename, "imputed_genos")
     genos_imputed_loaded = hcat(genos_imputed_loaded, imputed_genos_one_chr)
     if ind_with_metadata_indFiltered.ind != load(filename, "ind_with_metadata_indFiltered")[:, :ind]
@@ -473,7 +481,7 @@ end
 
 Now do the PCA for non_LHBR parts of genome:
 
-```julia
+```{julia}
 flipPC1 = true
 flipPC2 = true
 PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered, 
@@ -494,7 +502,7 @@ The above looks quite similar to the whole-genome PCA including the LHBRs.
 
 #### Do non_LHBR for a specific chromosome:
 
-```julia
+```{julia}
 selection = pos_SNP_loaded.chrom .== "gw4A"
 pos_SNP_loaded_oneChr = pos_SNP_loaded[selection, :]
 genos_imputed_loaded_oneChr = genos_imputed_loaded[:, selection]
@@ -502,7 +510,7 @@ flipPC1 = true
 flipPC2 = true
 PCA_oneChr = plotPCA(genos_imputed_loaded_oneChr, ind_with_metadata_indFiltered, 
         groups_to_plot_PCA, group_colors_PCA; 
-        sampleSet = "greenish warblers", regionText = "non-LHBR wholeGenome",
+        sampleSet = "greenish warblers", regionText = "non-LHBR gw4A",
         flip1 = flipPC1, flip2 = flipPC2,
         lineOpacity = 0.7, fillOpacity = 0.6,
         symbolSize = 14, showTitle = false)
@@ -512,7 +520,6 @@ PC1_prop_variance = PC1_variance / totalObservationVariance
 PC2_prop_variance = PC2_variance / totalObservationVariance
 println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
 PC2 explains ", 100*PC2_prop_variance, "%.")
-
 ```
 
 There is a whole lot of signal for population structure in the non-LHBR regions--maybe not suprising given there are high-Fst regions with low ViSHet.
@@ -640,11 +647,11 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # choose inds with low IndHet in high HetVar region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 2) 
 
-#Plot only the lowIndHetStan individuals:
+#Plot only the lowIndHetStan individuals, PC1 to PC2:
 
-f = CairoMakie.Figure()
-ax = Axis(f[1, 1],
-    title = "PC1 vs. PC2, only low heterozygosity",
+fig_3A = CairoMakie.Figure()
+ax = Axis(fig_3A[1, 1],
+    title = "gwZ LHBR PC1 vs. PC2, only low heterozygosity",
     xlabel = "Region PC1", xlabelsize = 24,
     ylabel = "Region PC2", ylabelsize = 24,
     autolimitaspect = 1)
@@ -653,7 +660,32 @@ for i in eachindex(groups_to_plot_PCA)
     selection = (PCAmodelAll.metadata.Fst_group .== groups_to_plot_PCA[i]) .& indSelection_lowIndHetStan
     CairoMakie.scatter!(ax, PCAmodelAll.metadata.PC1[selection], PCAmodelAll.metadata.PC2[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
 end
-display(f)
+display(fig_3A)
+if false  # set to true to save plot
+    save("Figure3A_from_Julia.png", fig_3A, px_per_unit = 2.0)
+end 
+```
+
+#### Now plot PC1 vs. PC3 for low ViSHet individuals
+
+```{julia}
+#Plot only the lowIndHetStan individuals, PC1 to PC2:
+
+fig_3B = CairoMakie.Figure()
+ax = Axis(fig_3B[1, 1],
+    title = "gwZ LHBR PC1 vs. PC3, only low heterozygosity",
+    xlabel = "Region PC1", xlabelsize = 24,
+    ylabel = "Region PC2", ylabelsize = 24,
+    autolimitaspect = 1)
+hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
+for i in eachindex(groups_to_plot_PCA) 
+    selection = (PCAmodelAll.metadata.Fst_group .== groups_to_plot_PCA[i]) .& indSelection_lowIndHetStan
+    CairoMakie.scatter!(ax, PCAmodelAll.metadata.PC1[selection], PCAmodelAll.metadata.PC3[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
+end
+display(fig_3B)
+if false  # set to true to save plot
+    save("Figure3B_from_Julia.png", fig_3B, px_per_unit = 2.0)
+end 
 ```
 
 ### Save the individual colors in the metadata
@@ -670,9 +702,9 @@ PCAmodelAll.metadata.indColorRight = indColors
 ### Plot PC1 vs. PC2:
 
 ```{julia}
-f = CairoMakie.Figure()
-ax = Axis(f[1, 1],
-    title = "PC1 vs. PC2",
+fig_3C = CairoMakie.Figure()
+ax = Axis(fig_3C[1, 1],
+    title = "gwZ LHBR PC1 vs. PC2, all individuals",
     xlabel = "Region PC1", xlabelsize = 24,
     ylabel = "Region PC2", ylabelsize = 24,
     autolimitaspect = 1)
@@ -681,15 +713,18 @@ for i in eachindex(groups_to_plot_PCA)
     selection = PCAmodelAll.metadata.Fst_group .== groups_to_plot_PCA[i]
     CairoMakie.scatter!(ax, PCAmodelAll.metadata.PC1[selection], PCAmodelAll.metadata.PC2[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
 end
-display(f)
+display(fig_3C)
+if false  # set to true to save plot
+    save("Figure3C_from_Julia.png", fig_3C, px_per_unit = 2.0)
+end 
 ```
 
 ### Plot PC1 vs. PC3:
 
 ```{julia}
-f = CairoMakie.Figure()
-ax = Axis(f[1, 1],
-    title = "PC1 vs. PC3",
+fig_3D = CairoMakie.Figure()
+ax = Axis(fig_3D[1, 1],
+    title = "gwZ LHBR PC1 vs. PC3, all individuals",
     xlabel = "Region PC1", xlabelsize = 24,
     ylabel = "Region PC3", ylabelsize = 24,
     autolimitaspect = 1)
@@ -698,8 +733,12 @@ for i in eachindex(groups_to_plot_PCA)
     selection = PCAmodelAll.metadata.Fst_group .== groups_to_plot_PCA[i]
     CairoMakie.scatter!(ax, PCAmodelAll.metadata.PC1[selection], PCAmodelAll.metadata.PC3[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
 end
-display(f)
+display(fig_3D)
+if false  # set to true to save plot
+    save("Figure3D_from_Julia.png", fig_3D, px_per_unit = 2.0)
+end
 ```
+
 
 ### Now it is clear that there are six clear haplogroups of Z high HetVar region. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
@@ -996,11 +1035,16 @@ genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsTo
                                             genos_selectedSNPs, PCAmodelAll.metadata;
                                             sortByMissing = true)
 
-plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+plotInfo = plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
+                indFontSize=6, figureSize=(1200, 1600),
                 indColorLeftProvided = false,
                 indColorRightProvided = true)
+
+if true  # set to true to save plot
+    save("FigureS1_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
+end
 ```
 
 
@@ -1248,9 +1292,10 @@ PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included
             showPlot = false)
 
 display(PCAmodel.PCAfig)
+if false  # set to true to save plot
+    save("FigureS2A_gwZ_nonHLBRarbitrary_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
+end 
 ```
-
-
 
 
 ## Do similar as above but for chr 15:
@@ -2840,9 +2885,10 @@ PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included
             showPlot = false)
 
 display(PCAmodel.PCAfig)
+if true  # set to true to save plot
+    save("FigureS2C_gw26_nonHLBRarbitrary_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
+end 
 ```
-
-
 
 
 ## Do similar as above but for chr 1A:
@@ -5226,9 +5272,10 @@ PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included
             showPlot = false)
 
 display(PCAmodel.PCAfig)
+if true  # set to true to save plot
+    save("FigureS2B_gw13_nonHLBRarbitrary_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
+end 
 ```
-
-
 
 
 ## Tried chr 14 but not very clear--seems recombination backcrosses in ludlowi
@@ -6813,8 +6860,10 @@ PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included
             showPlot = false)
 
 display(PCAmodel.PCAfig)
+if true  # set to true to save plot
+    save("FigureS2D_gw4A_nonHLBRarbitrary_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
+end 
 ```
-
 
 
 #### Chr 4A shows really remarkable patterns. Absolutely must be selective sweeps.
@@ -6897,6 +6946,9 @@ for i in eachindex(groups_to_plot_PCA)
     CairoMakie.scatter!(ax, PCAmodelAll.metadata.PC1[selection], PCAmodelAll.metadata.PC2[selection], marker = :diamond, color = (group_colors_PCA[i], 0.6), markersize = 14, strokewidth=0.5, strokecolor = ("black", 0.7))
 end
 display(f)
+if false  # set to true to save plot
+    save("Figure6_top_gw28GBIplotEast_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
+end 
 ```
 
 ### Save the individual colors in the metadata
@@ -8708,6 +8760,111 @@ Really neat results above. More diversity at chr 3 LHBR than at 4A.
 
 
 
+### Copying (from the main page) and modifying the bit below to make Supplemental GBI plots
+
+##### Make list of scaffolds to plot:
+
+```{julia}
+scaffolds_to_plot = "gw" .* string.(vcat(28:-1:17, 15:-1:1))
+push!(scaffolds_to_plot, "gw1A", "gw4A")  # add two other scaffolds
+```
+
+##### Do other setup:
+
+```{julia}
+
+groups_to_plot_all = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
+group_colors_all = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
+
+groups = ["vir","troch_LN","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
+plotGroups = groups_to_plot_all 
+plotGroupColors = group_colors_all
+group1 = "vir"   # these groups will determine the color used in the graph
+group2 = "plumb"
+groupsToCompare = ["vir_plumb", "vir_troch_LN", "troch_LN_plumb"]     # "Fst_among" #"vir_plumb" 
+missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+
+# Calculate allele freqs and sample sizes (use column Fst_group)
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+println("Calculated population allele frequencies and sample sizes")
+
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+println("Calculated Fst values")
+```
+
+##### Loop through scaffolds and make plots, and adding a line for the LHBRs:
+
+```{julia}
+# for autosomes, Fst > 0.8
+Fst_cutoff = 0.8
+for i in 1:length(scaffolds_to_plot)
+    chr = scaffolds_to_plot[i]
+    regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+    # get info for lines for LHBRs
+    highHetVarRegions_thisScaffold = highHetVarRegions[highHetVarRegions.regionChrom .== chr, :]
+
+    plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
+        missingFractionAllowed, regionInfo,
+        pos_SNP_filtered, Fst, pairwiseNamesFst, 
+        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+        plotGroups, plotGroupColors;
+        indFontSize=4, figureSize=(1200,1600), plotTitle = "",
+        highlightRegionStarts = highHetVarRegions_thisScaffold.regionStart,
+        highlightRegionEnds = highHetVarRegions_thisScaffold.regionEnd,
+        highlightRegionColor = "magenta")
+
+    println("Completed the figure for ", chr, ".")
+    if true  # set to true to save plot
+        filename = string("Figure_", chr, "_Fst3groupsGBIallInds_Fst",Fst_cutoff,"_fromJulia.png")
+        save(filename, plotInfo[1], px_per_unit = 2.0)
+        println("Saved ", filename)
+    end 
+end
+```
+
+##### Now for Z chromosome, with Fst > 0.9
+
+```{julia}
+scaffolds_to_plot = ["gwZ"]; Fst_cutoff = 0.9
+for i in 1:length(scaffolds_to_plot)
+    chr = scaffolds_to_plot[i]
+    regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+    # get info for lines for LHBRs
+    highHetVarRegions_thisScaffold = highHetVarRegions[highHetVarRegions.regionChrom .== chr, :]
+
+    #= ##### for testing function
+    pos=pos_SNP_filtered
+    genoData=genosOnly_with_missing
+    indMetadata= ind_with_metadata_indFiltered
+    colorAllelesByGroup = true
+    group1 = plotGroups[1]
+    indFontSize=4
+    figureSize=(1200,1600)
+    show_SNP_density = true 
+    densityPlotColor = :steelblue1
+    plotTitle = ""
+    highlightRegionStarts = highHetVarRegions_thisScaffold.regionStart
+    highlightRegionEnds = highHetVarRegions_thisScaffold.regionEnd
+    ############ =#
+
+    plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
+        missingFractionAllowed, regionInfo,
+        pos_SNP_filtered, Fst, pairwiseNamesFst, 
+        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+        plotGroups, plotGroupColors;
+        indFontSize=4, figureSize=(1200,1600), plotTitle = "",
+        highlightRegionStarts = highHetVarRegions_thisScaffold.regionStart,
+        highlightRegionEnds = highHetVarRegions_thisScaffold.regionEnd,
+        highlightRegionColor = "magenta")
+
+    println("Completed the figure for ", chr, ".")
+    if true  # set to true to save plot
+        filename = string("Figure_", chr, "_Fst3groupsGBIallInds_fromJulia.png")
+        save(filename, plotInfo[1], px_per_unit = 2.0)
+        println("Saved ", filename)
+    end 
+end
+```
 
 
 

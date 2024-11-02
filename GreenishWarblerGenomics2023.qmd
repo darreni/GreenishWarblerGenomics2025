@@ -655,7 +655,7 @@ end
 
 #### Make a GBI plot to illustrate variation along east side of ring
 
-```{julia}
+```julia
 groups = ["troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)
 plotGroups = ["troch_LN","troch_EM","obs","plumb_BJ","plumb"]
 plotGroupColors = ["yellow","gold","orange","pink","red"]
@@ -783,9 +783,9 @@ Our goal is to produce plots showing individuals in genotype space, using Princi
 
 PCA requires imputation of missing genotypes. I did imputation for each scaffold above a certain size threshold. These are listed in `chromosomes_to_process` .
 
-Imputation can take several minutes per scaffold, so I ran this imputation step separately from this Quarto notebook (otherwise render would take long) and saved the genotype data for each scaffold for loading in the next step. Below is the code I initially used for imputing, BUT IT USES THE SVD ALGORITHM AND I LATER DECIDED THAT KNN IS BETTER:
+Imputation can take several minutes per scaffold, so I ran this imputation step separately from this Quarto notebook (otherwise render would take long) and saved the genotype data for each scaffold for loading in the next step. Below is the code I initially used for imputing, BUT IT USES THE SVD ALGORITHM AND I LATER DECIDED THAT KNN IS BETTER (BUT IN OCT2024 DECIDED SVD IS BEST HA HA, but it takes a lot longer):
 
-```julia
+```{julia}
 for i in eachindex(chromosomes_to_process)
     chrom = chromosomes_to_process[i]
     regionText = string("chr", chrom)
@@ -793,7 +793,7 @@ for i in eachindex(chromosomes_to_process)
     pos_SNP_filtered_region = pos_SNP_filtered[loci_selection,:]
     genosOnly_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing[:,loci_selection])
     @time imputed_genos = Impute.svd(genosOnly_region_for_imputing)
-    filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
+    filename = string(baseName, tagName, regionText, ".SVDimputedMissing.jld2")
     jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_region)
     println(string("Chromosome ", chrom, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_region, 1)," SNPs and ", size(genosOnly_region_for_imputing, 1)," filtered individuals."))
 end
@@ -806,7 +806,7 @@ groups_to_plot_PCA = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "l
 group_colors_PCA = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
 ```
 
-Now we'll actually do the PCA and make the plot for each scaffold. The code block below is what I initially used, based on the SVD method of imputing. I've now decided that KNN is better (see further below).
+Now we'll actually do the PCA and make the plot for each scaffold. The code block below is what I initially used, based on the SVD method of imputing. I've now decided that KNN is better (see further below)--CHANGED MIND AGAIN 1NOV2024.
 
 MAKING INACTIVE FOR NOW, BECAUSE MAKES A LOT OF PLOTS:
 
@@ -814,7 +814,7 @@ MAKING INACTIVE FOR NOW, BECAUSE MAKES A LOT OF PLOTS:
 for i in eachindex(chromosomes_to_process)
     chrom = chromosomes_to_process[i]
     regionText = string("chr", chrom)
-    filename = string(baseName, tagName, regionText, ".imputedMissing.jld2")
+    filename = string(baseName, tagName, regionText, ".SVDimputedMissing.jld2")
     imputed_genos = load(filename, "imputed_genos")
     ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
     pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
@@ -840,7 +840,7 @@ for i in eachindex(chromosomes_to_process)
 end
 ```
 
-#### Imputation using KNN
+#### Imputation using SVD
 
 Troyanskaya _et al._ (2001) recommend imputation using K-nearest neighbors approach as being better than SVD, both of which are better than other methods for DNA genotyping. They also recommend using Euclidian distance. So I will try KNN with Euclidian distance, which like SVD is provided by Impute.jl. I am going with the default of setting `dims` to `:rows`, as that seems to run much faster and produces PCAs that make a lot of sense. I've already run this next code cell, which does the imputing and saves the imputed data matrix for each scaffold. This actually runs quite quickly--at most a couple minutes per scaffold. :)
 
@@ -851,14 +851,14 @@ for i in eachindex(chromosomes_to_process)
     loci_selection = (pos_SNP_filtered.chrom .== chrom)
     pos_SNP_filtered_region = pos_SNP_filtered[loci_selection,:]
     genosOnly_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing[:,loci_selection])
-    @time imputed_genos = Impute.knn(genosOnly_region_for_imputing; k=1, dims=:rows)
+    @time imputed_genos = Impute.knn(genosOnly_region_for_imputing)
     filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
     jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_region)
     println(string("Chromosome ", chrom, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_region, 1)," SNPs and ", size(genosOnly_region_for_imputing, 1)," filtered individuals."))
 end
 ```
 
-Now do the KNN PCA:
+Now do the SVD PCA:
 
 MAKING INACTIVE FOR NOW, BECAUSE MAKES A LOT OF PLOTS:
 
@@ -866,7 +866,7 @@ MAKING INACTIVE FOR NOW, BECAUSE MAKES A LOT OF PLOTS:
 for i in eachindex(chromosomes_to_process)
     scaffold = chromosomes_to_process[i]
     regionText = string("chr", scaffold)
-    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
+    filename = string(baseName, tagName, regionText, ".SVDimputedMissing.jld2")
     imputed_genos = load(filename, "imputed_genos")
     ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
     pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")

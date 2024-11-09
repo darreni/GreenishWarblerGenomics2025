@@ -80,6 +80,15 @@ genosOnly_with_missing = replace(genosOnly_with_missing, -1 => missing)
 scaffolds_to_plot = "gw" .* string.(vcat(1, "1A", 2:4, "4A", 5:15, 17:28, "Z"))
 ```
 
+## Determine number of SNPs in the chromosomes above
+
+```{julia}
+sum(map(in(scaffolds_to_plot), pos_SNP_filtered.chrom))
+```
+
+This reports that 1003924 SNPs are within the listed chromosomes.
+(Good because that matches the number as determined in GW_PCAplots.qmd)
+
 ## Choose groups and colors
 
 ```{julia}

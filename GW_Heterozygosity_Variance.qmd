@@ -10,7 +10,7 @@ format:
   pdf:
     keep-tex: false
     monofont: "JuliaMono"
-jupyter: julia-1.10
+jupyter: julia-1.11
 ---
 
 This script depends on `GreenishWarblerGenomics2023.qmd` and `GW_Zchromosome_analysis.qmd`
@@ -8941,7 +8941,7 @@ plot(PCO1, PCO2)
 
 pcoResults = DataFrame(ind = ind_with_metadata_lowIndHetStan.ind, Fst_group = ind_with_metadata_lowIndHetStan.Fst_group, PCo1 = PCO1, PCo2 = PCO2)
 
-# code taken from SNPlots.plotPCA :
+# code taken from GenomicDiversity.plotPCA :
 autolimitaspect_setting = 1; lineOpacity = 0.8; fillOpacity = 0.2;
     symbolSize = 10; plotTitle = "PCo plot"; showTitle = true;
     xLabelText = "Genomic PC1"; yLabelText = "Genomic PC2";

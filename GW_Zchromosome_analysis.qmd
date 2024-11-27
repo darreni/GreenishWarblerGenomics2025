@@ -10,7 +10,7 @@ format:
   pdf:
     keep-tex: false
     monofont: "JuliaMono"
-jupyter: julia-1.10
+jupyter: julia-1.11
 ---
 
 ## Load the filtered dataset

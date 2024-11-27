@@ -10,7 +10,7 @@ format:
   pdf:
     keep-tex: false
     monofont: "JuliaMono"
-jupyter: julia-1.10
+jupyter: julia-1.11
 ---
 
 This script depends on `GreenishWarblerGenomics2023.qmd` and `GW_Zchromosome_analysis.qmd`

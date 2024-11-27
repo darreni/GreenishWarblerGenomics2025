@@ -10,7 +10,7 @@ format:
   pdf:
     keep-tex: false
     monofont: "JuliaMono"
-jupyter: julia-1.10
+jupyter: julia-1.11
 ---
 
 This page contains notes and code describing the data analysis for a manuscript on Greenish Warbler genomics. I've been working with the data for several years, and the R and then Julia code has been in development for a while. This is a Quarto notebook, which can run and display the results of Julia (or other) code blocks, along with text narration, and output in html, pdf, Word, etc.
@@ -34,7 +34,7 @@ Pkg.add("Impute")
 Pkg.add("JLD2")
 Pkg.add("CairoMakie")
 Pkg.add("PrettyTables") # for printing nice tables to REPL
-Pkg.add(path="/Users/darrenirwin/.julia/dev/SNPlots.jl")
+Pkg.add("GenomicDiversity")
 ```
 
 Now actually load those packages into the Julia session:
@@ -53,12 +53,11 @@ using PrettyTables
 CairoMakie.activate!()  # this makes CairoMakie the main package for figures (in case another already loaded)
 ```
 
-Load my custom package `SNPlots`:
+Load my custom package `GenomicDiversity`:
 
 ```{julia}
-# include("SNPlots.jl") # load file containing custom-built functions
-using SNPlots # actually make SNPlots module available with SNPlots.functionName(),
-# or if functions are exported from SNPlots then they are available.
+using GenomicDiversity # actually make GenomicDiversity module available with GenomicDiversity.functionName(),
+# or if functions are exported from GenomicDiversity then they are available.
 ```
 
 Test Julia:

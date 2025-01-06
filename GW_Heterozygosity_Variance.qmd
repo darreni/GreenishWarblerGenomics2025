@@ -1,30 +1,108 @@
 ---
 title: "Greenish Warbler heterozygosity variance analysis"
 author: "Darren Irwin"
-date: "6/11/2024"
+date: last-modified
+date-format: long
 execute:
   echo: true
 format:
   html:
     code-fold: false
+    fig-width: 8
+    fig-height: 10
   pdf:
     keep-tex: false
     monofont: "JuliaMono"
+    fig-width: 8
+    fig-height: 10
 jupyter: julia-1.11
 ---
 
 This script depends on `GreenishWarblerGenomics2023.qmd` and `GW_Zchromosome_analysis.qmd`
+
+## Load packages
+
+```{julia}
+using JLD2 # for loading saved data
+using DataFrames # for storing data as type DataFrame
+using GenomicDiversity # for plotPCA (my custom package)
+using CairoMakie # for plots
+using Impute # for imputing missing genotypes
+using Statistics # for var() function
+using MultivariateStats # for getting variances from PCA model
+using CSV # for reading in delimited files
+using DelimitedFiles # for reading delimited files (the genotypic data)
+
+
+```
+
+## Choose working directory
+
+```{julia}
+dataDirectory = "/Users/darrenirwin/Dropbox/Darren's current work/"
+cd(dataDirectory)
+```
 
 ## Load the filtered dataset
 
 This dataset was produced through filtering in GreenishWarblerGenomics2023.qmd
 
 ```{julia}
-filename = string(baseName, tagName, ".ind_SNP_ind_filtered.jld2")
+baseName = "GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"
+tagName = ".Jan2025."
+filename = string(baseName, tagName, "ind_SNP_ind_filtered.jld2")
+# load info into a dictionary:
+d = load(filename)
+if baseName != d["baseName"]
+    println("WARNING: baseNames don't match between that defined above and in the saved file")
+end
+if tagName != d["tagName"]
+    println("WARNING: tagNames don't match don't match between that defined above and in the saved file")
+end
+genosOnly = d["genosOnly_ind_SNP_ind_filtered"]
+ind_with_metadata_indFiltered = d["ind_with_metadata_indFiltered"]
+pos_SNP_filtered = d["pos_SNP_filtered"]
+repoDirectory = d["repoDirectory"]
+dataDirectory = d["dataDirectory"]
+scaffold_info = d["scaffold_info"]
+scaffold_lengths = d["scaffold_lengths"]
+filenameTextMiddle = d["filenameTextMiddle"]
+missingGenotypeThreshold = d["missingGenotypeThreshold"]
+filenameTextEnd = d["filenameTextEnd"]
+chromosomes_to_process =d["chromosomes_to_process"]
+metadataFile = d["metadataFile"]
+println("Loaded the filtered data.")
+
+#= filename = string(baseName, tagName, "ind_SNP_ind_filtered.jld2")
 genosOnly = load(filename, "genosOnly_ind_SNP_ind_filtered")
 ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
 pos_SNP_filtered = load(filename, "pos_SNP_filtered")
-println("Loaded the filtered data.")
+println("Loaded the filtered data.") =#
+```
+
+Also define `correctNames()` function as in main script, to correct some names:
+
+```{julia}
+function correctNames(metadataColumn)
+        metadataColumn_corrected = replace(metadataColumn, "GW_Armando_plate1_TTGW05_rep2" => "GW_Armando_plate1_TTGW05r2",
+        "GW_Lane5_NA3-3ul" => "GW_Lane5_NA3",
+        "GW_Armando_plate1_TTGW_15_05" => "GW_Armando_plate1_TTGW-15-05",
+        "GW_Armando_plate1_TTGW_15_07" => "GW_Armando_plate1_TTGW-15-07",
+        "GW_Armando_plate1_TTGW_15_08" => "GW_Armando_plate1_TTGW-15-08",
+        "GW_Armando_plate1_TTGW_15_09" => "GW_Armando_plate1_TTGW-15-09",
+        "GW_Armando_plate1_TTGW_15_01" => "GW_Armando_plate1_TTGW-15-01",
+        "GW_Armando_plate1_TTGW_15_02" => "GW_Armando_plate1_TTGW-15-02",	
+        "GW_Armando_plate1_TTGW_15_03" => "GW_Armando_plate1_TTGW-15-03",
+        "GW_Armando_plate1_TTGW_15_04" => "GW_Armando_plate1_TTGW-15-04",
+        "GW_Armando_plate1_TTGW_15_06" => "GW_Armando_plate1_TTGW-15-06",
+        "GW_Armando_plate1_TTGW_15_10" => "GW_Armando_plate1_TTGW-15-10",
+        "GW_Armando_plate2_TTGW_15_01" => "GW_Armando_plate2_TTGW-15-01",
+        "GW_Armando_plate2_TTGW_15_02" => "GW_Armando_plate2_TTGW-15-02",
+        "GW_Armando_plate2_TTGW_15_03" => "GW_Armando_plate2_TTGW-15-03",
+        "GW_Armando_plate2_TTGW_15_04" => "GW_Armando_plate2_TTGW-15-04",
+        "GW_Armando_plate2_TTGW_15_06" => "GW_Armando_plate2_TTGW-15-06",
+        "GW_Armando_plate2_TTGW_15_10" => "GW_Armando_plate2_TTGW-15-10") 
+end
 ```
 
 ## Replace the Z chromosome SNPs with the filtered Z chromosome SNPs
@@ -239,7 +317,7 @@ for chrom in scaffolds_for_HetVariance
 end
 
 # Quick test plot (overlapping all chromosomes, so not good)
-plot(windowed_pos_all.mean_position, windowed_HetVariance_all)
+# plot(windowed_pos_all.mean_position, windowed_HetVariance_all)
 ```
 
 ## Identify "haploblock regions" as those that have high HetVar
@@ -412,7 +490,7 @@ fig2 = plotGenomeHetVariance(scaffolds_to_plot,
                         plotRegions = true,
                         regionsToPlot = highHetVarRegions,
                         regionColor = "magenta")
-if true  # set to true to save plot
+if false  # set to true to save plot
     filename = "Figure2_ViSHet_allGenome_fromJulia.png"
     save(filename, fig2, px_per_unit = 2.0)
     println("Saved ", filename)
@@ -429,8 +507,8 @@ end
 # cycle through the LHBRs, determining the SNPs within each to remove from the dataset:
 lociToRemove = fill(false, nrow(pos_SNP_filtered))
 for i in eachrow(highHetVarRegions) 
-    display(i.regionChrom)
-    display(i.regionStart)
+    # display(i.regionChrom)
+    # display(i.regionStart)
     lociWithinThisLHBR = (pos_SNP_filtered.chrom .== i.regionChrom) .&& 
                     (pos_SNP_filtered.position .>= i.regionStart) .&&
                     (pos_SNP_filtered.position .<= i.regionEnd)
@@ -448,21 +526,21 @@ chromosomes_to_include = "gw" .* string.(vcat(28:-1:17, 15:-1:1))
 push!(chromosomes_to_include, "gw1A", "gw4A", "gwZ")  # add two other scaffolds
 ```
 
-#### Imputation using SVD
+#### Imputation using KNN
 
-Did this on 1Nov2024 and saved files, so inactivated this cell for now (takes about 0.5 to 6 min per scaffold):
+Did this on 5Jan2025 and saved files, so inactivated this cell for now (can take up to several minutes for each big scaffold):
 
 ```julia
 for i in eachindex(chromosomes_to_include)
     chrom = chromosomes_to_include[i]
-    regionText = string("chr", chrom, "nonLHBR")
+    regionText = string("chr", chrom, "nonLHBR") # this is where "nonLHBR will be incorporated in file name"
     loci_selection = (pos_SNP_filtered_nonLHBR.chrom .== chrom)
     pos_SNP_filtered_nonLHBR_region = pos_SNP_filtered_nonLHBR[loci_selection,:]
     genosOnly_nonLHBR_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_included_nonLHBR[:,loci_selection])
-    @time imputed_genos = Impute.svd(genosOnly_nonLHBR_region_for_imputing)
-    filename = string(baseName, tagName, regionText, ".SVDimputedMissing.jld2")
+    @time imputed_genos = Impute.knn(genosOnly_nonLHBR_region_for_imputing; dims = :rows)
+    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
     jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_nonLHBR_region)
-    println(string(regionText, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_nonLHBR_region, 1)," SNPs and ", size(genosOnly_nonLHBR_region_for_imputing, 1)," filtered individuals, in file $filename"))
+    println(string(regionText, ": Saved real and imputed genotypes for non_LHBR parts of genome, for ", size(pos_SNP_filtered_nonLHBR_region, 1)," SNPs and ", size(genosOnly_nonLHBR_region_for_imputing, 1)," filtered individuals, in file $filename"))
 end
 ```
 
@@ -475,7 +553,7 @@ pos_SNP_loaded = DataFrame(chrom = String[], position = Int64[])
 for i in eachindex(chromosomes_to_include)
     chrom = chromosomes_to_include[i]
     regionText = string("chr", chrom, "nonLHBR")
-    filename = string(baseName, tagName, regionText, ".SVDimputedMissing.jld2")
+    filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
     imputed_genos_one_chr = load(filename, "imputed_genos")
     genos_imputed_loaded = hcat(genos_imputed_loaded, imputed_genos_one_chr)
     if ind_with_metadata_indFiltered.ind != load(filename, "ind_with_metadata_indFiltered")[:, :ind]
@@ -531,7 +609,7 @@ println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
 PC2 explains ", 100*PC2_prop_variance, "%.")
 ```
 
-There is a whole lot of signal for population structure in the non-LHBR regions--maybe not suprising given there are high-Fst regions with low ViSHet.
+There is a whole lot of signal for population structure in the non-LHBR regions---maybe not suprising given there are high-Fst regions with low ViSHet.
 
 
 ## Choose low-het individuals in a high HetVar region
@@ -648,7 +726,8 @@ if flipPC2
 else
     PCAmodelAll.metadata.PC2 = PCAmodelAll.values[2,:]
 end
-PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
+# also flip PC3:
+PCAmodelAll.metadata.PC3 = -1 .* PCAmodelAll.values[3,:]
 
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
@@ -684,7 +763,7 @@ fig_3B = CairoMakie.Figure()
 ax = Axis(fig_3B[1, 1],
     title = "gwZ LHBR PC1 vs. PC3, only low heterozygosity",
     xlabel = "Region PC1", xlabelsize = 24,
-    ylabel = "Region PC2", ylabelsize = 24,
+    ylabel = "Region PC3", ylabelsize = 24,
     autolimitaspect = 1)
 hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
 for i in eachindex(groups_to_plot_PCA) 
@@ -2894,7 +2973,7 @@ PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included
             showPlot = false)
 
 display(PCAmodel.PCAfig)
-if true  # set to true to save plot
+if false  # set to true to save plot
     save("FigureS2C_gw26_nonHLBRarbitrary_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
 end 
 ```
@@ -5281,7 +5360,7 @@ PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included
             showPlot = false)
 
 display(PCAmodel.PCAfig)
-if true  # set to true to save plot
+if false  # set to true to save plot
     save("FigureS2B_gw13_nonHLBRarbitrary_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
 end 
 ```
@@ -7396,7 +7475,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
 
 
 
-## Try chr 22 
+## Try chr 27 
 
 ```{julia}
 # choose scaffold
@@ -7427,7 +7506,7 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
 
-flipPC1 = false
+flipPC1 = true
 flipPC2 = true
 
 PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
@@ -8378,7 +8457,7 @@ freqs, sampleSizes = getFreqsAndSampleSizes(geno_chr4A_included_LHBR, indCluster
 sitePi = getSitePi(freqs, sampleSizes)
 
 # calculate pairwise Dxy per site, using data in "freqs" and groups in "groups"
-Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames)
+Dxy, pairwiseDxyClusterNames = getDxy(freqs, clusterNames_gw4A)
 
 Fst, FstNumerator, FstDenominator, pairwiseFstClusterNames = getFst(freqs, sampleSizes, clusterNames_gw4A; among=false)
 
@@ -8803,7 +8882,9 @@ println("Calculated Fst values")
 
 ##### Loop through scaffolds and make plots, and adding a line for the LHBRs:
 
-```{julia}
+Making inactive because plots were already made:
+
+```julia
 # for autosomes, Fst > 0.8
 Fst_cutoff = 0.8
 for i in 1:length(scaffolds_to_plot)
@@ -8891,7 +8972,7 @@ end
 
 # Adding 28June2024: starting with PCA of just the homozygotes (above), apply those axes to other individuals to add them to the PCA:
 
-```{julia}
+```julia
 
 ind_with_metadata_included # this is the list of all individuals prior to choosing low IndHet
 
@@ -8922,7 +9003,7 @@ display(f)
 
 # Below, what I tried first here is to calculate a matrix of pairwise genetic distances and then use Principal Coordinates Analysis (Metric Multidimensional Scaling). The below works. Then I realized that it is perhaps better to stick with PCA like in the rest of the paper. So will do that above.
 
-```{julia}
+```julia
 indGenDistances = getIndGenDistances(genos_lowIndHetStan)
 
 mds = fit(MDS, indGenDistances; distances=true)
@@ -8974,7 +9055,7 @@ display(f)
 
 # Pick a small set of individuals to examine genetic distances
 
-```{julia}
+```julia
 # for demonstration haplotypes, choose individuals with numMissings < 200_000
 # and regionIndHetStan < 0.5:
 

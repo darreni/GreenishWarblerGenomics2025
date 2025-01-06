@@ -1,15 +1,20 @@
 ---
 title: "Greenish Warbler PCA plots"
 author: "Darren Irwin"
-date: "9/10/2023"
+date: last-modified
+date-format: long
 execute:
   echo: true
 format:
   html:
     code-fold: false
+    fig-width: 8
+    fig-height: 10
   pdf:
     keep-tex: false
     monofont: "JuliaMono"
+    fig-width: 8
+    fig-height: 10
 jupyter: julia-1.11
 ---
 
@@ -20,7 +25,7 @@ This script depends on `GreenishWarblerGenomics2023.qmd` and `GW_Zchromosome_ana
 This dataset was produced through filtering in GreenishWarblerGenomics2023.qmd
 
 ```{julia}
-filename = string(baseName, tagName, ".ind_SNP_ind_filtered.jld2")
+filename = string(baseName, tagName, "ind_SNP_ind_filtered.jld2")
 genosOnly = load(filename, "genosOnly_ind_SNP_ind_filtered")
 ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
 pos_SNP_filtered = load(filename, "pos_SNP_filtered")
@@ -96,7 +101,7 @@ catch
     println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
 end
 
-if true  #set to true to save
+if false  #set to true to save
     save("Figure1B_PCAwholeGenome_fromJulia.png", PCA_wholeGenome.PCAfig, px_per_unit = 2.0)
 end
 ```
@@ -125,7 +130,7 @@ CairoMakie.scatter!(refGenome_location, refGenomePCAposition[1], marker = :diamo
 cd(dataDirectory)
 display(f)
 
-if true  #set to true to save
+if false  #set to true to save
     save("Figure1C_PCAwholeGenomeAroundRing_fromJulia.png", f, px_per_unit = 2.0)
 end
 ```

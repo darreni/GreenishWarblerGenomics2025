@@ -1,28 +1,96 @@
 ---
 title: "Greenish Warbler Z-chromosome analysis"
 author: "Darren Irwin"
-date: "9/10/2023"
+date: last-modified
+date-format: long
 execute:
   echo: true
 format:
   html:
     code-fold: false
+    fig-width: 8
+    fig-height: 10
   pdf:
     keep-tex: false
     monofont: "JuliaMono"
+    fig-width: 8
+    fig-height: 10
 jupyter: julia-1.11
 ---
+
+## Load packages
+
+```{julia}
+using JLD2 # for loading saved data
+using DataFrames # for storing data as type DataFrame
+using CairoMakie # for plots
+using CSV # for reading in delimited files
+using Impute # for imputing missing genotypes
+using GenomicDiversity # for plotPCA (my custom package)
+using Statistics # for var() function
+using MultivariateStats # for getting variances from PCA model
+```
+
+## Choose working directory
+
+```{julia}
+dataDirectory = "/Users/darrenirwin/Dropbox/Darren's current work/"
+cd(dataDirectory)
+```
 
 ## Load the filtered dataset
 
 This dataset was produced through filtering in GreenishWarblerGenomics2023.qmd
 
 ```{julia}
-filename = string(baseName, tagName, ".ind_SNP_ind_filtered.jld2")
-genosOnly = load(filename, "genosOnly_ind_SNP_ind_filtered")
-ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
-pos_SNP_filtered = load(filename, "pos_SNP_filtered")
+baseName = "GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"
+tagName = ".Jan2025."
+filename = string(baseName, tagName, "ind_SNP_ind_filtered.jld2")
+# load info into a dictionary:
+d = load(filename)
+if baseName != d["baseName"]
+    println("WARNING: baseNames don't match between that defined above and in the saved file")
+end
+if tagName != d["tagName"]
+    println("WARNING: tagNames don't match don't match between that defined above and in the saved file")
+end
+genosOnly = d["genosOnly_ind_SNP_ind_filtered"]
+ind_with_metadata_indFiltered = d["ind_with_metadata_indFiltered"]
+pos_SNP_filtered = d["pos_SNP_filtered"]
+repoDirectory = d["repoDirectory"]
+dataDirectory = d["dataDirectory"]
+scaffold_info = d["scaffold_info"]
+scaffold_lengths = d["scaffold_lengths"]
+filenameTextMiddle = d["filenameTextMiddle"]
+missingGenotypeThreshold = d["missingGenotypeThreshold"]
+filenameTextEnd = d["filenameTextEnd"]
+chromosomes_to_process =d["chromosomes_to_process"]
 println("Loaded the filtered data.")
+```
+
+Also define `correctNames()` function as in main script, to correct some names:
+
+```{julia}
+function correctNames(metadataColumn)
+        metadataColumn_corrected = replace(metadataColumn, "GW_Armando_plate1_TTGW05_rep2" => "GW_Armando_plate1_TTGW05r2",
+        "GW_Lane5_NA3-3ul" => "GW_Lane5_NA3",
+        "GW_Armando_plate1_TTGW_15_05" => "GW_Armando_plate1_TTGW-15-05",
+        "GW_Armando_plate1_TTGW_15_07" => "GW_Armando_plate1_TTGW-15-07",
+        "GW_Armando_plate1_TTGW_15_08" => "GW_Armando_plate1_TTGW-15-08",
+        "GW_Armando_plate1_TTGW_15_09" => "GW_Armando_plate1_TTGW-15-09",
+        "GW_Armando_plate1_TTGW_15_01" => "GW_Armando_plate1_TTGW-15-01",
+        "GW_Armando_plate1_TTGW_15_02" => "GW_Armando_plate1_TTGW-15-02",	
+        "GW_Armando_plate1_TTGW_15_03" => "GW_Armando_plate1_TTGW-15-03",
+        "GW_Armando_plate1_TTGW_15_04" => "GW_Armando_plate1_TTGW-15-04",
+        "GW_Armando_plate1_TTGW_15_06" => "GW_Armando_plate1_TTGW-15-06",
+        "GW_Armando_plate1_TTGW_15_10" => "GW_Armando_plate1_TTGW-15-10",
+        "GW_Armando_plate2_TTGW_15_01" => "GW_Armando_plate2_TTGW-15-01",
+        "GW_Armando_plate2_TTGW_15_02" => "GW_Armando_plate2_TTGW-15-02",
+        "GW_Armando_plate2_TTGW_15_03" => "GW_Armando_plate2_TTGW-15-03",
+        "GW_Armando_plate2_TTGW_15_04" => "GW_Armando_plate2_TTGW-15-04",
+        "GW_Armando_plate2_TTGW_15_06" => "GW_Armando_plate2_TTGW-15-06",
+        "GW_Armando_plate2_TTGW_15_10" => "GW_Armando_plate2_TTGW-15-10") 
+end
 ```
 
 # Z chromosome differentiation
@@ -157,10 +225,6 @@ male_heterozygosity = numHetsPerSNP_males ./ num_males
 CairoMakie.hist(male_heterozygosity)
 CairoMakie.plot(male_heterozygosity)
 
-CairoMakie.scatter(vec(numHetsPerSNP_females ./ num_females), vec(numHetsPerSNP_males ./ num_males),
-    xlabel = "Proportion females heterozygous",
-    ylabel = "Proportion males heterozygous")
-
 f = CairoMakie.Figure()
 ax = Axis(f[1, 1],
     title = "Heterozygosity by sex of putative Z-chromosome SNPs",
@@ -204,10 +268,6 @@ male_heterozygosity = numHetsPerSNP_males ./ num_males
 CairoMakie.hist(male_heterozygosity)
 CairoMakie.plot(male_heterozygosity)
 
-CairoMakie.scatter(vec(numHetsPerSNP_females ./ num_females), vec(numHetsPerSNP_males ./ num_males),
-    xlabel = "Proportion females heterozygous",
-    ylabel = "Proportion males heterozygous")
-
 f = CairoMakie.Figure()
 ax = Axis(f[1, 1],
     title = "After filtering of SNPs: Heterozygosity by sex of putative Z-chromosome SNPs",
@@ -237,12 +297,12 @@ genotypes_gwZ_SNPfiltered_with_missing = Matrix{Union{Missing, Float32}}(genotyp
 # change "-1" to "missing":
 genotypes_gwZ_SNPfiltered_with_missing[genotypes_gwZ_SNPfiltered_with_missing .== -1] .= missing;
 regionText = "chrgwZ_cleaned"
-filename = string(baseName, tagName, regionText, ".SVDimputedMissing.jld2")
+filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
 # to do the imputing, do this by setting to true:
 cd(dataDirectory)
 do_imputing = true
 if do_imputing
-    @time imputed_genos = Impute.svd(genotypes_gwZ_SNPfiltered_with_missing)
+    @time imputed_genos = Impute.knn(genotypes_gwZ_SNPfiltered_with_missing; dims = :rows)
     # took 46 sec
     jldsave(filename; imputed_genos, ind_with_metadata_indFiltered = ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region = pos_SNP_filtered_gwZ_SNPfiltered)
     imputed_genos_chrZcleaned = imputed_genos

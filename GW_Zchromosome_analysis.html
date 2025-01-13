@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Darren Irwin">
-<meta name="dcterms.date" content="2025-01-04">
+<meta name="dcterms.date" content="2025-01-12">
 
 <title>Greenish Warbler Z-chromosome analysis</title>
 <style>
@@ -73,11 +73,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </head>
 
-<body>
+<body class="fullcontent">
 
 <div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-<div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="GW_Zchromosome_analysis.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></div>
+
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -99,7 +98,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">January 4, 2025</p>
+      <p class="date">January 12, 2025</p>
     </div>
   </div>
   
@@ -111,136 +110,121 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
+<p>The scripts, data, and figures shown in this document were used as part of the analysis for the paper listed below, which should be cited as the source of information from this document:</p>
+<p>Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. <em>Molecular Ecology</em>.</p>
+<p>This page shows the code used for filtering of SNPs that mapped to the Z chromosome.</p>
+<p>Prior to examining the code on this page, readers should look at <code>GreenishWarblerGenomics.qmd</code> (or <code>.html</code>), as this current page depends on the code on that page being run first.</p>
+<section id="a-note-about-plots-in-this-document" class="level5">
+<h5 class="anchored" data-anchor-id="a-note-about-plots-in-this-document">A note about plots in this document</h5>
+<p>The plots shown below may different somewhat in appearance between the version produced by Quarto (i.e., in this published document) and the version you would get if you run this code without using Quarto. In particular, the dimensions and font sizes of labels and titles may differ. So if you want the versions identical to those used in the paper, run the code directly in the Julia REPL (or using an environment such as VS Code) without using Quarto.</p>
+<p>In the rendered (<code>.html</code>) version of this Quarto notebook, each figure may be accompanied by a warning caused by an interaction between Quarto and the Makie plotting package. Ignore these warnings as they do not affect the calculations or plots.</p>
+</section>
 <section id="load-packages" class="level2">
 <h2 class="anchored" data-anchor-id="load-packages">Load packages</h2>
-<div id="e8c9329a" class="cell" data-execution_count="1">
+<div id="da6e076e" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">JLD2</span> <span class="co"># for loading saved data</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">DataFrames</span> <span class="co"># for storing data as type DataFrame</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CairoMakie</span> <span class="co"># for plots</span></span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CSV</span> <span class="co"># for reading in delimited files</span></span>
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Impute</span> <span class="co"># for imputing missing genotypes</span></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">GenomicDiversity</span> <span class="co"># for plotPCA (my custom package)</span></span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Statistics</span> <span class="co"># for var() function</span></span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">MultivariateStats</span> <span class="co"># for Principal Coordinates Analysis (multidimensional scaling)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Statistics</span> <span class="co"># for var() function</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">MultivariateStats</span> <span class="co"># for getting variances from PCA model</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Load my custom package <code>GenomicDiversity</code>:</p>
+<div id="68919684" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">GenomicDiversity</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="choose-working-directory" class="level2">
 <h2 class="anchored" data-anchor-id="choose-working-directory">Choose working directory</h2>
-<div id="66732482" class="cell" data-execution_count="2">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>dataDirectory <span class="op">=</span> <span class="st">"/Users/darrenirwin/Dropbox/Darren's current work/"</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(dataDirectory)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="26565d15" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>dataDirectory <span class="op">=</span> <span class="st">"/Users/darrenirwin/Dropbox/Darren's current work/"</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(dataDirectory)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="load-the-filtered-dataset" class="level2">
 <h2 class="anchored" data-anchor-id="load-the-filtered-dataset">Load the filtered dataset</h2>
 <p>This dataset was produced through filtering in GreenishWarblerGenomics2023.qmd</p>
-<div id="2b008ed6" class="cell" data-execution_count="3">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>baseName <span class="op">=</span> <span class="st">"GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>tagName <span class="op">=</span> <span class="st">".Jan2025."</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, <span class="st">"ind_SNP_ind_filtered.jld2"</span>)</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># load info into a dictionary:</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>d <span class="op">=</span> <span class="fu">load</span>(filename)</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> baseName <span class="op">!=</span> d[<span class="st">"baseName"</span>]</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"WARNING: baseNames don't match between that defined above and in the saved file"</span>)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> tagName <span class="op">!=</span> d[<span class="st">"tagName"</span>]</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"WARNING: tagNames don't match don't match between that defined above and in the saved file"</span>)</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>genosOnly <span class="op">=</span> d[<span class="st">"genosOnly_ind_SNP_ind_filtered"</span>]</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered <span class="op">=</span> d[<span class="st">"ind_with_metadata_indFiltered"</span>]</span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>pos_SNP_filtered <span class="op">=</span> d[<span class="st">"pos_SNP_filtered"</span>]</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>repoDirectory <span class="op">=</span> d[<span class="st">"repoDirectory"</span>]</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>dataDirectory <span class="op">=</span> d[<span class="st">"dataDirectory"</span>]</span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>scaffold_info <span class="op">=</span> d[<span class="st">"scaffold_info"</span>]</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>scaffold_lengths <span class="op">=</span> d[<span class="st">"scaffold_lengths"</span>]</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>filenameTextMiddle <span class="op">=</span> d[<span class="st">"filenameTextMiddle"</span>]</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>missingGenotypeThreshold <span class="op">=</span> d[<span class="st">"missingGenotypeThreshold"</span>]</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>filenameTextEnd <span class="op">=</span> d[<span class="st">"filenameTextEnd"</span>]</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>chromosomes_to_process <span class="op">=</span>d[<span class="st">"chromosomes_to_process"</span>]</span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Loaded the filtered data."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="d7c617e1" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>baseName <span class="op">=</span> <span class="st">"GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>tagName <span class="op">=</span> <span class="st">".Jan2025."</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, <span class="st">"ind_SNP_ind_filtered.jld2"</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># load info into a dictionary:</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>d <span class="op">=</span> <span class="fu">load</span>(filename)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> baseName <span class="op">!=</span> d[<span class="st">"baseName"</span>]</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"WARNING: baseNames don't match between that defined above and in the saved file"</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> tagName <span class="op">!=</span> d[<span class="st">"tagName"</span>]</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"WARNING: tagNames don't match don't match between that defined above and in the saved file"</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>genosOnly <span class="op">=</span> d[<span class="st">"genosOnly_ind_SNP_ind_filtered"</span>]</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered <span class="op">=</span> d[<span class="st">"ind_with_metadata_indFiltered"</span>]</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>pos_SNP_filtered <span class="op">=</span> d[<span class="st">"pos_SNP_filtered"</span>]</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>repoDirectory <span class="op">=</span> d[<span class="st">"repoDirectory"</span>]</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>dataDirectory <span class="op">=</span> d[<span class="st">"dataDirectory"</span>]</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>scaffold_info <span class="op">=</span> d[<span class="st">"scaffold_info"</span>]</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>scaffold_lengths <span class="op">=</span> d[<span class="st">"scaffold_lengths"</span>]</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>filenameTextMiddle <span class="op">=</span> d[<span class="st">"filenameTextMiddle"</span>]</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>missingGenotypeThreshold <span class="op">=</span> d[<span class="st">"missingGenotypeThreshold"</span>]</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>filenameTextEnd <span class="op">=</span> d[<span class="st">"filenameTextEnd"</span>]</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>chromosomes_to_process <span class="op">=</span>d[<span class="st">"chromosomes_to_process"</span>]</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Loaded the filtered data."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Loaded the filtered data.</code></pre>
 </div>
 </div>
 <p>Also define <code>correctNames()</code> function as in main script, to correct some names:</p>
-<div id="6d325954" class="cell" data-execution_count="4">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">correctNames</span>(metadataColumn)</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>        metadataColumn_corrected <span class="op">=</span> <span class="fu">replace</span>(metadataColumn, <span class="st">"GW_Armando_plate1_TTGW05_rep2"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW05r2"</span>,</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Lane5_NA3-3ul"</span> <span class="op">=&gt;</span> <span class="st">"GW_Lane5_NA3"</span>,</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_05"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-05"</span>,</span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_07"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-07"</span>,</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_08"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-08"</span>,</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_09"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-09"</span>,</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_01"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-01"</span>,</span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_02"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-02"</span>,   </span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_03"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-03"</span>,</span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_04"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-04"</span>,</span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_06"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-06"</span>,</span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_10"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-10"</span>,</span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate2_TTGW_15_01"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate2_TTGW-15-01"</span>,</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate2_TTGW_15_02"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate2_TTGW-15-02"</span>,</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate2_TTGW_15_03"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate2_TTGW-15-03"</span>,</span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate2_TTGW_15_04"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate2_TTGW-15-04"</span>,</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate2_TTGW_15_06"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate2_TTGW-15-06"</span>,</span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate2_TTGW_15_10"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate2_TTGW-15-10"</span>) </span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="5">
+<div id="7c03b37b" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">correctNames</span>(metadataColumn)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>        metadataColumn_corrected <span class="op">=</span> <span class="fu">replace</span>(metadataColumn, <span class="st">"GW_Armando_plate1_TTGW05_rep2"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW05r2"</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Lane5_NA3-3ul"</span> <span class="op">=&gt;</span> <span class="st">"GW_Lane5_NA3"</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_05"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-05"</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_07"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-07"</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_08"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-08"</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_09"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-09"</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_01"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-01"</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_02"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-02"</span>,   </span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_03"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-03"</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_04"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-04"</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_06"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-06"</span>,</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate1_TTGW_15_10"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW-15-10"</span>,</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate2_TTGW_15_01"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate2_TTGW-15-01"</span>,</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate2_TTGW_15_02"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate2_TTGW-15-02"</span>,</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate2_TTGW_15_03"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate2_TTGW-15-03"</span>,</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate2_TTGW_15_04"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate2_TTGW-15-04"</span>,</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate2_TTGW_15_06"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate2_TTGW-15-06"</span>,</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Armando_plate2_TTGW_15_10"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate2_TTGW-15-10"</span>) </span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="6">
 <pre><code>correctNames (generic function with 1 method)</code></pre>
 </div>
 </div>
 </section>
 <section id="z-chromosome-differentiation" class="level1">
 <h1>Z chromosome differentiation</h1>
-<p>The PCA of Z chromosome variation (see far above) showed some unexpected structure, which I think it likely due to females being shifted (especially on PC2) compared to males. I think this is likely due to females having W chromosomes, reads from which are sometimes incorrectly mapped to the Z. Hence a small fraction of SNPs differ between females and males (with females called as heterozygotes, males as homozygotes, at those SNPs). However, at loci that are only on the Z, males can be heterozygous (2 alleles) whereas females can only be hemizygous (one allele). I am not sure of the net effect.</p>
+<p>The initial PCA of Z chromosome variation showed some unexpected structure, with females having shifted locations (especially on PC2) compared to males. This is likely due to females having W chromosomes, reads from which are sometimes incorrectly mapped to the Z. Hence a small fraction of SNPs differ between females and males (with females called as heterozygotes, males as homozygotes, at those SNPs). However, at loci that are only on the Z, males can be heterozygous (2 alleles) whereas females can only be hemizygous (one allele).</p>
 <p>To remove this problem, we could take several approaches (e.g., remove problematic SNPs, or look at one sex at a time). Here we’ll plot only males as that will remove the W chromosome. To infer sex of the birds, we’ll try plotting heterozygosity of Z chromosome SNPs per bird.</p>
-<div id="d9b2c672" class="cell" data-execution_count="5">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>chrom <span class="op">=</span> <span class="st">"gwZ"</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"chr"</span>, chrom)</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>loci_selection <span class="op">=</span> (pos_SNP_filtered.chrom <span class="op">.==</span> chrom)</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>pos_SNP_filtered_gwZ <span class="op">=</span> pos_SNP_filtered[loci_selection,<span class="op">:</span>]</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ <span class="op">=</span> genosOnly[<span class="op">:</span>,loci_selection]</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>numHetSNPs <span class="op">=</span> <span class="fu">sum</span>(genotypes_gwZ <span class="op">.==</span> <span class="fl">1</span>, dims<span class="op">=</span><span class="fl">2</span>)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>numGenotypedSNPs <span class="op">=</span> <span class="fu">sum</span>(<span class="fu">map</span>(<span class="fu">in</span>([<span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span>]), genotypes_gwZ), dims<span class="op">=</span><span class="fl">2</span>)</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>hetFraction <span class="op">=</span> numHetSNPs <span class="op">./</span> numGenotypedSNPs</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered[!, <span class="op">:</span>hetFractionZ] <span class="op">.=</span> hetFraction</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> <span class="fu">Axis</span>(f[<span class="fl">1</span>, <span class="fl">1</span>],</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    title <span class="op">=</span> <span class="st">"Average heterozygosity at SNPs on the Z chromosome"</span>,</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    xlabel <span class="op">=</span> <span class="st">"Individual (order as in metadata)"</span>,</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    ylabel <span class="op">=</span> <span class="st">"Heterozygosity (as fraction of genotypes SNPs)"</span></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>x_plot_values <span class="op">=</span> <span class="fu">eachindex</span>(ind_with_metadata_indFiltered.hetFractionZ)</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>y_plot_values <span class="op">=</span> ind_with_metadata_indFiltered.hetFractionZ</span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(ax, x_plot_values, y_plot_values, marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">10</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(f);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
-└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
-</div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-6-output-2.svg" class="img-fluid figure-img"></p>
-</figure>
-</div>
-</div>
-</div>
-<p>That doesn’t provide super clear separation.</p>
-<p>Let’s try looking at number of missing genotypes:</p>
-<div id="d0e2598b" class="cell" data-execution_count="6">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>missingGenotypeCount <span class="op">=</span> <span class="fu">sum</span>(genotypes_gwZ <span class="op">.==</span> <span class="op">-</span><span class="fl">1</span>, dims<span class="op">=</span><span class="fl">2</span>)</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered[!, <span class="op">:</span>missingZgenotypeCount] <span class="op">.=</span> missingGenotypeCount</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> <span class="fu">Axis</span>(f[<span class="fl">1</span>, <span class="fl">1</span>],</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    title <span class="op">=</span> <span class="st">"Number of missing SNP genotypes on the Z chromosome"</span>,</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    xlabel <span class="op">=</span> <span class="st">"Individual (order as in metadata)"</span>,</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    ylabel <span class="op">=</span> <span class="st">"Number of missing SNPs (out of 53336 SNPs)"</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>x_plot_values <span class="op">=</span> <span class="fu">eachindex</span>(ind_with_metadata_indFiltered.missingZgenotypeCount)</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>y_plot_values <span class="op">=</span> ind_with_metadata_indFiltered.missingZgenotypeCount</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(ax, x_plot_values, y_plot_values, marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">10</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(f);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="792a490c" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>chrom <span class="op">=</span> <span class="st">"gwZ"</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"chr"</span>, chrom)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>loci_selection <span class="op">=</span> (pos_SNP_filtered.chrom <span class="op">.==</span> chrom)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>pos_SNP_filtered_gwZ <span class="op">=</span> pos_SNP_filtered[loci_selection,<span class="op">:</span>]</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ <span class="op">=</span> genosOnly[<span class="op">:</span>,loci_selection]</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>numHetSNPs <span class="op">=</span> <span class="fu">sum</span>(genotypes_gwZ <span class="op">.==</span> <span class="fl">1</span>, dims<span class="op">=</span><span class="fl">2</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>numGenotypedSNPs <span class="op">=</span> <span class="fu">sum</span>(<span class="fu">map</span>(<span class="fu">in</span>([<span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">2</span>]), genotypes_gwZ), dims<span class="op">=</span><span class="fl">2</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>hetFraction <span class="op">=</span> numHetSNPs <span class="op">./</span> numGenotypedSNPs</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered[!, <span class="op">:</span>hetFractionZ] <span class="op">.=</span> hetFraction</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> <span class="fu">Axis</span>(f[<span class="fl">1</span>, <span class="fl">1</span>],</span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    title <span class="op">=</span> <span class="st">"Average heterozygosity at SNPs on the Z chromosome"</span>,</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    xlabel <span class="op">=</span> <span class="st">"Individual (order as in metadata)"</span>,</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    ylabel <span class="op">=</span> <span class="st">"Heterozygosity (as fraction of genotypes SNPs)"</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>x_plot_values <span class="op">=</span> <span class="fu">eachindex</span>(ind_with_metadata_indFiltered.hetFractionZ)</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>y_plot_values <span class="op">=</span> ind_with_metadata_indFiltered.hetFractionZ</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(ax, x_plot_values, y_plot_values, marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">10</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(f);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
 └ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
@@ -253,18 +237,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<p>Now let’s plot those together:</p>
-<div id="fb09f836" class="cell" data-execution_count="7">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> <span class="fu">Axis</span>(f[<span class="fl">1</span>, <span class="fl">1</span>],</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    title <span class="op">=</span> <span class="st">"Missing vs. fraction heterozygous Z SNPs"</span>,</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    xlabel <span class="op">=</span> <span class="st">"Number missing genotypes"</span>,</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    ylabel <span class="op">=</span> <span class="st">"Fraction heterozygous"</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>x_plot_values <span class="op">=</span> ind_with_metadata_indFiltered.missingZgenotypeCount</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>y_plot_values <span class="op">=</span> ind_with_metadata_indFiltered.hetFractionZ</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(ax, x_plot_values, y_plot_values, marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">10</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(f);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>That doesn’t provide super clear separation.</p>
+<p>Let’s try looking at number of missing genotypes:</p>
+<div id="799106c3" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>missingGenotypeCount <span class="op">=</span> <span class="fu">sum</span>(genotypes_gwZ <span class="op">.==</span> <span class="op">-</span><span class="fl">1</span>, dims<span class="op">=</span><span class="fl">2</span>)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered[!, <span class="op">:</span>missingZgenotypeCount] <span class="op">.=</span> missingGenotypeCount</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> <span class="fu">Axis</span>(f[<span class="fl">1</span>, <span class="fl">1</span>],</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    title <span class="op">=</span> <span class="st">"Number of missing SNP genotypes on the Z chromosome"</span>,</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    xlabel <span class="op">=</span> <span class="st">"Individual (order as in metadata)"</span>,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    ylabel <span class="op">=</span> <span class="st">"Number of missing SNPs (out of 53336 SNPs)"</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>x_plot_values <span class="op">=</span> <span class="fu">eachindex</span>(ind_with_metadata_indFiltered.missingZgenotypeCount)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>y_plot_values <span class="op">=</span> ind_with_metadata_indFiltered.missingZgenotypeCount</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(ax, x_plot_values, y_plot_values, marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">10</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(f);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
 └ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
@@ -273,6 +260,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div>
 <figure class="figure">
 <p><img src="GW_Zchromosome_analysis_files/figure-html/cell-8-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Now let’s plot those together:</p>
+<div id="291b668e" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> <span class="fu">Axis</span>(f[<span class="fl">1</span>, <span class="fl">1</span>],</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    title <span class="op">=</span> <span class="st">"Missing vs. fraction heterozygous Z SNPs"</span>,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    xlabel <span class="op">=</span> <span class="st">"Number missing genotypes"</span>,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    ylabel <span class="op">=</span> <span class="st">"Fraction heterozygous"</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>x_plot_values <span class="op">=</span> ind_with_metadata_indFiltered.missingZgenotypeCount</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>y_plot_values <span class="op">=</span> ind_with_metadata_indFiltered.hetFractionZ</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(ax, x_plot_values, y_plot_values, marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">10</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(f);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-9-output-2.svg" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
@@ -292,85 +303,32 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 # Outputting Mean Depth by Individual
 # After filtering, kept 229227 out of a possible 2431709 Sites
 # Run Time = 155.00 seconds</code></pre>
-<p>The plan is to load these read depth files into Julia and determine sex of individuals from the ratio of read depth on chromosome Z to chromosome 2:</p>
-<div id="7dc1d8a2" class="cell" data-execution_count="8">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(repoDirectory)</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>filename_gwZ <span class="op">=</span> <span class="st">"metadata/GW2022_all4plates.genotypes.SNPs_only.chrgwZ.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf.idepth"</span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>readDepthZ <span class="op">=</span> <span class="fu">DataFrame</span>(CSV.<span class="fu">File</span>(filename_gwZ))</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>readDepthZ.INDV <span class="op">=</span> <span class="fu">correctNames</span>(readDepthZ.INDV)</span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>filename_gw2 <span class="op">=</span> <span class="st">"metadata/GW2022_all4plates.genotypes.SNPs_only.chrgw2.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf.idepth"</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>readDepth2 <span class="op">=</span> <span class="fu">DataFrame</span>(CSV.<span class="fu">File</span>(filename_gw2))</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>readDepth2.INDV <span class="op">=</span> <span class="fu">correctNames</span>(readDepth2.INDV)</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>readDepthRatioZto2 <span class="op">=</span> <span class="fu">innerjoin</span>(readDepthZ, readDepth2, on <span class="op">=</span> <span class="op">:</span>INDV, renamecols <span class="op">=</span> <span class="st">"_gwZ"</span> <span class="op">=&gt;</span> <span class="st">"_gw2"</span>)</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>readDepthRatioZto2[!, <span class="op">:</span>depthRatio] <span class="op">=</span> readDepthRatioZto2.MEAN_DEPTH_gwZ <span class="op">./</span> readDepthRatioZto2.MEAN_DEPTH_gw2</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_sex <span class="op">=</span> <span class="fu">leftjoin</span>(ind_with_metadata_indFiltered, readDepthRatioZto2, on <span class="op">=</span> <span class="op">:</span>ind <span class="op">=&gt;</span> <span class="op">:</span>INDV)</span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(ind_with_metadata_indFiltered_sex.depthRatio)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We then load these read depth files into Julia and determine sex of individuals from the ratio of read depth on chromosome Z to chromosome 2:</p>
+<div id="6f73cfbd" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(repoDirectory)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>filename_gwZ <span class="op">=</span> <span class="st">"metadata/GW2022_all4plates.genotypes.SNPs_only.chrgwZ.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf.idepth"</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>readDepthZ <span class="op">=</span> <span class="fu">DataFrame</span>(CSV.<span class="fu">File</span>(filename_gwZ))</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>readDepthZ.INDV <span class="op">=</span> <span class="fu">correctNames</span>(readDepthZ.INDV)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>filename_gw2 <span class="op">=</span> <span class="st">"metadata/GW2022_all4plates.genotypes.SNPs_only.chrgw2.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf.idepth"</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>readDepth2 <span class="op">=</span> <span class="fu">DataFrame</span>(CSV.<span class="fu">File</span>(filename_gw2))</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>readDepth2.INDV <span class="op">=</span> <span class="fu">correctNames</span>(readDepth2.INDV)</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>readDepthRatioZto2 <span class="op">=</span> <span class="fu">innerjoin</span>(readDepthZ, readDepth2, on <span class="op">=</span> <span class="op">:</span>INDV, renamecols <span class="op">=</span> <span class="st">"_gwZ"</span> <span class="op">=&gt;</span> <span class="st">"_gw2"</span>)</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>readDepthRatioZto2[!, <span class="op">:</span>depthRatio] <span class="op">=</span> readDepthRatioZto2.MEAN_DEPTH_gwZ <span class="op">./</span> readDepthRatioZto2.MEAN_DEPTH_gw2</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_sex <span class="op">=</span> <span class="fu">leftjoin</span>(ind_with_metadata_indFiltered, readDepthRatioZto2, on <span class="op">=</span> <span class="op">:</span>ind <span class="op">=&gt;</span> <span class="op">:</span>INDV)</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(ind_with_metadata_indFiltered_sex.depthRatio)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
 └ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
 </div>
-<div class="cell-output cell-output-display" data-execution_count="9">
-<div>
-<figure class="figure">
-<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-9-output-2.svg" class="img-fluid figure-img"></p>
-</figure>
-</div>
-</div>
-</div>
-<p>That is quite a clear difference. The cluster with the lower Z / autosome read depth ratio should correspond to females (one copy of Z), whereas the higher Z / autosome ratio should be males. Interestingly, the ratios are a little higher than the expected 0.5 and 1, likely due to some repetitive elements (on the Z) and some W fragments being mapped to Z. Additional, the pseudoautosomal region, which is homologous and recombines between Z and W, will drive up Z read depth in females.</p>
-<p>It is these SNPs with a W copy that I will now try to detect and remove. They should show high heterozygosity in females.</p>
-<div id="cff434d7" class="cell" data-execution_count="9">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_sex.sex <span class="op">.=</span> <span class="st">"na"</span> </span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>females <span class="op">=</span> ind_with_metadata_indFiltered_sex.depthRatio <span class="op">.&lt;</span> <span class="fl">0.8</span></span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_sex.sex[females] <span class="op">.=</span> <span class="st">"F"</span></span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>num_females <span class="op">=</span> <span class="fu">sum</span>(females)</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>females_genotypes_gwZ <span class="op">=</span> <span class="fu">view</span>(genotypes_gwZ, females, <span class="op">:</span>)</span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>numHetsPerSNP_females <span class="op">=</span> <span class="fu">vec</span>(<span class="fu">sum</span>(females_genotypes_gwZ <span class="op">.==</span> <span class="fl">1</span>, dims<span class="op">=</span><span class="fl">1</span>))</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>female_heterozygosity <span class="op">=</span> numHetsPerSNP_females <span class="op">./</span> num_females</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">hist</span>(female_heterozygosity)</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">plot</span>(female_heterozygosity)</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="co"># compare with males:</span></span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a>males <span class="op">=</span> ind_with_metadata_indFiltered_sex.depthRatio <span class="op">.&gt;</span> <span class="fl">0.9</span></span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_sex.sex[males] <span class="op">.=</span> <span class="st">"M"</span></span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>num_males <span class="op">=</span> <span class="fu">sum</span>(males)</span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>males_genotypes_gwZ <span class="op">=</span> <span class="fu">view</span>(genotypes_gwZ, males, <span class="op">:</span>)</span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a>numHetsPerSNP_males <span class="op">=</span> <span class="fu">vec</span>(<span class="fu">sum</span>(males_genotypes_gwZ <span class="op">.==</span> <span class="fl">1</span>, dims<span class="op">=</span><span class="fl">1</span>))</span>
-<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>male_heterozygosity <span class="op">=</span> numHetsPerSNP_males <span class="op">./</span> num_males</span>
-<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">hist</span>(male_heterozygosity)</span>
-<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">plot</span>(male_heterozygosity)</span>
-<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
-<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> <span class="fu">Axis</span>(f[<span class="fl">1</span>, <span class="fl">1</span>],</span>
-<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>    title <span class="op">=</span> <span class="st">"Heterozygosity by sex of putative Z-chromosome SNPs"</span>,</span>
-<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>    xlabel <span class="op">=</span> <span class="st">"Proportion females heterozygous"</span>,</span>
-<span id="cb16-25"><a href="#cb16-25" aria-hidden="true" tabindex="-1"></a>    ylabel <span class="op">=</span> <span class="st">"Proportion males heterozygous"</span></span>
-<span id="cb16-26"><a href="#cb16-26" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb16-27"><a href="#cb16-27" aria-hidden="true" tabindex="-1"></a>x_plot_values <span class="op">=</span> female_heterozygosity</span>
-<span id="cb16-28"><a href="#cb16-28" aria-hidden="true" tabindex="-1"></a>y_plot_values <span class="op">=</span> male_heterozygosity</span>
-<span id="cb16-29"><a href="#cb16-29" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(ax, x_plot_values, y_plot_values, marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">10</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
-<span id="cb16-30"><a href="#cb16-30" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(f);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
-└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238
-┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
-└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238
-┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
-└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238
-┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
-└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238
-┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
-└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
-</div>
-<div class="cell-output cell-output-display">
+<div class="cell-output cell-output-display" data-execution_count="10">
 <div>
 <figure class="figure">
 <p><img src="GW_Zchromosome_analysis_files/figure-html/cell-10-output-2.svg" class="img-fluid figure-img"></p>
@@ -378,44 +336,39 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 </div>
 </div>
 </div>
-<p>This really clarifies things. The SNPs in the middle of the graph, with similar heterozygosity in females and males, are consistent with being pseudoautosomal SNPs. But the SNPs that have much higher female heterozygosity than male heterozygosity could be non-pseudoautosomal SNPs with reads from the W mapping to the Z, and giving appearance of Z heterozygosity in females (and not males). It is these SNPs we should remove. Also, there are a few with &gt; 0.5 heterozygosity in males, which should be removed because they are likely due to paralogs.</p>
-<p>So, going to remove SNPs according to these rules: If (female heterozygosity is above 0.05) AND (ratio of male to female heterozygosity is less than 1/2), REMOVE the SNP from consideration. If (male heterozygosity is above 0.5), REMOVE the SNP.</p>
-<div id="b911d56c" class="cell" data-execution_count="10">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>removed_SNPs <span class="op">=</span> (male_heterozygosity <span class="op">.&gt;</span> <span class="fl">0.5</span>) <span class="op">.||</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>                ((female_heterozygosity <span class="op">.&gt;</span> <span class="fl">0.05</span>) <span class="op">.&amp;&amp;</span> </span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                ((male_heterozygosity <span class="op">./</span> female_heterozygosity) <span class="op">.&lt;</span> <span class="fl">0.5</span> ))</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ_SNPfiltered <span class="op">=</span> genotypes_gwZ[<span class="op">:</span>, <span class="fu">Not</span>(removed_SNPs)]</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>pos_SNP_filtered_gwZ_SNPfiltered <span class="op">=</span> pos_SNP_filtered_gwZ[<span class="fu">Not</span>(removed_SNPs),<span class="op">:</span>]</span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"This filtering removed "</span>, <span class="fu">sum</span>(removed_SNPs), <span class="st">" SNPs."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>This filtering removed 1831 SNPs.</code></pre>
-</div>
-</div>
-<p>Check that the filtering did remove the problematic SNPs:</p>
-<div id="997ecf0e" class="cell" data-execution_count="11">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>females_genotypes_gwZ <span class="op">=</span> <span class="fu">view</span>(genotypes_gwZ_SNPfiltered, females, <span class="op">:</span>)</span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>numHetsPerSNP_females <span class="op">=</span> <span class="fu">vec</span>(<span class="fu">sum</span>(females_genotypes_gwZ <span class="op">.==</span> <span class="fl">1</span>, dims<span class="op">=</span><span class="fl">1</span>))</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>female_heterozygosity <span class="op">=</span> numHetsPerSNP_females <span class="op">./</span> num_females</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">hist</span>(female_heterozygosity)</span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">plot</span>(female_heterozygosity)</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="co"># compare with males:</span></span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>males_genotypes_gwZ <span class="op">=</span> <span class="fu">view</span>(genotypes_gwZ_SNPfiltered, males, <span class="op">:</span>)</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>numHetsPerSNP_males <span class="op">=</span> <span class="fu">vec</span>(<span class="fu">sum</span>(males_genotypes_gwZ <span class="op">.==</span> <span class="fl">1</span>, dims<span class="op">=</span><span class="fl">1</span>))</span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>male_heterozygosity <span class="op">=</span> numHetsPerSNP_males <span class="op">./</span> num_males</span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">hist</span>(male_heterozygosity)</span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">plot</span>(male_heterozygosity)</span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> <span class="fu">Axis</span>(f[<span class="fl">1</span>, <span class="fl">1</span>],</span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>    title <span class="op">=</span> <span class="st">"After filtering of SNPs: Heterozygosity by sex of putative Z-chromosome SNPs"</span>,</span>
-<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>    xlabel <span class="op">=</span> <span class="st">"Proportion females heterozygous"</span>,</span>
-<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>    ylabel <span class="op">=</span> <span class="st">"Proportion males heterozygous"</span></span>
-<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>x_plot_values <span class="op">=</span> female_heterozygosity</span>
-<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>y_plot_values <span class="op">=</span> male_heterozygosity</span>
-<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(ax, x_plot_values, y_plot_values, marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">10</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
-<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(f);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>That is quite a clear difference. The cluster with the lower Z / autosome read depth ratio should correspond to females (one copy of Z), whereas the higher Z / autosome ratio should be males. Interestingly, the ratios are a little higher than the expected 0.5 and 1, likely due to some repetitive elements (on the Z) and some W fragments being mapped to Z. Additional, the pseudoautosomal region, which is homologous and recombines between Z and W, will drive up Z read depth in females.</p>
+<p>It is these SNPs with a W copy that I will now try to detect and remove. They should show high heterozygosity in females.</p>
+<div id="2d6e6275" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_sex.sex <span class="op">.=</span> <span class="st">"na"</span> </span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>females <span class="op">=</span> ind_with_metadata_indFiltered_sex.depthRatio <span class="op">.&lt;</span> <span class="fl">0.8</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_sex.sex[females] <span class="op">.=</span> <span class="st">"F"</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>num_females <span class="op">=</span> <span class="fu">sum</span>(females)</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>females_genotypes_gwZ <span class="op">=</span> <span class="fu">view</span>(genotypes_gwZ, females, <span class="op">:</span>)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>numHetsPerSNP_females <span class="op">=</span> <span class="fu">vec</span>(<span class="fu">sum</span>(females_genotypes_gwZ <span class="op">.==</span> <span class="fl">1</span>, dims<span class="op">=</span><span class="fl">1</span>))</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>female_heterozygosity <span class="op">=</span> numHetsPerSNP_females <span class="op">./</span> num_females</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">hist</span>(female_heterozygosity)</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">plot</span>(female_heterozygosity)</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="co"># compare with males:</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>males <span class="op">=</span> ind_with_metadata_indFiltered_sex.depthRatio <span class="op">.&gt;</span> <span class="fl">0.9</span></span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_sex.sex[males] <span class="op">.=</span> <span class="st">"M"</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>num_males <span class="op">=</span> <span class="fu">sum</span>(males)</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>males_genotypes_gwZ <span class="op">=</span> <span class="fu">view</span>(genotypes_gwZ, males, <span class="op">:</span>)</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>numHetsPerSNP_males <span class="op">=</span> <span class="fu">vec</span>(<span class="fu">sum</span>(males_genotypes_gwZ <span class="op">.==</span> <span class="fl">1</span>, dims<span class="op">=</span><span class="fl">1</span>))</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a>male_heterozygosity <span class="op">=</span> numHetsPerSNP_males <span class="op">./</span> num_males</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">hist</span>(male_heterozygosity)</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">plot</span>(male_heterozygosity)</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> <span class="fu">Axis</span>(f[<span class="fl">1</span>, <span class="fl">1</span>],</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a>    title <span class="op">=</span> <span class="st">"Heterozygosity by sex of putative Z-chromosome SNPs"</span>,</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a>    xlabel <span class="op">=</span> <span class="st">"Proportion females heterozygous"</span>,</span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a>    ylabel <span class="op">=</span> <span class="st">"Proportion males heterozygous"</span></span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>x_plot_values <span class="op">=</span> female_heterozygosity</span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a>y_plot_values <span class="op">=</span> male_heterozygosity</span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(ax, x_plot_values, y_plot_values, marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">10</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(f);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
 └ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238
@@ -431,61 +384,120 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-12-output-2.svg" class="img-fluid figure-img"></p>
+<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-11-output-2.svg" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
-</section>
-<section id="save-the-filtered-z-chromosome-genotypes" class="level1">
-<h1>Save the filtered Z chromosome genotypes</h1>
-<div id="34f0060f" class="cell" data-execution_count="12">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(dataDirectory)</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="st">"chrgwZ_cleaned"</span></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".notImputed.jld2"</span>)</span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="fu">jldsave</span>(filename; genotypes_gwZ_SNPfiltered, ind_with_metadata_indFiltered <span class="op">=</span> ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region <span class="op">=</span> pos_SNP_filtered_gwZ_SNPfiltered)</span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Saved matrix of real Z chromosome genotypes (without imputation)."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This really clarifies things. The SNPs in the middle of the graph, with similar heterozygosity in females and males, are consistent with being pseudoautosomal SNPs. But the SNPs that have much higher female heterozygosity than male heterozygosity could be non-pseudoautosomal SNPs with reads from the W mapping to the Z, and giving appearance of Z heterozygosity in females (and not males). It is these SNPs we should remove. Also, there are a few with &gt; 0.5 heterozygosity in males, which should be removed because they are likely due to paralogs.</p>
+<p>So, we will remove SNPs according to these rules: If (female heterozygosity is above 0.05) AND (ratio of male to female heterozygosity is less than 1/2), REMOVE the SNP from consideration. If (male heterozygosity is above 0.5), REMOVE the SNP.</p>
+<div id="611ae662" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>removed_SNPs <span class="op">=</span> (male_heterozygosity <span class="op">.&gt;</span> <span class="fl">0.5</span>) <span class="op">.||</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                ((female_heterozygosity <span class="op">.&gt;</span> <span class="fl">0.05</span>) <span class="op">.&amp;&amp;</span> </span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                ((male_heterozygosity <span class="op">./</span> female_heterozygosity) <span class="op">.&lt;</span> <span class="fl">0.5</span> ))</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ_SNPfiltered <span class="op">=</span> genotypes_gwZ[<span class="op">:</span>, <span class="fu">Not</span>(removed_SNPs)]</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>pos_SNP_filtered_gwZ_SNPfiltered <span class="op">=</span> pos_SNP_filtered_gwZ[<span class="fu">Not</span>(removed_SNPs),<span class="op">:</span>]</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"This filtering removed "</span>, <span class="fu">sum</span>(removed_SNPs), <span class="st">" SNPs."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>This filtering removed 1831 SNPs.</code></pre>
+</div>
+</div>
+<p>Check that the filtering did remove the problematic SNPs:</p>
+<div id="6b87f6e7" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>females_genotypes_gwZ <span class="op">=</span> <span class="fu">view</span>(genotypes_gwZ_SNPfiltered, females, <span class="op">:</span>)</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>numHetsPerSNP_females <span class="op">=</span> <span class="fu">vec</span>(<span class="fu">sum</span>(females_genotypes_gwZ <span class="op">.==</span> <span class="fl">1</span>, dims<span class="op">=</span><span class="fl">1</span>))</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>female_heterozygosity <span class="op">=</span> numHetsPerSNP_females <span class="op">./</span> num_females</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">hist</span>(female_heterozygosity)</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">plot</span>(female_heterozygosity)</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="co"># compare with males:</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>males_genotypes_gwZ <span class="op">=</span> <span class="fu">view</span>(genotypes_gwZ_SNPfiltered, males, <span class="op">:</span>)</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>numHetsPerSNP_males <span class="op">=</span> <span class="fu">vec</span>(<span class="fu">sum</span>(males_genotypes_gwZ <span class="op">.==</span> <span class="fl">1</span>, dims<span class="op">=</span><span class="fl">1</span>))</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>male_heterozygosity <span class="op">=</span> numHetsPerSNP_males <span class="op">./</span> num_males</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">hist</span>(male_heterozygosity)</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">plot</span>(male_heterozygosity)</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> <span class="fu">Axis</span>(f[<span class="fl">1</span>, <span class="fl">1</span>],</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>    title <span class="op">=</span> <span class="st">"After filtering of SNPs: Heterozygosity by sex of putative Z-chromosome SNPs"</span>,</span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>    xlabel <span class="op">=</span> <span class="st">"Proportion females heterozygous"</span>,</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a>    ylabel <span class="op">=</span> <span class="st">"Proportion males heterozygous"</span></span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb21-20"><a href="#cb21-20" aria-hidden="true" tabindex="-1"></a>x_plot_values <span class="op">=</span> female_heterozygosity</span>
+<span id="cb21-21"><a href="#cb21-21" aria-hidden="true" tabindex="-1"></a>y_plot_values <span class="op">=</span> male_heterozygosity</span>
+<span id="cb21-22"><a href="#cb21-22" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(ax, x_plot_values, y_plot_values, marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">10</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb21-23"><a href="#cb21-23" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(f);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238
+┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238
+┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238
+┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238
+┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-13-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The filtering worked well!</p>
+<section id="save-the-filtered-z-chromosome-genotypes" class="level2">
+<h2 class="anchored" data-anchor-id="save-the-filtered-z-chromosome-genotypes">Save the filtered Z chromosome genotypes</h2>
+<div id="e2c517b6" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(dataDirectory)</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="st">"chrgwZ_cleaned"</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".notImputed.jld2"</span>)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="fu">jldsave</span>(filename; genotypes_gwZ_SNPfiltered, ind_with_metadata_indFiltered <span class="op">=</span> ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region <span class="op">=</span> pos_SNP_filtered_gwZ_SNPfiltered)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Saved matrix of real Z chromosome genotypes (without imputation)."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Saved matrix of real Z chromosome genotypes (without imputation).</code></pre>
 </div>
 </div>
 <p>Looks good. Now impute and do the PCA. I did the imputing previously (to do it again, set <code>do_imputing = true</code> below).</p>
-<div id="efe378cf" class="cell" data-execution_count="13">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ_SNPfiltered_with_missing <span class="op">=</span> <span class="fu">Matrix</span><span class="dt">{Union{Missing, Float32}}</span>(genotypes_gwZ_SNPfiltered)</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="co"># change "-1" to "missing":</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ_SNPfiltered_with_missing[genotypes_gwZ_SNPfiltered_with_missing <span class="op">.==</span> <span class="op">-</span><span class="fl">1</span>] <span class="op">.=</span> <span class="cn">missing</span>;</span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="st">"chrgwZ_cleaned"</span></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".KNNimputedMissing.jld2"</span>)</span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="co"># to do the imputing, do this by setting to true:</span></span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(dataDirectory)</span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>do_imputing <span class="op">=</span> <span class="cn">true</span></span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> do_imputing</span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>    <span class="pp">@time</span> imputed_genos <span class="op">=</span> Impute.<span class="fu">knn</span>(genotypes_gwZ_SNPfiltered_with_missing; dims <span class="op">=</span> <span class="op">:</span>rows)</span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># took 46 sec</span></span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">jldsave</span>(filename; imputed_genos, ind_with_metadata_indFiltered <span class="op">=</span> ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region <span class="op">=</span> pos_SNP_filtered_gwZ_SNPfiltered)</span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>    imputed_genos_chrZcleaned <span class="op">=</span> imputed_genos</span>
-<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>    ind_with_metadata_indFiltered_sex_chrZcleaned <span class="op">=</span> ind_with_metadata_indFiltered_sex</span>
-<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_chZcleaned <span class="op">=</span> pos_SNP_filtered_gwZ_SNPfiltered</span>
-<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved matrix of real and imputed Z chromosome genotypes. </span><span class="sc">\n</span><span class="st">"</span>)</span>
-<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span> <span class="co"># load the already saved imputing</span></span>
-<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a>    imputed_genos_chrZcleaned <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"imputed_genos"</span>)</span>
-<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a>    ind_with_metadata_indFiltered_sex_chrZcleaned <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"ind_with_metadata_indFiltered"</span>)</span>
-<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_chZcleaned <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"pos_SNP_filtered_region"</span>)</span>
-<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(<span class="st">"Loaded "</span>,filename))</span>
-<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(regionText, <span class="st">": "</span>, <span class="fu">size</span>(imputed_genos_chrZcleaned, <span class="fl">2</span>), <span class="st">" SNPs from "</span>, <span class="fu">size</span>(imputed_genos_chrZcleaned, <span class="fl">1</span>), <span class="st">" individuals"</span>))</span>
-<span id="cb24-23"><a href="#cb24-23" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
-<span id="cb24-24"><a href="#cb24-24" aria-hidden="true" tabindex="-1"></a>groups_to_plot_PCA <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>,<span class="st">"troch_west"</span>,<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>,<span class="st">"plumb_vir"</span>]</span>
-<span id="cb24-25"><a href="#cb24-25" aria-hidden="true" tabindex="-1"></a>group_colors_PCA <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"grey"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"olivedrab3"</span>,<span class="st">"olivedrab2"</span>,<span class="st">"olivedrab1"</span>,<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>,<span class="st">"purple"</span>]</span>
-<span id="cb24-26"><a href="#cb24-26" aria-hidden="true" tabindex="-1"></a><span class="fu">plotPCA</span>(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, </span>
-<span id="cb24-27"><a href="#cb24-27" aria-hidden="true" tabindex="-1"></a>            groups_to_plot_PCA, group_colors_PCA; </span>
-<span id="cb24-28"><a href="#cb24-28" aria-hidden="true" tabindex="-1"></a>            sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
-<span id="cb24-29"><a href="#cb24-29" aria-hidden="true" tabindex="-1"></a>            flip1 <span class="op">=</span> <span class="cn">true</span>, flip2 <span class="op">=</span> <span class="cn">true</span>,</span>
-<span id="cb24-30"><a href="#cb24-30" aria-hidden="true" tabindex="-1"></a>            lineOpacity <span class="op">=</span> <span class="fl">0.7</span>, fillOpacity <span class="op">=</span> <span class="fl">0.6</span>,</span>
-<span id="cb24-31"><a href="#cb24-31" aria-hidden="true" tabindex="-1"></a>            symbolSize <span class="op">=</span> <span class="fl">14</span>, showTitle <span class="op">=</span> <span class="cn">true</span>,</span>
-<span id="cb24-32"><a href="#cb24-32" aria-hidden="true" tabindex="-1"></a>            xLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC1"</span>), yLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC2"</span>),</span>
-<span id="cb24-33"><a href="#cb24-33" aria-hidden="true" tabindex="-1"></a>            showPlot <span class="op">=</span> <span class="cn">true</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="449d62e2" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ_SNPfiltered_with_missing <span class="op">=</span> <span class="fu">Matrix</span><span class="dt">{Union{Missing, Float32}}</span>(genotypes_gwZ_SNPfiltered)</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="co"># change "-1" to "missing":</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ_SNPfiltered_with_missing[genotypes_gwZ_SNPfiltered_with_missing <span class="op">.==</span> <span class="op">-</span><span class="fl">1</span>] <span class="op">.=</span> <span class="cn">missing</span>;</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="st">"chrgwZ_cleaned"</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".KNNimputedMissing.jld2"</span>)</span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="co"># to do the imputing, do this by setting to true:</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(dataDirectory)</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>do_imputing <span class="op">=</span> <span class="cn">true</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> do_imputing</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">#@time imputed_genos = Impute.svd(genotypes_gwZ_SNPfiltered_with_missing)</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>    <span class="pp">@time</span> imputed_genos <span class="op">=</span> Impute.<span class="fu">knn</span>(genotypes_gwZ_SNPfiltered_with_missing; dims <span class="op">=</span> <span class="op">:</span>rows)</span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># took 46 sec</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>    <span class="fu">jldsave</span>(filename; imputed_genos, ind_with_metadata_indFiltered <span class="op">=</span> ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region <span class="op">=</span> pos_SNP_filtered_gwZ_SNPfiltered)</span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>    imputed_genos_chrZcleaned <span class="op">=</span> imputed_genos</span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>    ind_with_metadata_indFiltered_sex_chrZcleaned <span class="op">=</span> ind_with_metadata_indFiltered_sex</span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_chZcleaned <span class="op">=</span> pos_SNP_filtered_gwZ_SNPfiltered</span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved matrix of real and imputed Z chromosome genotypes. </span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span> <span class="co"># load the already saved imputing</span></span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a>    imputed_genos_chrZcleaned <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"imputed_genos"</span>)</span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a>    ind_with_metadata_indFiltered_sex_chrZcleaned <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"ind_with_metadata_indFiltered"</span>)</span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_chZcleaned <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"pos_SNP_filtered_region"</span>)</span>
+<span id="cb25-22"><a href="#cb25-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(<span class="st">"Loaded "</span>,filename))</span>
+<span id="cb25-23"><a href="#cb25-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(regionText, <span class="st">": "</span>, <span class="fu">size</span>(imputed_genos_chrZcleaned, <span class="fl">2</span>), <span class="st">" SNPs from "</span>, <span class="fu">size</span>(imputed_genos_chrZcleaned, <span class="fl">1</span>), <span class="st">" individuals"</span>))</span>
+<span id="cb25-24"><a href="#cb25-24" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb25-25"><a href="#cb25-25" aria-hidden="true" tabindex="-1"></a>groups_to_plot_PCA <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>,<span class="st">"troch_west"</span>,<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>,<span class="st">"plumb_vir"</span>]</span>
+<span id="cb25-26"><a href="#cb25-26" aria-hidden="true" tabindex="-1"></a>group_colors_PCA <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"grey"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"olivedrab3"</span>,<span class="st">"olivedrab2"</span>,<span class="st">"olivedrab1"</span>,<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>,<span class="st">"purple"</span>]</span>
+<span id="cb25-27"><a href="#cb25-27" aria-hidden="true" tabindex="-1"></a><span class="fu">plotPCA</span>(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, </span>
+<span id="cb25-28"><a href="#cb25-28" aria-hidden="true" tabindex="-1"></a>            groups_to_plot_PCA, group_colors_PCA; </span>
+<span id="cb25-29"><a href="#cb25-29" aria-hidden="true" tabindex="-1"></a>            sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
+<span id="cb25-30"><a href="#cb25-30" aria-hidden="true" tabindex="-1"></a>            flip1 <span class="op">=</span> <span class="cn">true</span>, flip2 <span class="op">=</span> <span class="cn">true</span>,</span>
+<span id="cb25-31"><a href="#cb25-31" aria-hidden="true" tabindex="-1"></a>            lineOpacity <span class="op">=</span> <span class="fl">0.7</span>, fillOpacity <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span id="cb25-32"><a href="#cb25-32" aria-hidden="true" tabindex="-1"></a>            symbolSize <span class="op">=</span> <span class="fl">14</span>, showTitle <span class="op">=</span> <span class="cn">true</span>,</span>
+<span id="cb25-33"><a href="#cb25-33" aria-hidden="true" tabindex="-1"></a>            xLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC1"</span>), yLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC2"</span>),</span>
+<span id="cb25-34"><a href="#cb25-34" aria-hidden="true" tabindex="-1"></a>            showPlot <span class="op">=</span> <span class="cn">true</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>112.669829 seconds (13.83 M allocations: 1.097 GiB, 0.57% gc time, 5.05% compilation time)
+<pre><code>109.643789 seconds (13.83 M allocations: 1.097 GiB, 0.60% gc time, 5.03% compilation time)
 Saved matrix of real and imputed Z chromosome genotypes. 
 </code></pre>
 </div>
@@ -496,11 +508,11 @@ Saved matrix of real and imputed Z chromosome genotypes.
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-14-output-3.svg" class="img-fluid figure-img"></p>
+<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-15-output-3.svg" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
-<div class="cell-output cell-output-display" data-execution_count="14">
+<div class="cell-output cell-output-display" data-execution_count="15">
 <div class="ansi-escaped-output">
 <pre>(model = PCA(indim = 51505, outdim = 3, principalratio = 0.29670843), metadata = <span class="ansi-bold">257×16 DataFrame</span>
 <span class="ansi-bold"> Row </span>│<span class="ansi-bold"> ind                       </span><span class="ansi-bold"> ID                        </span><span class="ansi-bold"> location </span><span class="ansi-bold"> group  </span> ⋯
@@ -538,47 +550,46 @@ Saved matrix of real and imputed Z chromosome genotypes.
 <p>Looks Great!! Now have a Z chromosome PCA with both males and females, based on only Z-chromosome markers.</p>
 <section id="genotype-by-individual-plots-for-z-chromosome" class="level4">
 <h4 class="anchored" data-anchor-id="genotype-by-individual-plots-for-z-chromosome">Genotype-by-individual plots for Z chromosome</h4>
-<div id="59cee4fd" class="cell" data-execution_count="14">
-<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>groups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"lud_PK"</span>,<span class="st">"troch_LN"</span>,<span class="st">"obs"</span>,<span class="st">"plumb"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)    </span></span>
-<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>plotGroups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"lud_PK"</span>,<span class="st">"lud_KS"</span>,<span class="st">"lud_central"</span>,<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>,<span class="st">"plumb_vir"</span>]</span>
-<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>plotGroupColors <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>, <span class="st">"pink"</span>,<span class="st">"red"</span>,<span class="st">"purple"</span>]</span>
-<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>numIndsToPlot <span class="op">=</span> [<span class="fl">10</span>, <span class="fl">5</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">8</span>, <span class="fl">10</span>, <span class="fl">1</span>, <span class="fl">4</span>, <span class="fl">3</span>, <span class="fl">10</span>, <span class="fl">1</span>] <span class="co"># maximum number of individuals to plot from each group</span></span>
-<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>group1 <span class="op">=</span> <span class="st">"vir"</span>   <span class="co"># these groups will determine the color used in the graph</span></span>
-<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>group2 <span class="op">=</span> <span class="st">"plumb"</span></span>
-<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>groupsToCompare <span class="op">=</span> <span class="st">"vir_plumb"</span>  <span class="co"># "obs_plumb" #"troch_LN_obs"   #"Fst_among"  #"vir_troch_LN"       #"vir_plumb"      #"troch_LN_plumb"      #"vir_troch_LN"</span></span>
-<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>Fst_cutoff <span class="op">=</span> <span class="fl">0.95</span></span>
-<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>missingFractionAllowed <span class="op">=</span> <span class="fl">0.2</span>  <span class="co"># only show SNPs with less than this fraction of missing data among individuals</span></span>
-<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate allele freqs and sample sizes (use column Fst_group)</span></span>
-<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>freqs, sampleSizes <span class="op">=</span> <span class="fu">getFreqsAndSampleSizes</span>(genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned.Fst_group, groups)</span>
-<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated population allele frequencies and sample sizes"</span>)</span>
-<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>Fst, FstNumerator, FstDenominator, pairwiseNamesFst <span class="op">=</span> <span class="fu">getFst</span>(freqs, sampleSizes, groups; among<span class="op">=</span><span class="cn">true</span>)  <span class="co"># set among to FALSE if no among Fst wanted (some things won't work without it) </span></span>
-<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated Fst values"</span>)</span>
-<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a><span class="co"># For this Z-chromosome genotype-by-individual plot, include only males (so 2 Z chromosomes) and filter out individuals with lots of missing genotypes</span></span>
-<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>numMissings_threshold <span class="op">=</span> <span class="fl">800_000</span></span>
-<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>selection <span class="op">=</span> (ind_with_metadata_indFiltered_sex_chrZcleaned.numMissings <span class="op">.&lt;</span> numMissings_threshold) <span class="op">.&amp;&amp;</span> (ind_with_metadata_indFiltered_sex_chrZcleaned.sex <span class="op">.==</span> <span class="st">"M"</span>) </span>
-<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ_SNPfiltered_with_missing_selected <span class="op">=</span> <span class="fu">view</span>(genotypes_gwZ_SNPfiltered_with_missing, selection, <span class="op">:</span>)</span>
-<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_sex_chrZcleaned_selected <span class="op">=</span> <span class="fu">view</span>(ind_with_metadata_indFiltered_sex_chrZcleaned, selection, <span class="op">:</span>)</span>
-<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a><span class="co"># now limit each group to specified numbers</span></span>
-<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a>genosOnly_included, ind_with_metadata_included <span class="op">=</span> <span class="fu">limitIndsToPlot</span>(plotGroups, numIndsToPlot, genotypes_gwZ_SNPfiltered_with_missing_selected, ind_with_metadata_indFiltered_sex_chrZcleaned_selected);</span>
-<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-27"><a href="#cb27-27" aria-hidden="true" tabindex="-1"></a>chr <span class="op">=</span> <span class="st">"gwZ"</span></span>
-<span id="cb27-28"><a href="#cb27-28" aria-hidden="true" tabindex="-1"></a>regionInfo <span class="op">=</span> <span class="fu">chooseChrRegion</span>(pos_SNP_filtered_chZcleaned, chr; positionMin<span class="op">=</span><span class="fl">1</span>, positionMax<span class="op">=</span>scaffold_lengths[chr])</span>
-<span id="cb27-29"><a href="#cb27-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-30"><a href="#cb27-30" aria-hidden="true" tabindex="-1"></a>plotInfo <span class="op">=</span> <span class="fu">plotGenotypeByIndividualWithFst</span>(groupsToCompare, Fst_cutoff, missingFractionAllowed,</span>
-<span id="cb27-31"><a href="#cb27-31" aria-hidden="true" tabindex="-1"></a>    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, </span>
-<span id="cb27-32"><a href="#cb27-32" aria-hidden="true" tabindex="-1"></a>    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);</span>
-<span id="cb27-33"><a href="#cb27-33" aria-hidden="true" tabindex="-1"></a><span class="co"># plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)</span></span>
-<span id="cb27-34"><a href="#cb27-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb27-35"><a href="#cb27-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Now plot without title:</span></span>
-<span id="cb27-36"><a href="#cb27-36" aria-hidden="true" tabindex="-1"></a>plotInfo <span class="op">=</span> <span class="fu">plotGenotypeByIndividualWithFst</span>(groupsToCompare, Fst_cutoff, missingFractionAllowed,</span>
-<span id="cb27-37"><a href="#cb27-37" aria-hidden="true" tabindex="-1"></a>    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, </span>
-<span id="cb27-38"><a href="#cb27-38" aria-hidden="true" tabindex="-1"></a>    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;</span>
-<span id="cb27-39"><a href="#cb27-39" aria-hidden="true" tabindex="-1"></a>    plotTitle <span class="op">=</span> <span class="st">""</span>);</span>
-<span id="cb27-40"><a href="#cb27-40" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(<span class="st">"Figure2_from_Julia.png"</span>, plotInfo[<span class="fl">1</span>], px_per_unit <span class="op">=</span> <span class="fl">2.0</span>) <span class="co"># the last bit doubles the pixels per row and per column (times 4 overall) </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="2aebf0e6" class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>groups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"lud_PK"</span>,<span class="st">"troch_LN"</span>,<span class="st">"obs"</span>,<span class="st">"plumb"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)    </span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>plotGroups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"lud_PK"</span>,<span class="st">"lud_KS"</span>,<span class="st">"lud_central"</span>,<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>,<span class="st">"plumb_vir"</span>]</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>plotGroupColors <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>, <span class="st">"pink"</span>,<span class="st">"red"</span>,<span class="st">"purple"</span>]</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>numIndsToPlot <span class="op">=</span> [<span class="fl">10</span>, <span class="fl">5</span>, <span class="fl">2</span>, <span class="fl">1</span>, <span class="fl">8</span>, <span class="fl">10</span>, <span class="fl">1</span>, <span class="fl">4</span>, <span class="fl">3</span>, <span class="fl">10</span>, <span class="fl">1</span>] <span class="co"># maximum number of individuals to plot from each group</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>group1 <span class="op">=</span> <span class="st">"vir"</span>   <span class="co"># these groups will determine the color used in the graph</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>group2 <span class="op">=</span> <span class="st">"plumb"</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>groupsToCompare <span class="op">=</span> <span class="st">"vir_plumb"</span>  <span class="co"># "obs_plumb" #"troch_LN_obs"   #"Fst_among"  #"vir_troch_LN"       #"vir_plumb"      #"troch_LN_plumb"      #"vir_troch_LN"</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>Fst_cutoff <span class="op">=</span> <span class="fl">0.95</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>missingFractionAllowed <span class="op">=</span> <span class="fl">0.2</span>  <span class="co"># only show SNPs with less than this fraction of missing data among individuals</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate allele freqs and sample sizes (use column Fst_group)</span></span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>freqs, sampleSizes <span class="op">=</span> <span class="fu">getFreqsAndSampleSizes</span>(genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned.Fst_group, groups)</span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated population allele frequencies and sample sizes"</span>)</span>
+<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a>Fst, FstNumerator, FstDenominator, pairwiseNamesFst <span class="op">=</span> <span class="fu">getFst</span>(freqs, sampleSizes, groups; among<span class="op">=</span><span class="cn">true</span>)  <span class="co"># set among to FALSE if no among Fst wanted (some things won't work without it) </span></span>
+<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated Fst values"</span>)</span>
+<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a><span class="co"># For this Z-chromosome genotype-by-individual plot, include only males (so 2 Z chromosomes) and filter out individuals with lots of missing genotypes</span></span>
+<span id="cb28-19"><a href="#cb28-19" aria-hidden="true" tabindex="-1"></a>numMissings_threshold <span class="op">=</span> <span class="fl">800_000</span></span>
+<span id="cb28-20"><a href="#cb28-20" aria-hidden="true" tabindex="-1"></a>selection <span class="op">=</span> (ind_with_metadata_indFiltered_sex_chrZcleaned.numMissings <span class="op">.&lt;</span> numMissings_threshold) <span class="op">.&amp;&amp;</span> (ind_with_metadata_indFiltered_sex_chrZcleaned.sex <span class="op">.==</span> <span class="st">"M"</span>) </span>
+<span id="cb28-21"><a href="#cb28-21" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ_SNPfiltered_with_missing_selected <span class="op">=</span> <span class="fu">view</span>(genotypes_gwZ_SNPfiltered_with_missing, selection, <span class="op">:</span>)</span>
+<span id="cb28-22"><a href="#cb28-22" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_sex_chrZcleaned_selected <span class="op">=</span> <span class="fu">view</span>(ind_with_metadata_indFiltered_sex_chrZcleaned, selection, <span class="op">:</span>)</span>
+<span id="cb28-23"><a href="#cb28-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-24"><a href="#cb28-24" aria-hidden="true" tabindex="-1"></a><span class="co"># now limit each group to specified numbers</span></span>
+<span id="cb28-25"><a href="#cb28-25" aria-hidden="true" tabindex="-1"></a>genosOnly_included, ind_with_metadata_included <span class="op">=</span> <span class="fu">limitIndsToPlot</span>(plotGroups, numIndsToPlot, genotypes_gwZ_SNPfiltered_with_missing_selected, ind_with_metadata_indFiltered_sex_chrZcleaned_selected);</span>
+<span id="cb28-26"><a href="#cb28-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-27"><a href="#cb28-27" aria-hidden="true" tabindex="-1"></a>chr <span class="op">=</span> <span class="st">"gwZ"</span></span>
+<span id="cb28-28"><a href="#cb28-28" aria-hidden="true" tabindex="-1"></a>regionInfo <span class="op">=</span> <span class="fu">chooseChrRegion</span>(pos_SNP_filtered_chZcleaned, chr; positionMin<span class="op">=</span><span class="fl">1</span>, positionMax<span class="op">=</span>scaffold_lengths[chr])</span>
+<span id="cb28-29"><a href="#cb28-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-30"><a href="#cb28-30" aria-hidden="true" tabindex="-1"></a>plotInfo <span class="op">=</span> <span class="fu">plotGenotypeByIndividualWithFst</span>(groupsToCompare, Fst_cutoff, missingFractionAllowed,</span>
+<span id="cb28-31"><a href="#cb28-31" aria-hidden="true" tabindex="-1"></a>    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, </span>
+<span id="cb28-32"><a href="#cb28-32" aria-hidden="true" tabindex="-1"></a>    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);</span>
+<span id="cb28-33"><a href="#cb28-33" aria-hidden="true" tabindex="-1"></a><span class="co"># plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)</span></span>
+<span id="cb28-34"><a href="#cb28-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-35"><a href="#cb28-35" aria-hidden="true" tabindex="-1"></a><span class="co"># Now plot without title:</span></span>
+<span id="cb28-36"><a href="#cb28-36" aria-hidden="true" tabindex="-1"></a>plotInfo <span class="op">=</span> <span class="fu">plotGenotypeByIndividualWithFst</span>(groupsToCompare, Fst_cutoff, missingFractionAllowed,</span>
+<span id="cb28-37"><a href="#cb28-37" aria-hidden="true" tabindex="-1"></a>    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, </span>
+<span id="cb28-38"><a href="#cb28-38" aria-hidden="true" tabindex="-1"></a>    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;</span>
+<span id="cb28-39"><a href="#cb28-39" aria-hidden="true" tabindex="-1"></a>    plotTitle <span class="op">=</span> <span class="st">""</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Calculated population allele frequencies and sample sizes
 Calculated Fst values</code></pre>
@@ -590,7 +601,7 @@ Calculated Fst values</code></pre>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-15-output-3.svg" class="img-fluid figure-img"></p>
+<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-16-output-3.svg" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
@@ -601,18 +612,15 @@ Calculated Fst values</code></pre>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-15-output-5.svg" class="img-fluid figure-img"></p>
+<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-16-output-5.svg" class="img-fluid figure-img"></p>
 </figure>
 </div>
-</div>
-<div class="cell-output cell-output-display" data-execution_count="15">
-<pre><code>CairoMakie.Screen{IMAGE}</code></pre>
 </div>
 </div>
 </section>
 <section id="now-make-one-of-all-individuals-for-the-supplement" class="level4">
 <h4 class="anchored" data-anchor-id="now-make-one-of-all-individuals-for-the-supplement">Now make one of all individuals, for the supplement</h4>
-<div id="8b2dcebb" class="cell" data-execution_count="15">
+<div id="a899a37b" class="cell" data-execution_count="16">
 <div class="sourceCode cell-code" id="cb32"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>groups_to_plot_all <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>,<span class="st">"troch_west"</span>,<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>,<span class="st">"plumb_vir"</span>]</span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>group_colors_all <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"grey"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"olivedrab3"</span>,<span class="st">"olivedrab2"</span>,<span class="st">"olivedrab1"</span>,<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>,<span class="st">"purple"</span>];</span>
 <span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -642,66 +650,7 @@ Calculated Fst values</code></pre>
 <span id="cb32-27"><a href="#cb32-27" aria-hidden="true" tabindex="-1"></a>    plotGroups, plotGroupColors;</span>
 <span id="cb32-28"><a href="#cb32-28" aria-hidden="true" tabindex="-1"></a>    indFontSize<span class="op">=</span><span class="fl">4</span>, figureSize<span class="op">=</span>(<span class="fl">1200</span>,<span class="fl">1600</span>),</span>
 <span id="cb32-29"><a href="#cb32-29" aria-hidden="true" tabindex="-1"></a>    plotTitle <span class="op">=</span> <span class="st">""</span>);</span>
-<span id="cb32-30"><a href="#cb32-30" aria-hidden="true" tabindex="-1"></a><span class="co"># plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)</span></span>
-<span id="cb32-31"><a href="#cb32-31" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(<span class="st">"Fig_gwZ_Fst3groups_FstCutoff0.9_GBI_allinds_from_Julia.png"</span>, plotInfo[<span class="fl">1</span>], px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Calculated population allele frequencies and sample sizes
-Calculated Fst values</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
-└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
-</div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-16-output-3.svg" class="img-fluid figure-img"></p>
-</figure>
-</div>
-</div>
-<div class="cell-output cell-output-display" data-execution_count="16">
-<pre><code>CairoMakie.Screen{IMAGE}</code></pre>
-</div>
-</div>
-</section>
-<section id="just-west-side" class="level2">
-<h2 class="anchored" data-anchor-id="just-west-side">Just west side</h2>
-<p>One of the nitidus is a female, so including both sexes here, and no additional filtering for missing data:</p>
-<div id="1643881f" class="cell" data-execution_count="16">
-<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>groups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"troch_LN"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)</span></span>
-<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>plotGroups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>,<span class="st">"troch_west"</span>,<span class="st">"troch_LN"</span>]</span>
-<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>plotGroupColors <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"grey"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"olivedrab3"</span>,<span class="st">"olivedrab2"</span>,<span class="st">"olivedrab1"</span>,<span class="st">"yellow"</span>]</span>
-<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>numIndsToPlot <span class="op">=</span> [<span class="fl">10</span>, <span class="fl">5</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">5</span>, <span class="fl">15</span>, <span class="fl">3</span>, <span class="fl">5</span>, <span class="fl">10</span>, <span class="fl">10</span>] <span class="co"># maximum number of individuals to plot from each group</span></span>
-<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>group1 <span class="op">=</span> <span class="st">"vir"</span>   <span class="co"># these groups will determine the color used in the graph</span></span>
-<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>group2 <span class="op">=</span> <span class="st">"troch_LN"</span></span>
-<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>groupsToCompare <span class="op">=</span> <span class="st">"vir_troch_LN"</span> <span class="co"># "Fst_among"</span></span>
-<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>Fst_cutoff <span class="op">=</span> <span class="fl">0.95</span></span>
-<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>missingFractionAllowed <span class="op">=</span> <span class="fl">0.2</span>  <span class="co"># only show SNPs with less than this fraction of missing data among individuals</span></span>
-<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate allele freqs and sample sizes (use column Fst_group)</span></span>
-<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>freqs, sampleSizes <span class="op">=</span> <span class="fu">getFreqsAndSampleSizes</span>(genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned.Fst_group, groups)</span>
-<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated population allele frequencies and sample sizes"</span>)</span>
-<span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb36-15"><a href="#cb36-15" aria-hidden="true" tabindex="-1"></a>Fst, FstNumerator, FstDenominator, pairwiseNamesFst <span class="op">=</span> <span class="fu">getFst</span>(freqs, sampleSizes, groups; among<span class="op">=</span><span class="cn">true</span>)  <span class="co"># set among to FALSE if no among Fst wanted (some things won't work without it) </span></span>
-<span id="cb36-16"><a href="#cb36-16" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated Fst values"</span>)</span>
-<span id="cb36-17"><a href="#cb36-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb36-18"><a href="#cb36-18" aria-hidden="true" tabindex="-1"></a><span class="co"># now limit each group to specified numbers</span></span>
-<span id="cb36-19"><a href="#cb36-19" aria-hidden="true" tabindex="-1"></a>genosOnly_included, ind_with_metadata_included <span class="op">=</span> <span class="fu">limitIndsToPlot</span>(plotGroups, numIndsToPlot, genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned);</span>
-<span id="cb36-20"><a href="#cb36-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb36-21"><a href="#cb36-21" aria-hidden="true" tabindex="-1"></a>chr <span class="op">=</span> <span class="st">"gwZ"</span></span>
-<span id="cb36-22"><a href="#cb36-22" aria-hidden="true" tabindex="-1"></a>regionInfo <span class="op">=</span> <span class="fu">chooseChrRegion</span>(pos_SNP_filtered_chZcleaned, chr; positionMin<span class="op">=</span><span class="fl">1</span>, positionMax<span class="op">=</span>scaffold_lengths[chr])</span>
-<span id="cb36-23"><a href="#cb36-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb36-24"><a href="#cb36-24" aria-hidden="true" tabindex="-1"></a>plotInfo <span class="op">=</span> <span class="fu">plotGenotypeByIndividualWithFst</span>(groupsToCompare, Fst_cutoff, missingFractionAllowed,</span>
-<span id="cb36-25"><a href="#cb36-25" aria-hidden="true" tabindex="-1"></a>    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, </span>
-<span id="cb36-26"><a href="#cb36-26" aria-hidden="true" tabindex="-1"></a>    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);</span>
-<span id="cb36-27"><a href="#cb36-27" aria-hidden="true" tabindex="-1"></a><span class="co"># plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)</span></span>
-<span id="cb36-28"><a href="#cb36-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb36-29"><a href="#cb36-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Now plot without title:</span></span>
-<span id="cb36-30"><a href="#cb36-30" aria-hidden="true" tabindex="-1"></a>plotInfo <span class="op">=</span> <span class="fu">plotGenotypeByIndividualWithFst</span>(groupsToCompare, Fst_cutoff, missingFractionAllowed,</span>
-<span id="cb36-31"><a href="#cb36-31" aria-hidden="true" tabindex="-1"></a>    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, </span>
-<span id="cb36-32"><a href="#cb36-32" aria-hidden="true" tabindex="-1"></a>    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;</span>
-<span id="cb36-33"><a href="#cb36-33" aria-hidden="true" tabindex="-1"></a>    plotTitle <span class="op">=</span> <span class="st">""</span>);</span>
-<span id="cb36-34"><a href="#cb36-34" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(<span class="st">"Figure_suppWestZ_GBI_from_Julia.png"</span>, plotInfo[<span class="fl">1</span>], px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb32-30"><a href="#cb32-30" aria-hidden="true" tabindex="-1"></a><span class="co"># plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Calculated population allele frequencies and sample sizes
 Calculated Fst values</code></pre>
@@ -717,6 +666,50 @@ Calculated Fst values</code></pre>
 </figure>
 </div>
 </div>
+</div>
+</section>
+</section>
+<section id="just-west-side" class="level2">
+<h2 class="anchored" data-anchor-id="just-west-side">Just west side</h2>
+<p>One of the nitidus is a female, so including both sexes here, and no additional filtering for missing data:</p>
+<div id="15ef7f83" class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>groups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"troch_LN"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>plotGroups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>,<span class="st">"troch_west"</span>,<span class="st">"troch_LN"</span>]</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>plotGroupColors <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"grey"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"olivedrab3"</span>,<span class="st">"olivedrab2"</span>,<span class="st">"olivedrab1"</span>,<span class="st">"yellow"</span>]</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>numIndsToPlot <span class="op">=</span> [<span class="fl">10</span>, <span class="fl">5</span>, <span class="fl">2</span>, <span class="fl">3</span>, <span class="fl">5</span>, <span class="fl">15</span>, <span class="fl">3</span>, <span class="fl">5</span>, <span class="fl">10</span>, <span class="fl">10</span>] <span class="co"># maximum number of individuals to plot from each group</span></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>group1 <span class="op">=</span> <span class="st">"vir"</span>   <span class="co"># these groups will determine the color used in the graph</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>group2 <span class="op">=</span> <span class="st">"troch_LN"</span></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>groupsToCompare <span class="op">=</span> <span class="st">"vir_troch_LN"</span> <span class="co"># "Fst_among"</span></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>Fst_cutoff <span class="op">=</span> <span class="fl">0.95</span></span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>missingFractionAllowed <span class="op">=</span> <span class="fl">0.2</span>  <span class="co"># only show SNPs with less than this fraction of missing data among individuals</span></span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate allele freqs and sample sizes (use column Fst_group)</span></span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a>freqs, sampleSizes <span class="op">=</span> <span class="fu">getFreqsAndSampleSizes</span>(genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned.Fst_group, groups)</span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated population allele frequencies and sample sizes"</span>)</span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-15"><a href="#cb35-15" aria-hidden="true" tabindex="-1"></a>Fst, FstNumerator, FstDenominator, pairwiseNamesFst <span class="op">=</span> <span class="fu">getFst</span>(freqs, sampleSizes, groups; among<span class="op">=</span><span class="cn">true</span>)  <span class="co"># set among to FALSE if no among Fst wanted (some things won't work without it) </span></span>
+<span id="cb35-16"><a href="#cb35-16" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated Fst values"</span>)</span>
+<span id="cb35-17"><a href="#cb35-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-18"><a href="#cb35-18" aria-hidden="true" tabindex="-1"></a><span class="co"># now limit each group to specified numbers</span></span>
+<span id="cb35-19"><a href="#cb35-19" aria-hidden="true" tabindex="-1"></a>genosOnly_included, ind_with_metadata_included <span class="op">=</span> <span class="fu">limitIndsToPlot</span>(plotGroups, numIndsToPlot, genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned);</span>
+<span id="cb35-20"><a href="#cb35-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-21"><a href="#cb35-21" aria-hidden="true" tabindex="-1"></a>chr <span class="op">=</span> <span class="st">"gwZ"</span></span>
+<span id="cb35-22"><a href="#cb35-22" aria-hidden="true" tabindex="-1"></a>regionInfo <span class="op">=</span> <span class="fu">chooseChrRegion</span>(pos_SNP_filtered_chZcleaned, chr; positionMin<span class="op">=</span><span class="fl">1</span>, positionMax<span class="op">=</span>scaffold_lengths[chr])</span>
+<span id="cb35-23"><a href="#cb35-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-24"><a href="#cb35-24" aria-hidden="true" tabindex="-1"></a>plotInfo <span class="op">=</span> <span class="fu">plotGenotypeByIndividualWithFst</span>(groupsToCompare, Fst_cutoff, missingFractionAllowed,</span>
+<span id="cb35-25"><a href="#cb35-25" aria-hidden="true" tabindex="-1"></a>    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, </span>
+<span id="cb35-26"><a href="#cb35-26" aria-hidden="true" tabindex="-1"></a>    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);</span>
+<span id="cb35-27"><a href="#cb35-27" aria-hidden="true" tabindex="-1"></a><span class="co"># plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)</span></span>
+<span id="cb35-28"><a href="#cb35-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-29"><a href="#cb35-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Now plot without title:</span></span>
+<span id="cb35-30"><a href="#cb35-30" aria-hidden="true" tabindex="-1"></a>plotInfo <span class="op">=</span> <span class="fu">plotGenotypeByIndividualWithFst</span>(groupsToCompare, Fst_cutoff, missingFractionAllowed,</span>
+<span id="cb35-31"><a href="#cb35-31" aria-hidden="true" tabindex="-1"></a>    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, </span>
+<span id="cb35-32"><a href="#cb35-32" aria-hidden="true" tabindex="-1"></a>    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;</span>
+<span id="cb35-33"><a href="#cb35-33" aria-hidden="true" tabindex="-1"></a>    plotTitle <span class="op">=</span> <span class="st">""</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Calculated population allele frequencies and sample sizes
+Calculated Fst values</code></pre>
+</div>
 <div class="cell-output cell-output-stderr">
 <pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
 └ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
@@ -724,33 +717,41 @@ Calculated Fst values</code></pre>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-17-output-5.svg" class="img-fluid figure-img"></p>
+<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-18-output-3.svg" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
-<div class="cell-output cell-output-display" data-execution_count="17">
-<pre><code>CairoMakie.Screen{IMAGE}</code></pre>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-18-output-5.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <section id="do-z-chromosome-pca-on-west-side" class="level3">
 <h3 class="anchored" data-anchor-id="do-z-chromosome-pca-on-west-side">Do Z-chromosome PCA on west side</h3>
-<div id="883e3b2d" class="cell" data-execution_count="17">
-<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>groups_to_plot_PCA <span class="op">=</span> [<span class="st">"vir"</span>, <span class="st">"vir_S"</span>, <span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>, <span class="st">"troch_west"</span>, <span class="st">"troch_LN"</span>]</span>
-<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>group_colors_PCA <span class="op">=</span> [<span class="st">"blue"</span>, <span class="st">"turquoise1"</span>, <span class="st">"grey"</span>, <span class="st">"seagreen4"</span>, <span class="st">"seagreen3"</span>, <span class="st">"seagreen2"</span>, <span class="st">"olivedrab3"</span>, <span class="st">"olivedrab2"</span>, <span class="st">"olivedrab1"</span>, <span class="st">"yellow"</span>]</span>
-<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>PCA_Zchrom_west <span class="op">=</span> <span class="fu">plotPCA</span>(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, </span>
-<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>            groups_to_plot_PCA, group_colors_PCA; </span>
-<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>            sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
-<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>            flip1 <span class="op">=</span> <span class="cn">true</span>, flip2 <span class="op">=</span> <span class="cn">false</span>,</span>
-<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>            lineOpacity <span class="op">=</span> <span class="fl">0.7</span>, fillOpacity <span class="op">=</span> <span class="fl">0.6</span>,</span>
-<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>            symbolSize <span class="op">=</span> <span class="fl">14</span>, showTitle <span class="op">=</span> <span class="cn">true</span>,</span>
-<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>            xLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC1"</span>), yLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC2"</span>),</span>
-<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>            showPlot <span class="op">=</span> <span class="cn">true</span>)</span>
-<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>totalObservationVariance <span class="op">=</span> <span class="fu">var</span>(PCA_Zchrom_west.model) </span>
-<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>PC1_variance, PC2_variance <span class="op">=</span> <span class="fu">principalvars</span>(PCA_Zchrom_west.model)[<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>]</span>
-<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>PC1_prop_variance <span class="op">=</span> PC1_variance <span class="op">/</span> totalObservationVariance</span>
-<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>PC2_prop_variance <span class="op">=</span> PC2_variance <span class="op">/</span> totalObservationVariance</span>
-<span id="cb41-15"><a href="#cb41-15" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"PC1 explains "</span>, <span class="fl">100</span><span class="op">*</span>PC1_prop_variance, <span class="st">"% of the total variance.</span></span>
-<span id="cb41-16"><a href="#cb41-16" aria-hidden="true" tabindex="-1"></a>PC2 explains <span class="st">", 100*PC2_prop_variance, "</span><span class="op">%</span>.<span class="st">")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="69f7681f" class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>groups_to_plot_PCA <span class="op">=</span> [<span class="st">"vir"</span>, <span class="st">"vir_S"</span>, <span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>, <span class="st">"troch_west"</span>, <span class="st">"troch_LN"</span>]</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>group_colors_PCA <span class="op">=</span> [<span class="st">"blue"</span>, <span class="st">"turquoise1"</span>, <span class="st">"grey"</span>, <span class="st">"seagreen4"</span>, <span class="st">"seagreen3"</span>, <span class="st">"seagreen2"</span>, <span class="st">"olivedrab3"</span>, <span class="st">"olivedrab2"</span>, <span class="st">"olivedrab1"</span>, <span class="st">"yellow"</span>]</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>PCA_Zchrom_west <span class="op">=</span> <span class="fu">plotPCA</span>(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, </span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>            groups_to_plot_PCA, group_colors_PCA; </span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a>            sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>            flip1 <span class="op">=</span> <span class="cn">true</span>, flip2 <span class="op">=</span> <span class="cn">false</span>,</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>            lineOpacity <span class="op">=</span> <span class="fl">0.7</span>, fillOpacity <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>            symbolSize <span class="op">=</span> <span class="fl">14</span>, showTitle <span class="op">=</span> <span class="cn">true</span>,</span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a>            xLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC1"</span>), yLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC2"</span>),</span>
+<span id="cb39-10"><a href="#cb39-10" aria-hidden="true" tabindex="-1"></a>            showPlot <span class="op">=</span> <span class="cn">true</span>)</span>
+<span id="cb39-11"><a href="#cb39-11" aria-hidden="true" tabindex="-1"></a>totalObservationVariance <span class="op">=</span> <span class="fu">var</span>(PCA_Zchrom_west.model) </span>
+<span id="cb39-12"><a href="#cb39-12" aria-hidden="true" tabindex="-1"></a>PC1_variance, PC2_variance <span class="op">=</span> <span class="fu">principalvars</span>(PCA_Zchrom_west.model)[<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>]</span>
+<span id="cb39-13"><a href="#cb39-13" aria-hidden="true" tabindex="-1"></a>PC1_prop_variance <span class="op">=</span> PC1_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb39-14"><a href="#cb39-14" aria-hidden="true" tabindex="-1"></a>PC2_prop_variance <span class="op">=</span> PC2_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb39-15"><a href="#cb39-15" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"PC1 explains "</span>, <span class="fl">100</span><span class="op">*</span>PC1_prop_variance, <span class="st">"% of the total variance.</span></span>
+<span id="cb39-16"><a href="#cb39-16" aria-hidden="true" tabindex="-1"></a>PC2 explains <span class="st">", 100*PC2_prop_variance, "</span><span class="op">%</span>.<span class="st">")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
 └ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
@@ -758,7 +759,7 @@ Calculated Fst values</code></pre>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-18-output-2.svg" class="img-fluid figure-img"></p>
+<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-19-output-2.svg" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
@@ -772,41 +773,40 @@ PC2 explains 3.087952%.</code></pre>
 <section id="just-east-side" class="level2">
 <h2 class="anchored" data-anchor-id="just-east-side">Just east side:</h2>
 <p>One of obscuratus is female, so also showing both males and females here:</p>
-<div id="4a5baa47" class="cell" data-execution_count="18">
-<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>groups <span class="op">=</span> [<span class="st">"troch_LN"</span>,<span class="st">"obs"</span>,<span class="st">"plumb"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)</span></span>
-<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>plotGroups <span class="op">=</span> [<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>]</span>
-<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>plotGroupColors <span class="op">=</span> [<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>]</span>
-<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>numIndsToPlot <span class="op">=</span> [<span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">17</span>] <span class="co"># maximum number of individuals to plot from each group</span></span>
-<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>group1 <span class="op">=</span> <span class="st">"troch_LN"</span>   <span class="co"># these groups will determine the color used in the graph</span></span>
-<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>group2 <span class="op">=</span> <span class="st">"plumb"</span></span>
-<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>groupsToCompare <span class="op">=</span> <span class="st">"troch_LN_plumb"</span> <span class="co">#"Fst_among"</span></span>
-<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>Fst_cutoff <span class="op">=</span> <span class="fl">0.95</span></span>
-<span id="cb44-9"><a href="#cb44-9" aria-hidden="true" tabindex="-1"></a>missingFractionAllowed <span class="op">=</span> <span class="fl">0.2</span>  <span class="co"># only show SNPs with less than this fraction of missing data among individuals</span></span>
-<span id="cb44-10"><a href="#cb44-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-11"><a href="#cb44-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate allele freqs and sample sizes (use column Fst_group)</span></span>
-<span id="cb44-12"><a href="#cb44-12" aria-hidden="true" tabindex="-1"></a>freqs, sampleSizes <span class="op">=</span> <span class="fu">getFreqsAndSampleSizes</span>(genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned.Fst_group, groups)</span>
-<span id="cb44-13"><a href="#cb44-13" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated population allele frequencies and sample sizes"</span>)</span>
-<span id="cb44-14"><a href="#cb44-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-15"><a href="#cb44-15" aria-hidden="true" tabindex="-1"></a>Fst, FstNumerator, FstDenominator, pairwiseNamesFst <span class="op">=</span> <span class="fu">getFst</span>(freqs, sampleSizes, groups; among<span class="op">=</span><span class="cn">true</span>)  <span class="co"># set among to FALSE if no among Fst wanted (some things won't work without it) </span></span>
-<span id="cb44-16"><a href="#cb44-16" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated Fst values"</span>)</span>
-<span id="cb44-17"><a href="#cb44-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-18"><a href="#cb44-18" aria-hidden="true" tabindex="-1"></a><span class="co"># now limit each group to specified numbers</span></span>
-<span id="cb44-19"><a href="#cb44-19" aria-hidden="true" tabindex="-1"></a>genosOnly_included, ind_with_metadata_included <span class="op">=</span> <span class="fu">limitIndsToPlot</span>(plotGroups, numIndsToPlot, genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned);</span>
-<span id="cb44-20"><a href="#cb44-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-21"><a href="#cb44-21" aria-hidden="true" tabindex="-1"></a>chr <span class="op">=</span> <span class="st">"gwZ"</span></span>
-<span id="cb44-22"><a href="#cb44-22" aria-hidden="true" tabindex="-1"></a>regionInfo <span class="op">=</span> <span class="fu">chooseChrRegion</span>(pos_SNP_filtered_chZcleaned, chr; positionMin<span class="op">=</span><span class="fl">1</span>, positionMax<span class="op">=</span>scaffold_lengths[chr])</span>
-<span id="cb44-23"><a href="#cb44-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-24"><a href="#cb44-24" aria-hidden="true" tabindex="-1"></a>plotInfo <span class="op">=</span> <span class="fu">plotGenotypeByIndividualWithFst</span>(groupsToCompare, Fst_cutoff, missingFractionAllowed,</span>
-<span id="cb44-25"><a href="#cb44-25" aria-hidden="true" tabindex="-1"></a>    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, </span>
-<span id="cb44-26"><a href="#cb44-26" aria-hidden="true" tabindex="-1"></a>    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);</span>
-<span id="cb44-27"><a href="#cb44-27" aria-hidden="true" tabindex="-1"></a><span class="co"># plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)</span></span>
-<span id="cb44-28"><a href="#cb44-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb44-29"><a href="#cb44-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Now plot without title:</span></span>
-<span id="cb44-30"><a href="#cb44-30" aria-hidden="true" tabindex="-1"></a>plotInfo <span class="op">=</span> <span class="fu">plotGenotypeByIndividualWithFst</span>(groupsToCompare, Fst_cutoff, missingFractionAllowed,</span>
-<span id="cb44-31"><a href="#cb44-31" aria-hidden="true" tabindex="-1"></a>    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, </span>
-<span id="cb44-32"><a href="#cb44-32" aria-hidden="true" tabindex="-1"></a>    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;</span>
-<span id="cb44-33"><a href="#cb44-33" aria-hidden="true" tabindex="-1"></a>    plotTitle <span class="op">=</span> <span class="st">""</span>);</span>
-<span id="cb44-34"><a href="#cb44-34" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(<span class="st">"Figure_suppEastZ_GBI_from_Julia.png"</span>, plotInfo[<span class="fl">1</span>], px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="0a4eea1d" class="cell" data-execution_count="19">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>groups <span class="op">=</span> [<span class="st">"troch_LN"</span>,<span class="st">"obs"</span>,<span class="st">"plumb"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>plotGroups <span class="op">=</span> [<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>]</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>plotGroupColors <span class="op">=</span> [<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>]</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>numIndsToPlot <span class="op">=</span> [<span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">15</span>, <span class="fl">17</span>] <span class="co"># maximum number of individuals to plot from each group</span></span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>group1 <span class="op">=</span> <span class="st">"troch_LN"</span>   <span class="co"># these groups will determine the color used in the graph</span></span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>group2 <span class="op">=</span> <span class="st">"plumb"</span></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>groupsToCompare <span class="op">=</span> <span class="st">"troch_LN_plumb"</span> <span class="co">#"Fst_among"</span></span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>Fst_cutoff <span class="op">=</span> <span class="fl">0.95</span></span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>missingFractionAllowed <span class="op">=</span> <span class="fl">0.2</span>  <span class="co"># only show SNPs with less than this fraction of missing data among individuals</span></span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate allele freqs and sample sizes (use column Fst_group)</span></span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>freqs, sampleSizes <span class="op">=</span> <span class="fu">getFreqsAndSampleSizes</span>(genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned.Fst_group, groups)</span>
+<span id="cb42-13"><a href="#cb42-13" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated population allele frequencies and sample sizes"</span>)</span>
+<span id="cb42-14"><a href="#cb42-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-15"><a href="#cb42-15" aria-hidden="true" tabindex="-1"></a>Fst, FstNumerator, FstDenominator, pairwiseNamesFst <span class="op">=</span> <span class="fu">getFst</span>(freqs, sampleSizes, groups; among<span class="op">=</span><span class="cn">true</span>)  <span class="co"># set among to FALSE if no among Fst wanted (some things won't work without it) </span></span>
+<span id="cb42-16"><a href="#cb42-16" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Calculated Fst values"</span>)</span>
+<span id="cb42-17"><a href="#cb42-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-18"><a href="#cb42-18" aria-hidden="true" tabindex="-1"></a><span class="co"># now limit each group to specified numbers</span></span>
+<span id="cb42-19"><a href="#cb42-19" aria-hidden="true" tabindex="-1"></a>genosOnly_included, ind_with_metadata_included <span class="op">=</span> <span class="fu">limitIndsToPlot</span>(plotGroups, numIndsToPlot, genotypes_gwZ_SNPfiltered_with_missing, ind_with_metadata_indFiltered_sex_chrZcleaned);</span>
+<span id="cb42-20"><a href="#cb42-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-21"><a href="#cb42-21" aria-hidden="true" tabindex="-1"></a>chr <span class="op">=</span> <span class="st">"gwZ"</span></span>
+<span id="cb42-22"><a href="#cb42-22" aria-hidden="true" tabindex="-1"></a>regionInfo <span class="op">=</span> <span class="fu">chooseChrRegion</span>(pos_SNP_filtered_chZcleaned, chr; positionMin<span class="op">=</span><span class="fl">1</span>, positionMax<span class="op">=</span>scaffold_lengths[chr])</span>
+<span id="cb42-23"><a href="#cb42-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-24"><a href="#cb42-24" aria-hidden="true" tabindex="-1"></a>plotInfo <span class="op">=</span> <span class="fu">plotGenotypeByIndividualWithFst</span>(groupsToCompare, Fst_cutoff, missingFractionAllowed,</span>
+<span id="cb42-25"><a href="#cb42-25" aria-hidden="true" tabindex="-1"></a>    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, </span>
+<span id="cb42-26"><a href="#cb42-26" aria-hidden="true" tabindex="-1"></a>    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);</span>
+<span id="cb42-27"><a href="#cb42-27" aria-hidden="true" tabindex="-1"></a><span class="co"># plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)</span></span>
+<span id="cb42-28"><a href="#cb42-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb42-29"><a href="#cb42-29" aria-hidden="true" tabindex="-1"></a><span class="co"># Now plot without title:</span></span>
+<span id="cb42-30"><a href="#cb42-30" aria-hidden="true" tabindex="-1"></a>plotInfo <span class="op">=</span> <span class="fu">plotGenotypeByIndividualWithFst</span>(groupsToCompare, Fst_cutoff, missingFractionAllowed,</span>
+<span id="cb42-31"><a href="#cb42-31" aria-hidden="true" tabindex="-1"></a>    regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, </span>
+<span id="cb42-32"><a href="#cb42-32" aria-hidden="true" tabindex="-1"></a>    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;</span>
+<span id="cb42-33"><a href="#cb42-33" aria-hidden="true" tabindex="-1"></a>    plotTitle <span class="op">=</span> <span class="st">""</span>);</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Calculated population allele frequencies and sample sizes
 Calculated Fst values</code></pre>
@@ -818,7 +818,7 @@ Calculated Fst values</code></pre>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-19-output-3.svg" class="img-fluid figure-img"></p>
+<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-20-output-3.svg" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
@@ -829,33 +829,30 @@ Calculated Fst values</code></pre>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-19-output-5.svg" class="img-fluid figure-img"></p>
+<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-20-output-5.svg" class="img-fluid figure-img"></p>
 </figure>
 </div>
-</div>
-<div class="cell-output cell-output-display" data-execution_count="19">
-<pre><code>CairoMakie.Screen{IMAGE}</code></pre>
 </div>
 </div>
 <section id="do-z-chromosome-pca-on-east-side" class="level3">
 <h3 class="anchored" data-anchor-id="do-z-chromosome-pca-on-east-side">Do Z-chromosome PCA on east side</h3>
-<div id="90c177bb" class="cell" data-execution_count="19">
-<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>groups_to_plot_PCA <span class="op">=</span> [<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>]</span>
-<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>group_colors_PCA <span class="op">=</span> [<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>]</span>
-<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>PCA_Zchrom_east <span class="op">=</span> <span class="fu">plotPCA</span>(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, </span>
-<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>            groups_to_plot_PCA, group_colors_PCA; </span>
-<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>            sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
-<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>            flip1 <span class="op">=</span> <span class="cn">true</span>, flip2 <span class="op">=</span> <span class="cn">true</span>,</span>
-<span id="cb49-7"><a href="#cb49-7" aria-hidden="true" tabindex="-1"></a>            lineOpacity <span class="op">=</span> <span class="fl">0.7</span>, fillOpacity <span class="op">=</span> <span class="fl">0.6</span>,</span>
-<span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>            symbolSize <span class="op">=</span> <span class="fl">14</span>, showTitle <span class="op">=</span> <span class="cn">true</span>,</span>
-<span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>            xLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC1"</span>), yLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC2"</span>),</span>
-<span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>            showPlot <span class="op">=</span> <span class="cn">true</span>)</span>
-<span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a>totalObservationVariance <span class="op">=</span> <span class="fu">var</span>(PCA_Zchrom_east.model) </span>
-<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a>PC1_variance, PC2_variance <span class="op">=</span> <span class="fu">principalvars</span>(PCA_Zchrom_east.model)[<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>]</span>
-<span id="cb49-13"><a href="#cb49-13" aria-hidden="true" tabindex="-1"></a>PC1_prop_variance <span class="op">=</span> PC1_variance <span class="op">/</span> totalObservationVariance</span>
-<span id="cb49-14"><a href="#cb49-14" aria-hidden="true" tabindex="-1"></a>PC2_prop_variance <span class="op">=</span> PC2_variance <span class="op">/</span> totalObservationVariance</span>
-<span id="cb49-15"><a href="#cb49-15" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"PC1 explains "</span>, <span class="fl">100</span><span class="op">*</span>PC1_prop_variance, <span class="st">"% of the total variance.</span></span>
-<span id="cb49-16"><a href="#cb49-16" aria-hidden="true" tabindex="-1"></a>PC2 explains <span class="st">", 100*PC2_prop_variance, "</span><span class="op">%</span>.<span class="st">")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="76114a11" class="cell" data-execution_count="20">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>groups_to_plot_PCA <span class="op">=</span> [<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>]</span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>group_colors_PCA <span class="op">=</span> [<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>]</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>PCA_Zchrom_east <span class="op">=</span> <span class="fu">plotPCA</span>(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, </span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>            groups_to_plot_PCA, group_colors_PCA; </span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>            sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>            flip1 <span class="op">=</span> <span class="cn">true</span>, flip2 <span class="op">=</span> <span class="cn">true</span>,</span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>            lineOpacity <span class="op">=</span> <span class="fl">0.7</span>, fillOpacity <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>            symbolSize <span class="op">=</span> <span class="fl">14</span>, showTitle <span class="op">=</span> <span class="cn">true</span>,</span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>            xLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC1"</span>), yLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC2"</span>),</span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>            showPlot <span class="op">=</span> <span class="cn">true</span>)</span>
+<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a>totalObservationVariance <span class="op">=</span> <span class="fu">var</span>(PCA_Zchrom_east.model) </span>
+<span id="cb46-12"><a href="#cb46-12" aria-hidden="true" tabindex="-1"></a>PC1_variance, PC2_variance <span class="op">=</span> <span class="fu">principalvars</span>(PCA_Zchrom_east.model)[<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>]</span>
+<span id="cb46-13"><a href="#cb46-13" aria-hidden="true" tabindex="-1"></a>PC1_prop_variance <span class="op">=</span> PC1_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb46-14"><a href="#cb46-14" aria-hidden="true" tabindex="-1"></a>PC2_prop_variance <span class="op">=</span> PC2_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb46-15"><a href="#cb46-15" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"PC1 explains "</span>, <span class="fl">100</span><span class="op">*</span>PC1_prop_variance, <span class="st">"% of the total variance.</span></span>
+<span id="cb46-16"><a href="#cb46-16" aria-hidden="true" tabindex="-1"></a>PC2 explains <span class="st">", 100*PC2_prop_variance, "</span><span class="op">%</span>.<span class="st">")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
 └ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
@@ -863,7 +860,7 @@ Calculated Fst values</code></pre>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-20-output-2.svg" class="img-fluid figure-img"></p>
+<p><img src="GW_Zchromosome_analysis_files/figure-html/cell-21-output-2.svg" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>

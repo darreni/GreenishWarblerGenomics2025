@@ -10,13 +10,22 @@ format:
     code-fold: false
     fig-width: 8
     fig-height: 10
-  pdf:
-    keep-tex: false
-    monofont: "JuliaMono"
-    fig-width: 8
-    fig-height: 10
 jupyter: julia-1.11
 ---
+
+The scripts, data, and figures shown in this document were used as part of the analysis for the paper listed below, which should be cited as the source of information from this document:
+
+Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_.
+
+This page shows the code used for filtering of SNPs that mapped to the Z chromosome.
+
+Prior to examining the code on this page, readers should look at `GreenishWarblerGenomics.qmd` (or `.html`), as this current page depends on the code on that page being run first.
+
+##### A note about plots in this document
+
+The plots shown below may different somewhat in appearance between the version produced by Quarto (i.e., in this published document) and the version you would get if you run this code without using Quarto. In particular, the dimensions and font sizes of labels and titles may differ. So if you want the versions identical to those used in the paper, run the code directly in the Julia REPL (or using an environment such as VS Code) without using Quarto.
+
+In the rendered (`.html`) version of this Quarto notebook, each figure may be accompanied by a warning caused by an interaction between Quarto and the Makie plotting package. Ignore these warnings as they do not affect the calculations or plots.
 
 ## Load packages
 
@@ -26,9 +35,14 @@ using DataFrames # for storing data as type DataFrame
 using CairoMakie # for plots
 using CSV # for reading in delimited files
 using Impute # for imputing missing genotypes
-using GenomicDiversity # for plotPCA (my custom package)
 using Statistics # for var() function
 using MultivariateStats # for getting variances from PCA model
+```
+
+Load my custom package `GenomicDiversity`:
+
+```{julia}
+using GenomicDiversity
 ```
 
 ## Choose working directory
@@ -95,7 +109,7 @@ end
 
 # Z chromosome differentiation
 
-The PCA of Z chromosome variation (see far above) showed some unexpected structure, which I think it likely due to females being shifted (especially on PC2) compared to males. I think this is likely due to females having W chromosomes, reads from which are sometimes incorrectly mapped to the Z. Hence a small fraction of SNPs differ between females and males (with females called as heterozygotes, males as homozygotes, at those SNPs). However, at loci that are only on the Z, males can be heterozygous (2 alleles) whereas females can only be hemizygous (one allele). I am not sure of the net effect.
+The initial PCA of Z chromosome variation showed some unexpected structure, with females having shifted locations (especially on PC2) compared to males. This is likely due to females having W chromosomes, reads from which are sometimes incorrectly mapped to the Z. Hence a small fraction of SNPs differ between females and males (with females called as heterozygotes, males as homozygotes, at those SNPs). However, at loci that are only on the Z, males can be heterozygous (2 alleles) whereas females can only be hemizygous (one allele).
 
 To remove this problem, we could take several approaches (e.g., remove problematic SNPs, or look at one sex at a time). Here we'll plot only males as that will remove the W chromosome. To infer sex of the birds, we'll try plotting heterozygosity of Z chromosome SNPs per bird.
 
@@ -176,7 +190,7 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 # Run Time = 155.00 seconds
 ```
 
-The plan is to load these read depth files into Julia and determine sex of individuals from the ratio of read depth on chromosome Z to chromosome 2:
+We then load these read depth files into Julia and determine sex of individuals from the ratio of read depth on chromosome Z to chromosome 2:
 
 ```{julia}
 cd(repoDirectory)
@@ -239,7 +253,7 @@ display(f);
 
 This really clarifies things. The SNPs in the middle of the graph, with similar heterozygosity in females and males, are consistent with being pseudoautosomal SNPs. But the SNPs that have much higher female heterozygosity than male heterozygosity could be non-pseudoautosomal SNPs with reads from the W mapping to the Z, and giving appearance of Z heterozygosity in females (and not males). It is these SNPs we should remove. Also, there are a few with > 0.5 heterozygosity in males, which should be removed because they are likely due to paralogs.
 
-So, going to remove SNPs according to these rules:
+So, we will remove SNPs according to these rules:
 If (female heterozygosity is above 0.05) AND (ratio of male to female heterozygosity is less than 1/2), REMOVE the SNP from consideration.
 If (male heterozygosity is above 0.5), REMOVE the SNP.
 
@@ -280,7 +294,9 @@ CairoMakie.scatter!(ax, x_plot_values, y_plot_values, marker = :diamond, color="
 display(f);
 ```
 
-# Save the filtered Z chromosome genotypes
+The filtering worked well!
+
+## Save the filtered Z chromosome genotypes
 
 ```{julia}
 cd(dataDirectory)
@@ -302,6 +318,7 @@ filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
 cd(dataDirectory)
 do_imputing = true
 if do_imputing
+    #@time imputed_genos = Impute.svd(genotypes_gwZ_SNPfiltered_with_missing)
     @time imputed_genos = Impute.knn(genotypes_gwZ_SNPfiltered_with_missing; dims = :rows)
     # took 46 sec
     jldsave(filename; imputed_genos, ind_with_metadata_indFiltered = ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region = pos_SNP_filtered_gwZ_SNPfiltered)
@@ -372,8 +389,6 @@ plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingF
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;
     plotTitle = "");
-save("Figure2_from_Julia.png", plotInfo[1], px_per_unit = 2.0) # the last bit doubles the pixels per row and per column (times 4 overall) 
-
 ```
 
 
@@ -410,7 +425,6 @@ plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff,
     indFontSize=4, figureSize=(1200,1600),
     plotTitle = "");
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
-save("Fig_gwZ_Fst3groups_FstCutoff0.9_GBI_allinds_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
 ```
 
 ## Just west side
@@ -451,7 +465,6 @@ plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingF
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;
     plotTitle = "");
-save("Figure_suppWestZ_GBI_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
 ```
 
 ### Do Z-chromosome PCA on west side
@@ -514,7 +527,6 @@ plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingF
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors;
     plotTitle = "");
-save("Figure_suppEastZ_GBI_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
 ```
 
 ### Do Z-chromosome PCA on east side

@@ -10,30 +10,40 @@ format:
     code-fold: false
     fig-width: 8
     fig-height: 10
-  pdf:
-    keep-tex: false
-    monofont: "JuliaMono"
-    fig-width: 8
-    fig-height: 10
 jupyter: julia-1.11
 ---
 
-This script depends on `GreenishWarblerGenomics2023.qmd` and `GW_Zchromosome_analysis.qmd`
+The scripts, data, and figures shown in this document were used as part of the analysis for the paper listed below, which should be cited as the source of information from this document:
+
+Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_.
+
+This page shows the code used to generate PCA plots for the whole genome (and also for each chromosome, although those aren't shown in the paper).
+
+Prior to examining the code on this page, readers should look at `GreenishWarblerGenomics.qmd` (or `.html`) and `GW_Zchromosome_analysis.qmd` (or `.html`), as this current page depends on the code on those pages being run first.
+
+##### A note about plots in this document
+
+The plots shown below may different somewhat in appearance between the version produced by Quarto (i.e., in this published document) and the version you would get if you run this code without using Quarto. In particular, the dimensions and font sizes of labels and titles may differ. So if you want the versions identical to those used in the paper, run the code directly in the Julia REPL (or using an environment such as VS Code) without using Quarto.
+
+In the rendered (`.html`) version of this Quarto notebook, each figure may be accompanied by a warning caused by an interaction between Quarto and the Makie plotting package. Ignore these warnings as they do not affect the calculations or plots.
 
 ## Load packages
 
 ```{julia}
 using JLD2 # for loading saved data
 using DataFrames # for storing data as type DataFrame
-using GenomicDiversity # for plotPCA (my custom package)
 using CairoMakie # for plots
 using Impute # for imputing missing genotypes
 using Statistics # for var() function
 using MultivariateStats # for getting variances from PCA model
 using CSV # for reading in delimited files
 using DelimitedFiles # for reading delimited files (the genotypic data)
+```
 
+Load my custom package `GenomicDiversity`:
 
+```{julia}
+using GenomicDiversity
 ```
 
 ## Choose working directory
@@ -72,12 +82,6 @@ filenameTextEnd = d["filenameTextEnd"]
 chromosomes_to_process =d["chromosomes_to_process"]
 metadataFile = d["metadataFile"]
 println("Loaded the filtered data.")
-
-#= filename = string(baseName, tagName, "ind_SNP_ind_filtered.jld2")
-genosOnly = load(filename, "genosOnly_ind_SNP_ind_filtered")
-ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
-pos_SNP_filtered = load(filename, "pos_SNP_filtered")
-println("Loaded the filtered data.") =#
 ```
 
 Also define `correctNames()` function as in main script, to correct some names:
@@ -149,7 +153,6 @@ For missing genotypes, change our code of `-1` to `missing`:
 ```{julia}
 genosOnly_with_missing = Matrix{Union{Missing, Int16}}(genosOnly)
 genosOnly_with_missing = replace(genosOnly_with_missing, -1 => missing)
-#genosOnly_with_missing[genosOnly_with_missing .== -1] .= missing;
 ```
 
 ## Make list of scaffolds to plot:
@@ -181,16 +184,7 @@ group_colors_PCA = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen
 ```{julia}
 
 # option to select a subset of individuals
-filterGroups = false
-#groupsToInclude = ["vir"]
-#groupsToInclude = ["troch_LN"]
-#numIndsToPlot = [1000]
-
-# groupsToInclude = ["vir", "plumb", "plumb_vir"]
-# numIndsToPlot = [1000, 1000, 1000]
-
-# groupsToInclude = ["troch_LN","troch_EM","obs","plumb_BJ"]
-# numIndsToPlot = [1000, 1000, 1000, 1000]
+filterGroups = false  # false means include all individuals
 
 groupsToInclude = ["lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west"]
 numIndsToPlot = [1000, 1000, 1000, 1000, 1000, 1000]
@@ -248,19 +242,19 @@ display(g)
 
 # Now graph the variance in standardized heterozygosity
 
-varWindowedIndHet = getVarWindowedIndHet(windowedIndHet_standardized)
+windowedViSHet = getWindowedViSHet(windowedIndHet_standardized)
 
-plotTitle = string("Variance in standardized het. among ", size(windowedIndHet, 1), " individuals")
+plotTitle = string("Var. in Stand. Het. (ViSHet) among ", size(windowedIndHet, 1), " individuals")
 titleSize = 18
 xLabelText = string("Location on scaffold ", chr)
-yLabelText = "Heterozygosity variance (standardized)"
+yLabelText = "ViSHet"
 labelSize = 18
 h = CairoMakie.Figure()
 ax = Axis(h[1, 1],
     title=plotTitle, titlesize=titleSize,
     xlabel=xLabelText, xlabelsize=labelSize,
     ylabel=yLabelText, ylabelsize=labelSize)
-lines!(windowedPos, varWindowedIndHet)
+lines!(windowedPos, windowedViSHet)
 display(h)
 
 ```
@@ -271,18 +265,9 @@ display(h)
 ```{julia}
 
 # option to select a subset of individuals
-filterGroups = false
-# groupsToInclude = ["vir", "plumb", "plumb_vir"]
-# numIndsToPlot = [1000, 1000, 1000]
-
-# groupsToInclude = ["lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
-# numIndsToPlot = [1000, 1000, 1000, 1000, 1000, 1000, 1000]
-
-# groupsToInclude = ["troch_LN","troch_EM","obs","plumb_BJ"]
-# numIndsToPlot = [1000, 1000, 1000, 1000]
+filterGroups = false  # false means include all individuals
 
 groupsToInclude = ["vir"]
-#groupsToInclude = ["troch_LN"]
 numIndsToPlot = [1000]
 
 if filterGroups
@@ -292,76 +277,75 @@ else
     ind_with_metadata_included = ind_with_metadata_indFiltered
 end
 
-#scaffolds_for_HetVariance = ["gw26", "gw28"]
-scaffolds_for_HetVariance = scaffolds_to_plot
+scaffolds_for_ViSHet = scaffolds_to_plot
 #initialize data structures
 windowed_pos_all = DataFrame(chrom = String[], mean_position = Float64[], first_position = Int[], last_position = Int[])
-windowed_HetVariance_all = Vector{Float32}(undef, 0)
-for chrom in scaffolds_for_HetVariance
+windowed_ViSHet_all = Vector{Float32}(undef, 0)
+for chrom in scaffolds_for_ViSHet
     regionText = string("chr", chrom)
     loci_selection = (pos_SNP_filtered.chrom .== chrom)
     pos_region = pos_SNP_filtered[loci_selection, :]
     genotypes_region = genosOnly_included[:, loci_selection]
     if chrom == "gwZ" #include only males (because females have only one Z)
-        genotypes_region_males = genotypes_region[ind_with_metadata_indFiltered_chrgwZ_cleaned.sex .== "M", :]
+        genotypes_region_males = genotypes_region[ind_with_metadata_included.sex .== "M", :]
         windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region_males, pos_region, windowSize)
     else # for all other chromosomes, include all individuals
         windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
     end
     windowBoundaries = getWindowBoundaries(pos_region.position, windowSize)
     windowedIndHet_standardized = standardizeIndHet(windowedIndHet)
-    windowed_HetVariance_scaffold = getVarWindowedIndHet(windowedIndHet_standardized)
+    windowed_ViSHet_scaffold = getWindowedViSHet(windowedIndHet_standardized)
     windowed_pos_chrom = DataFrame(chrom = repeat([chrom], length(windowedPos)), mean_position = windowedPos, first_position = windowBoundaries[:,1], last_position = windowBoundaries[:,2])
     windowed_pos_all = vcat(windowed_pos_all, windowed_pos_chrom)
-    windowed_HetVariance_all = [windowed_HetVariance_all; windowed_HetVariance_scaffold]
+    windowed_ViSHet_all = [windowed_ViSHet_all; windowed_ViSHet_scaffold]
 end
 
 # Quick test plot (overlapping all chromosomes, so not good)
-# plot(windowed_pos_all.mean_position, windowed_HetVariance_all)
+# plot(windowed_pos_all.mean_position, windowed_ViSHet_all)
 ```
 
-## Identify "haploblock regions" as those that have high HetVar
+## Identify "haploblock regions" as those that have high ViSHet
 
 ```{julia}
-threshold_HetVar = 0.4
-selection = windowed_HetVariance_all .>= threshold_HetVar
-windowed_pos_all.high_HetVar = selection # adds true/false column to dataframe indicating high HetVar windows
+threshold_ViSHet = 0.4
+selection = windowed_ViSHet_all .>= threshold_ViSHet
+windowed_pos_all.high_ViSHet = selection # adds true/false column to dataframe indicating high ViSHet windows
 
-# Make list of contiguous high HetVar region:
+# Make list of contiguous high ViSHet region:
 
-highHetVarRegions = DataFrame(regionChrom = String[], regionStart = Int[], regionEnd = Int[])
+highViSHetRegions = DataFrame(regionChrom = String[], regionStart = Int[], regionEnd = Int[])
 i = 1
 lastWindow = nrow(windowed_pos_all)
 while i <= lastWindow # eachindex(windowed_pos_all[:,1])
-    if windowed_pos_all.high_HetVar[i] == true
+    if windowed_pos_all.high_ViSHet[i] == true
         regionChrom = windowed_pos_all.chrom[i]
         regionStart = windowed_pos_all.first_position[i]
         regionEnd = windowed_pos_all.last_position[i]
         # check whether contiguous with next
         next = 1
         while i + next <= lastWindow && windowed_pos_all.chrom[i + next] == regionChrom
-            if windowed_pos_all.high_HetVar[i + next] == true
+            if windowed_pos_all.high_ViSHet[i + next] == true
                 regionEnd = windowed_pos_all.last_position[i + next]
                 next += 1
             else
                 break
             end
         end
-        highHetVarRegions = push!(highHetVarRegions, [regionChrom, regionStart, regionEnd])
+        highViSHetRegions = push!(highViSHetRegions, [regionChrom, regionStart, regionEnd])
         i = i + next + 1
     else
         i = i + 1
     end 
     i
 end
-highHetVarRegions
+highViSHetRegions
 ```
 
 ## Determine fraction of genome that has high ViSHet
 
 ```{julia}
 # get total length of high ViSHet regions 
-sum_highHetVarRegions = sum(highHetVarRegions.regionEnd .- highHetVarRegions.regionStart)
+sum_highViSHetRegions = sum(highViSHetRegions.regionEnd .- highViSHetRegions.regionStart)
 
 # get total lengths of all scaffolds
 sum_scaffold_lengths = 0 
@@ -372,7 +356,7 @@ end
 sum_scaffold_lengths
 
 # calculate percent of genome in high ViSHet regions
-percentGenomeHighViSHet = 100 * sum_highHetVarRegions / sum_scaffold_lengths
+percentGenomeHighViSHet = 100 * sum_highViSHetRegions / sum_scaffold_lengths
 println("The percent of the genome in high ViSHet regions is $percentGenomeHighViSHet")
 ```
 
@@ -380,17 +364,45 @@ println("The percent of the genome in high ViSHet regions is $percentGenomeHighV
 ## Plot "haploblock regions" for whole genome
 
 ```{julia}
+#= """
+    plotGenomeViSHet(scaffolds_to_plot, 
+                    windowed_ViSHet_all,
+                    windowed_pos_all;
+                    fillColor = "purple",
+                    lineTransparency = 0.8,
+                    fillTransparency = 0.2,
+                    figureSize = (1200, 1200),
+                    plotRegions = false,
+                    regionsToPlot = [],
+                    regionColor = "red")
 
-function plotGenomeHetVariance(scaffolds_to_plot, 
-                                windowed_HetVariance_all,
-                                windowed_pos_all;
-                                fillColor = "purple",
-                                lineTransparency = 0.8,
-                                fillTransparency = 0.2,
-                                figureSize = (1200, 1200),
-                                plotRegions = false,
-                                regionsToPlot = [],
-                                regionColor = "red")
+Plot windowed Variance in Standardized Heterozygosity (ViSHet) along multiple scaffolds.
+
+​# Arguments
+- `scaffolds_to_plot`: a vector of the scaffold names to include in the plot.
+- `windowed_ViSHet_all`: a vector of ViSHet values for windows of the genome.
+- `windowed_pos_all`: dataframe containing genomic locations of windows (must have columns `chrom` and `mean_position`).
+- `fillColor` (optional): the color for the lines and fill (default `"purple"`).
+- `lineTransparency` (optional): transparency of the lines.
+- `fillTransparency` (optional): transparency of the fill color.
+- `figureSize` (optional): size of the figure (height, width).
+- `plotRegions` (optional): choose `true` to highlight regions.
+- `regionsToPlot` (optional): a DataFrame with three columns: `regionChrom` containing names of scaffolds, `regionStart` and `regionEnd` giving start and end of regions to highlight.
+- `regionColor` (optional): the color for the highlighted regions.
+
+# Notes
+- Returns the figure.
+"""
+function plotGenomeViSHet(scaffolds_to_plot, 
+                            windowed_ViSHet_all,
+                            windowed_pos_all;
+                            fillColor = "purple",
+                            lineTransparency = 0.8,
+                            fillTransparency = 0.2,
+                            figureSize = (1200, 1200),
+                            plotRegions = false,
+                            regionsToPlot = [],
+                            regionColor = "red")
     
     # get sizes of chromosomes (note this actually isn't the true length, just the mean position of the rightmost window):
     scaffoldLengths = repeat([-1], length(scaffolds_to_plot))	# vector of Int64
@@ -457,13 +469,13 @@ function plotGenomeHetVariance(scaffolds_to_plot,
             # select one scaffold from the whole genome:
             selection = windowed_pos_all.chrom .== scaffoldName 
             windowed_pos_selected = view(windowed_pos_all.mean_position, selection)
-            windowed_HetVariance_selected = view(windowed_HetVariance_all, selection)
+            windowed_ViSHet_selected = view(windowed_ViSHet_all, selection)
             if length(windowed_pos_selected) > 0  # only plot if there is data for that scaffold        
                 text!(axs[rowNum], scaffoldBpStartInRow[rowNum][orderNum] + 0.005bpPerRow, -0.2; text=scaffoldName, align=(:left, :center), fontsize=20)
                 xx = vcat(first(windowed_pos_selected), windowed_pos_selected, last(windowed_pos_selected)) .+ scaffoldBpStartInRow[rowNum][orderNum]
-                yy = vcat(0, windowed_HetVariance_selected, 0)
+                yy = vcat(0, windowed_ViSHet_selected, 0)
                 poly!(axs[rowNum], Point2f.(xx, yy), color = (fillColor, fillTransparency), strokecolor = (fillColor, lineTransparency), strokewidth = 1)
-                # if indicating regions (e.g. that have high HetVar)
+                # if indicating regions (e.g. that have high ViSHet)
                 if plotRegions
                     regionsToPlot_thisScaffold = regionsToPlot[regionsToPlot.regionChrom .== scaffoldName, :]
                     for i in eachindex(regionsToPlot_thisScaffold.regionStart)
@@ -478,17 +490,17 @@ function plotGenomeHetVariance(scaffolds_to_plot,
     display(f)
     return f
 end
+ =#
 
-
-fig2 = plotGenomeHetVariance(scaffolds_to_plot, 
-                        windowed_HetVariance_all,
+fig2 = plotGenomeViSHet(scaffolds_to_plot, 
+                        windowed_ViSHet_all,
                         windowed_pos_all;
                         fillColor = "purple",
                         lineTransparency = 0.8,
                         fillTransparency = 0.2,
                         figureSize=(1200, 1200),
                         plotRegions = true,
-                        regionsToPlot = highHetVarRegions,
+                        regionsToPlot = highViSHetRegions,
                         regionColor = "magenta")
 if false  # set to true to save plot
     filename = "Figure2_ViSHet_allGenome_fromJulia.png"
@@ -506,7 +518,7 @@ end
 ```{julia}
 # cycle through the LHBRs, determining the SNPs within each to remove from the dataset:
 lociToRemove = fill(false, nrow(pos_SNP_filtered))
-for i in eachrow(highHetVarRegions) 
+for i in eachrow(highViSHetRegions) 
     # display(i.regionChrom)
     # display(i.regionStart)
     lociWithinThisLHBR = (pos_SNP_filtered.chrom .== i.regionChrom) .&& 
@@ -528,7 +540,7 @@ push!(chromosomes_to_include, "gw1A", "gw4A", "gwZ")  # add two other scaffolds
 
 #### Imputation using KNN
 
-Did this on 5Jan2025 and saved files, so inactivated this cell for now (can take up to several minutes for each big scaffold):
+Did this on 11Jan2025 and saved files, so inactivated this cell for now (can take up to several minutes for each big scaffold):
 
 ```julia
 for i in eachindex(chromosomes_to_include)
@@ -609,35 +621,35 @@ println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
 PC2 explains ", 100*PC2_prop_variance, "%.")
 ```
 
-There is a whole lot of signal for population structure in the non-LHBR regions---maybe not suprising given there are high-Fst regions with low ViSHet.
+There is a whole lot of signal for population structure in the non-LHBR regions---maybe not surprising given there are high-Fst regions with low ViSHet.
 
 
-## Choose low-het individuals in a high HetVar region
+## Choose low-het individuals in a high ViSHet region
 
-Now that we have high HetVar regions indicated, we can automate the choosing of essential homozygous individuals in those regions. Below I will do this for chrZ (and later chr15 and chr18).
+Now that we have high ViSHet regions indicated, we can automate the choosing of essential homozygous individuals in those regions. Below I will do this for chrZ (and later chr15 and chr18).
 
-First, here's two functions, first for getting the boundaries of the longest high HetVar region from a scaffold, second for getting a bunch of info about the region:
+First, here's two functions, first for getting the boundaries of the longest high ViSHet region from a scaffold, second for getting a bunch of info about the region:
 
 ```{julia}
-function getOneHighHetVarRegion(highHetVarRegions, chr)
-    selection = (highHetVarRegions.regionChrom .== chr)
+function getOneHighViSHetRegion(highViSHetRegions, chr)
+    selection = (highViSHetRegions.regionChrom .== chr)
     if sum(selection) == 1
         println("Good news: 1 region on that scaffold")
-        positionMin = highHetVarRegions.regionStart[selection][1]
-        positionMax = highHetVarRegions.regionEnd[selection][1]
+        positionMin = highViSHetRegions.regionStart[selection][1]
+        positionMax = highViSHetRegions.regionEnd[selection][1]
         regionText = string("chr ", chr, " ",positionMin," to ",positionMax)
     elseif sum(selection) > 1
         println("More than 1 region on that scaffold. Using just the longest one.")
-        highHetVarRegions_chr = highHetVarRegions[selection, :]
-        display(highHetVarRegions_chr)
+        highViSHetRegions_chr = highViSHetRegions[selection, :]
+        display(highViSHetRegions_chr)
         # get biggest region (first one if tied):
-        regionSizes = highHetVarRegions_chr.regionEnd .- highHetVarRegions_chr.regionStart
+        regionSizes = highViSHetRegions_chr.regionEnd .- highViSHetRegions_chr.regionStart
         indexOfLongest = findfirst(regionSizes .== maximum(regionSizes))
-        positionMin = highHetVarRegions_chr.regionStart[indexOfLongest]
-        positionMax = highHetVarRegions_chr.regionEnd[indexOfLongest]
+        positionMin = highViSHetRegions_chr.regionStart[indexOfLongest]
+        positionMax = highViSHetRegions_chr.regionEnd[indexOfLongest]
         regionText = string("chr ", chr, " ",positionMin," to ",positionMax)
     elseif sum(selection) == 0
-        println("No high HetVar regions on that scaffold")
+        println("No high ViSHet regions on that scaffold")
         return
     end
     return positionMin, positionMax, regionText
@@ -645,7 +657,7 @@ end
 
 
 function getWindowedIndHetStanRegion(genos, pos, 
-                                    highHetVarRegions, chr;
+                                    highViSHetRegions, chr;
                                     windowSize = 500)
     # remake the windowedIndHet_standardized (done above in a different cell)
     loci_selection = (pos.chrom .== chr)
@@ -653,22 +665,22 @@ function getWindowedIndHetStanRegion(genos, pos,
     genotypes_region = genos[:, loci_selection]
     windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
     windowedIndHet_standardized = standardizeIndHet(windowedIndHet)
-    # look up the boundaries of the high HetVar region:
-    positionMin, positionMax, regionText = getOneHighHetVarRegion(highHetVarRegions, chr)
-    # choose just the windows that are in the high HetVar region:
+    # look up the boundaries of the high ViSHet region:
+    positionMin, positionMax, regionText = getOneHighViSHetRegion(highViSHetRegions, chr)
+    # choose just the windows that are in the high ViSHet region:
     window_selection = (positionMin .< windowedPos .< positionMax)
     windowedIndHetStanRegion = windowedIndHet_standardized[:,window_selection]
     meanAcrossRegionIndHetStan = mean.(eachrow(windowedIndHetStanRegion)) 
     # choose loci in region
     lociSelection = (positionMin .< pos_region.position .< positionMax)
-    pos_highHetVarRegion = pos_region[lociSelection, :]
-    genos_highHetVarRegion = genotypes_region[:, lociSelection]
+    pos_highViSHetRegion = pos_region[lociSelection, :]
+    genos_highViSHetRegion = genotypes_region[:, lociSelection]
     # convert `-1` genotypes (which indicates missing) to `missing`:
-    replace!(genos_highHetVarRegion, -1 => missing)
-    regionInfo = chooseChrRegion(pos_highHetVarRegion, chr; positionMin=positionMin, positionMax=positionMax) # this makes appropriate text describing the region
+    replace!(genos_highViSHetRegion, -1 => missing)
+    regionInfo = chooseChrRegion(pos_highViSHetRegion, chr; positionMin=positionMin, positionMax=positionMax) # this makes appropriate text describing the region
     return positionMin, positionMax, regionText, 
             windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-            genos_highHetVarRegion, pos_highHetVarRegion, regionInfo
+            genos_highViSHetRegion, pos_highViSHetRegion, regionInfo
 end
 ```
 
@@ -678,13 +690,13 @@ chr = "gwZ"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -699,12 +711,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = true
 flipPC2 = false
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -732,7 +744,7 @@ PCAmodelAll.metadata.PC3 = -1 .* PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 2) 
 
 #Plot only the lowIndHetStan individuals, PC1 to PC2:
@@ -828,7 +840,7 @@ end
 ```
 
 
-### Now it is clear that there are six clear haplogroups of Z high HetVar region. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### Now it is clear that there are six clear haplogroups of Z high ViSHet region. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 # Inspect Z chromosome PCA of low IndHet (< 2) individuals,
@@ -932,7 +944,7 @@ function getFreqsAndSampleSizesBySexForZ(genoData, sex, indGroup, groupsToCalc)
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizesBySexForZ(genos_highHetVarRegion, ind_with_metadata_included.sex, clusterMembership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizesBySexForZ(genos_highViSHetRegion, ind_with_metadata_included.sex, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -999,8 +1011,8 @@ PCAmodelAll.metadata.plot_order = plotOrder
 # (So for each column in `freqs`, the maximum should be > 0.5 
 # and the minimum should be < 0.5)
 selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
-genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
-pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+genos_selectedSNPs = genos_highViSHetRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highViSHetRegion[selectedSNPs, :]
 Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
@@ -1014,6 +1026,7 @@ genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot,
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
                 missingFractionAllowed = missingFractionAllowed,
+                titleFontSize = 20,
                 indColorRightProvided = true)
 ```
 
@@ -1258,7 +1271,7 @@ group_colors_PCA_westside = ["blue","turquoise1","grey","seagreen4","seagreen3",
 groups_to_plot_PCA_westside = ["vir","vir_S", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN"]
 group_colors_PCA_westside = ["blue","turquoise1","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow"]
 
-PCAmodel = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodel = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA_westside, group_colors_PCA_westside; 
             sampleSet = "greenish warblers (west side)", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -1277,7 +1290,7 @@ display(PCAmodel.PCAfig)
 groups_to_plot_PCA_eastside = ["troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
 group_colors_PCA_eastside = ["yellow","gold","orange","pink","red","purple"];
 
-PCAmodel = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodel = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA_eastside, group_colors_PCA_eastside; 
             sampleSet = "greenish warblers (east side)", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -1307,7 +1320,7 @@ group_colors_PCA_westside = ["blue","turquoise1","grey","seagreen4","seagreen3",
 flipPC1 = true
 flipPC2 = true
 
-PCAmodelHapWest = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included_temp, 
+PCAmodelHapWest = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included_temp, 
             groups_to_plot_PCA_westside, group_colors_PCA_westside; 
             sampleSet = "greenish warblers west haps", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -1336,7 +1349,7 @@ group_colors_PCA_eastside = ["yellow","gold","orange","red","purple","pink"];
 flipPC1 = true
 flipPC2 = true
 
-PCAmodelHapEast = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included_temp, 
+PCAmodelHapEast = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included_temp, 
             groups_to_plot_PCA_eastside, group_colors_PCA_eastside; 
             sampleSet = "greenish warblers east haps", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -1350,29 +1363,29 @@ display(PCAmodelHapEast.PCAfig)
 
 
 
-### Do a PCA based on a same-size region elsewhere on the Z (with low HetVar):
+### Do a PCA based on a same-size region elsewhere on the Z (with low ViSHet):
 
 ```{julia}
 # get length of region
-lengthHighHetVarRegion = positionMax - positionMin
+lengthHighViSHetRegion = positionMax - positionMin
 
 leftLocus = 1_000_000 # start at 1 Mb from left side
-rightLocus = leftLocus + lengthHighHetVarRegion
-regionText_lowHetVarRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
+rightLocus = leftLocus + lengthHighViSHetRegion
+regionText_lowViSHetRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
 
 lociSelection = (leftLocus .<= pos_region.position .<= rightLocus)
-genotypes_lowHetVarRegion = genotypes_region[:, lociSelection]
+genotypes_lowViSHetRegion = genotypes_region[:, lociSelection]
 
 # impute missing genotypes:
 
-genotypes_lowHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genotypes_lowHetVarRegion))
+genotypes_lowViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genotypes_lowViSHetRegion))
 
 flipPC1 = true
 flipPC2 = true
 
-PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodel = plotPCA(genotypes_lowViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
-            sampleSet = "greenish warblers", regionText = regionText_lowHetVarRegion,
+            sampleSet = "greenish warblers", regionText = regionText_lowViSHetRegion,
             flip1 = flipPC1, flip2 = flipPC2,
             lineOpacity = 0.7, fillOpacity = 0.6,
             symbolSize = 14, showTitle = true,
@@ -1394,13 +1407,13 @@ chr = "gw15"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -1415,12 +1428,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = true
 flipPC2 = true
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -1447,7 +1460,7 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.75) 
 
 #Plot only the lowIndHetStan individuals:
@@ -1513,7 +1526,7 @@ display(f)
 ```
 
 
-### At chr 15 high HetVar region, there are only 5 clear haplogroups (PC3 does not distinguish vir and lud). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 15 high ViSHet region, there are only 5 clear haplogroups (PC3 does not distinguish vir and lud). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -1563,7 +1576,7 @@ for i in eachindex(clusterArray[1,:])
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(genos_highHetVarRegion, clusterMembership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_highViSHetRegion, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -1618,8 +1631,8 @@ PCAmodelAll.metadata.plot_order = plotOrder
 # (So for each column in `freqs`, the maximum should be > 0.5 
 # and the minimum should be < 0.5)
 selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
-genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
-pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+genos_selectedSNPs = genos_highViSHetRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highViSHetRegion[selectedSNPs, :]
 Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
@@ -1826,13 +1839,13 @@ chr = "gw28"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -1847,12 +1860,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = true
 flipPC2 = true
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -1879,7 +1892,7 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 2) 
 
 #Plot only the lowIndHetStan individuals:
@@ -1945,7 +1958,7 @@ end
 display(f)
 ```
 
-### At chr 28 high HetVar region, there are only 5 clear haplogroups (yellow and orange are close). Vir and lud don't distinguish along PC3, as nitidus varies there. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 28 high ViSHet region, there are only 5 clear haplogroups (yellow and orange are close). Vir and lud don't distinguish along PC3, as nitidus varies there. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -1994,7 +2007,7 @@ for i in eachindex(clusterArray[1,:])
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(genos_highHetVarRegion, clusterMembership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_highViSHetRegion, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -2049,8 +2062,8 @@ PCAmodelAll.metadata.plot_order = plotOrder
 # (So for each column in `freqs`, the maximum should be > 0.5 
 # and the minimum should be < 0.5)
 selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
-genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
-pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+genos_selectedSNPs = genos_highViSHetRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highViSHetRegion[selectedSNPs, :]
 Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
@@ -2445,13 +2458,13 @@ chr = "gw26"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -2466,12 +2479,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = false
 flipPC2 = false
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -2498,7 +2511,7 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.5) 
 
 #Plot only the lowIndHetStan individuals:
@@ -2563,7 +2576,7 @@ end
 display(f)
 ```
 
-## At chr 26 high HetVar region, there are only 5 clear haplogroups (one green is somewhat away). Vir and lud vary along PC3 but cannot be clearly grouped. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+## At chr 26 high ViSHet region, there are only 5 clear haplogroups (one green is somewhat away). Vir and lud vary along PC3 but cannot be clearly grouped. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 # Inspect chromosome 26 PCA of low IndHet (< 1.5) individuals,
@@ -2608,7 +2621,7 @@ for i in eachindex(clusterArray[1,:])
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(genos_highHetVarRegion, clusterMembership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_highViSHetRegion, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -2663,8 +2676,8 @@ PCAmodelAll.metadata.plot_order = plotOrder
 # (So for each column in `freqs`, the maximum should be > 0.5 
 # and the minimum should be < 0.5)
 selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
-genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
-pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+genos_selectedSNPs = genos_highViSHetRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highViSHetRegion[selectedSNPs, :]
 Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
@@ -2943,29 +2956,29 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
 
 ```
 
-### Do a PCA based on a same-size region elsewhere on gw26 (with low HetVar):
+### Do a PCA based on a same-size region elsewhere on gw26 (with low ViSHet):
 
 ```{julia}
 # get length of region
-lengthHighHetVarRegion = positionMax - positionMin
+lengthHighViSHetRegion = positionMax - positionMin
 
 leftLocus = 1_000_000 # start at 1 Mb from left side
-rightLocus = leftLocus + lengthHighHetVarRegion
-regionText_lowHetVarRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
+rightLocus = leftLocus + lengthHighViSHetRegion
+regionText_lowViSHetRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
 
 lociSelection = (leftLocus .<= pos_region.position .<= rightLocus)
-genotypes_lowHetVarRegion = genotypes_region[:, lociSelection]
+genotypes_lowViSHetRegion = genotypes_region[:, lociSelection]
 
 # impute missing genotypes:
 
-genotypes_lowHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genotypes_lowHetVarRegion))
+genotypes_lowViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genotypes_lowViSHetRegion))
 
 flipPC1 = true
 flipPC2 = true
 
-PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodel = plotPCA(genotypes_lowViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
-            sampleSet = "greenish warblers", regionText = regionText_lowHetVarRegion,
+            sampleSet = "greenish warblers", regionText = regionText_lowViSHetRegion,
             flip1 = flipPC1, flip2 = flipPC2,
             lineOpacity = 0.7, fillOpacity = 0.6,
             symbolSize = 14, showTitle = true,
@@ -2989,13 +3002,13 @@ chr = "gw1A"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -3010,12 +3023,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = true
 flipPC2 = true
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -3042,7 +3055,7 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.5) 
 
 #Plot only the lowIndHetStan individuals:
@@ -3108,7 +3121,7 @@ display(f)
 ```
 
 
-### At chr 1A high HetVar region, there are only 5 clear haplogroups (checked that vir and lud don't form distinct groups on PC3). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 1A high ViSHet region, there are only 5 clear haplogroups (checked that vir and lud don't form distinct groups on PC3). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -3159,7 +3172,7 @@ for i in eachindex(clusterArray[1,:])
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(genos_highHetVarRegion, clusterMembership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_highViSHetRegion, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -3214,8 +3227,8 @@ PCAmodelAll.metadata.plot_order = plotOrder
 # (So for each column in `freqs`, the maximum should be > 0.5 
 # and the minimum should be < 0.5)
 selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
-genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
-pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+genos_selectedSNPs = genos_highViSHetRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highViSHetRegion[selectedSNPs, :]
 Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
@@ -3424,13 +3437,13 @@ chr = "gw2"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -3445,12 +3458,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = false
 flipPC2 = true
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -3477,7 +3490,7 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.25) 
 
 #Plot only the lowIndHetStan individuals:
@@ -3543,7 +3556,7 @@ display(f)
 ```
 
 
-### At chr 2 high HetVar region, there are 5 clear haplogroups. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 2 high ViSHet region, there are 5 clear haplogroups. Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -3595,7 +3608,7 @@ for i in eachindex(clusterArray[1,:])
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(genos_highHetVarRegion, clusterMembership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_highViSHetRegion, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -3650,8 +3663,8 @@ PCAmodelAll.metadata.plot_order = plotOrder
 # (So for each column in `freqs`, the maximum should be > 0.5 
 # and the minimum should be < 0.5)
 selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
-genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
-pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+genos_selectedSNPs = genos_highViSHetRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highViSHetRegion[selectedSNPs, :]
 Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
@@ -3817,13 +3830,13 @@ chr = "gw3"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -3838,12 +3851,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = false
 flipPC2 = true
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -3870,7 +3883,7 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.25) 
 
 #Plot only the lowIndHetStan individuals:
@@ -3936,7 +3949,7 @@ display(f)
 ```
 
 
-### At chr 3 high HetVar region, there are only 4 clear haplogroups (vir and lud separated though on PC3, but not in a clean way that I can distinguish clearly). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 3 high ViSHet region, there are only 4 clear haplogroups (vir and lud separated though on PC3, but not in a clean way that I can distinguish clearly). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -3981,7 +3994,7 @@ for i in eachindex(clusterArray[1,:])
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(genos_highHetVarRegion, clusterMembership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_highViSHetRegion, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -4031,8 +4044,8 @@ PCAmodelAll.metadata.plot_order = plotOrder
 # (So for each column in `freqs`, the maximum should be > 0.5 
 # and the minimum should be < 0.5)
 selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
-genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
-pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+genos_selectedSNPs = genos_highViSHetRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highViSHetRegion[selectedSNPs, :]
 Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
@@ -4278,13 +4291,13 @@ chr = "gw18"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -4299,12 +4312,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = true
 flipPC2 = true
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -4331,7 +4344,7 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.55) 
 
 #Plot only the lowIndHetStan individuals:
@@ -4397,7 +4410,7 @@ display(f)
 ```
 
 
-### At chr 18 high HetVar region, there are 5 clear haplogroups (vir and lud separated though on PC3, though not clearly enough to indicate as different in summary plot). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 18 high ViSHet region, there are 5 clear haplogroups (vir and lud separated though on PC3, though not clearly enough to indicate as different in summary plot). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -4448,7 +4461,7 @@ for i in eachindex(clusterArray[1,:])
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(genos_highHetVarRegion, clusterMembership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_highViSHetRegion, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -4503,8 +4516,8 @@ PCAmodelAll.metadata.plot_order = plotOrder
 # (So for each column in `freqs`, the maximum should be > 0.5 
 # and the minimum should be < 0.5)
 selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
-genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
-pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+genos_selectedSNPs = genos_highViSHetRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highViSHetRegion[selectedSNPs, :]
 Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
@@ -4798,13 +4811,13 @@ chr = "gw13"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -4819,12 +4832,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = true
 flipPC2 = true
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -4851,7 +4864,7 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.75) 
 
 #Plot only the lowIndHetStan individuals:
@@ -4917,7 +4930,7 @@ display(f)
 ```
 
 
-### At chr 13 high HetVar region, there are 6 clear haplogroups (vir and lud separated cleanly on PC3, with one hetero between them). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 13 high ViSHet region, there are 6 clear haplogroups (vir and lud separated cleanly on PC3, with one hetero between them). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -4976,7 +4989,7 @@ for i in eachindex(clusterArray[1,:])
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(genos_highHetVarRegion, clusterMembership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_highViSHetRegion, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -5037,8 +5050,8 @@ PCAmodelAll.metadata.plot_order = plotOrder
 # (So for each column in `freqs`, the maximum should be > 0.5 
 # and the minimum should be < 0.5)
 selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
-genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
-pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+genos_selectedSNPs = genos_highViSHetRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highViSHetRegion[selectedSNPs, :]
 Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
@@ -5330,29 +5343,29 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
 
 ```
 
-### Do a PCA based on a same-size region elsewhere on gw13 (with low HetVar):
+### Do a PCA based on a same-size region elsewhere on gw13 (with low ViSHet):
 
 ```{julia}
 # get length of region
-lengthHighHetVarRegion = positionMax - positionMin
+lengthHighViSHetRegion = positionMax - positionMin
 
 leftLocus = 1_000_000 # start at 1 Mb from left side
-rightLocus = leftLocus + lengthHighHetVarRegion
-regionText_lowHetVarRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
+rightLocus = leftLocus + lengthHighViSHetRegion
+regionText_lowViSHetRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
 
 lociSelection = (leftLocus .<= pos_region.position .<= rightLocus)
-genotypes_lowHetVarRegion = genotypes_region[:, lociSelection]
+genotypes_lowViSHetRegion = genotypes_region[:, lociSelection]
 
 # impute missing genotypes:
 
-genotypes_lowHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genotypes_lowHetVarRegion))
+genotypes_lowViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genotypes_lowViSHetRegion))
 
 flipPC1 = true
 flipPC2 = true
 
-PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodel = plotPCA(genotypes_lowViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
-            sampleSet = "greenish warblers", regionText = regionText_lowHetVarRegion,
+            sampleSet = "greenish warblers", regionText = regionText_lowViSHetRegion,
             flip1 = flipPC1, flip2 = flipPC2,
             lineOpacity = 0.7, fillOpacity = 0.6,
             symbolSize = 14, showTitle = true,
@@ -5379,13 +5392,13 @@ chr = "gw17"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -5400,12 +5413,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = false
 flipPC2 = false
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -5432,7 +5445,7 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.4) 
 
 #Plot only the lowIndHetStan individuals:
@@ -5548,7 +5561,7 @@ for i in eachindex(clusterArray[1,:])
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(genos_highHetVarRegion, clusterMembership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_highViSHetRegion, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -5603,8 +5616,8 @@ PCAmodelAll.metadata.plot_order = plotOrder
 # (So for each column in `freqs`, the maximum should be > 0.5 
 # and the minimum should be < 0.5)
 selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
-genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
-pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+genos_selectedSNPs = genos_highViSHetRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highViSHetRegion[selectedSNPs, :]
 Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
@@ -5719,13 +5732,13 @@ chr = "gw19"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -5740,12 +5753,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = true
 flipPC2 = true
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -5772,7 +5785,7 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.5) 
 
 #Plot only the lowIndHetStan individuals:
@@ -5838,7 +5851,7 @@ display(f)
 ```
 
 
-### At chr 19 high HetVar region, there are 4 clear homozygous haplogroups (vir and lud separated though on PC3, but not clearly enough to show in summary plot). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 19 high ViSHet region, there are 4 clear homozygous haplogroups (vir and lud separated though on PC3, but not clearly enough to show in summary plot). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -5885,7 +5898,7 @@ for i in eachindex(clusterArray[1,:])
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(genos_highHetVarRegion, clusterMembership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_highViSHetRegion, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -5935,8 +5948,8 @@ PCAmodelAll.metadata.plot_order = plotOrder
 # (So for each column in `freqs`, the maximum should be > 0.5 
 # and the minimum should be < 0.5)
 selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
-genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
-pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+genos_selectedSNPs = genos_highViSHetRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highViSHetRegion[selectedSNPs, :]
 Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
@@ -6332,13 +6345,13 @@ chr = "gw4A"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -6353,12 +6366,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = true
 flipPC2 = true
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -6385,7 +6398,7 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.5) 
 
 #Plot only the lowIndHetStan individuals:
@@ -6451,7 +6464,7 @@ display(f)
 ```
 
 
-### At chr 4A high HetVar region, there are 4 clear haplogroups (no discernment of lud or obs on PC3, which is driven by nitidus). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 4A high ViSHet region, there are 4 clear haplogroups (no discernment of lud or obs on PC3, which is driven by nitidus). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -6496,7 +6509,7 @@ for i in eachindex(clusterArray[1,:])
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(genos_highHetVarRegion, clusterMembership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_highViSHetRegion, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -6546,8 +6559,8 @@ PCAmodelAll.metadata.plot_order = plotOrder
 # (So for each column in `freqs`, the maximum should be > 0.5 
 # and the minimum should be < 0.5)
 selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
-genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
-pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+genos_selectedSNPs = genos_highViSHetRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highViSHetRegion[selectedSNPs, :]
 Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
@@ -6916,31 +6929,31 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
 
 ```
 
-### Do a PCA based on a same-size region elsewhere on gw4A (with low HetVar):
+### Do a PCA based on a same-size region elsewhere on gw4A (with low ViSHet):
 
 ```{julia}
 # get length of region
-lengthHighHetVarRegion = positionMax - positionMin
+lengthHighViSHetRegion = positionMax - positionMin
 
 # because the region is on the left side of chr 4A, will put the non-interesting region on the right side:
 rightLocus = scaffold_lengths["gw4A"] - 1_000_000
-leftLocus = rightLocus - lengthHighHetVarRegion
+leftLocus = rightLocus - lengthHighViSHetRegion
 
-regionText_lowHetVarRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
+regionText_lowViSHetRegion = string("chr ", chr, " ",leftLocus," to ",rightLocus)
 
 lociSelection = (leftLocus .<= pos_region.position .<= rightLocus)
-genotypes_lowHetVarRegion = genotypes_region[:, lociSelection]
+genotypes_lowViSHetRegion = genotypes_region[:, lociSelection]
 
 # impute missing genotypes:
 
-genotypes_lowHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genotypes_lowHetVarRegion))
+genotypes_lowViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genotypes_lowViSHetRegion))
 
 flipPC1 = true
 flipPC2 = true
 
-PCAmodel = plotPCA(genotypes_lowHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodel = plotPCA(genotypes_lowViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
-            sampleSet = "greenish warblers", regionText = regionText_lowHetVarRegion,
+            sampleSet = "greenish warblers", regionText = regionText_lowViSHetRegion,
             flip1 = flipPC1, flip2 = flipPC2,
             lineOpacity = 0.7, fillOpacity = 0.6,
             symbolSize = 14, showTitle = true,
@@ -6964,13 +6977,13 @@ chr = "gw20"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -6985,12 +6998,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = false
 flipPC2 = true
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -7017,7 +7030,7 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.5) 
 
 #Plot only the lowIndHetStan individuals:
@@ -7085,7 +7098,7 @@ display(f)
 ```
 
 
-### At chr 20 high HetVar region, there are 6 clear haplogroups (with vir and lud clearly different on PC3). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
+### At chr 20 high ViSHet region, there are 6 clear haplogroups (with vir and lud clearly different on PC3). Divide samples into those groups, based on PCA scores, and then calculate pi within and pi between
 
 ```{julia}
 
@@ -7144,7 +7157,7 @@ for i in eachindex(clusterArray[1,:])
 end
 
 # Calculate allele freqs and sample sizes
-freqs, sampleSizes = getFreqsAndSampleSizes(genos_highHetVarRegion, clusterMembership, clusterNames)
+freqs, sampleSizes = getFreqsAndSampleSizes(genos_highViSHetRegion, clusterMembership, clusterNames)
 println("Calculated population allele frequencies and sample sizes")
 
 # Calculate per-site pi (within-group nucleotide distance)
@@ -7205,8 +7218,8 @@ PCAmodelAll.metadata.plot_order = plotOrder
 # (So for each column in `freqs`, the maximum should be > 0.5 
 # and the minimum should be < 0.5)
 selectedSNPs = (vec(maximum(freqs, dims=1)) .> 0.5) .& (vec(minimum(freqs, dims=1)) .< 0.5)
-genos_selectedSNPs = genos_highHetVarRegion[:, selectedSNPs]
-pos_selectedSNPs = pos_highHetVarRegion[selectedSNPs, :]
+genos_selectedSNPs = genos_highViSHetRegion[:, selectedSNPs]
+pos_selectedSNPs = pos_highViSHetRegion[selectedSNPs, :]
 Fst_selectedSNPs = Fst[:, selectedSNPs]
 freqs_selectedSNPs = freqs[:, selectedSNPs]
 
@@ -7483,13 +7496,13 @@ chr = "gw27"
 
 positionMin, positionMax, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
     getWindowedIndHetStanRegion(genosOnly_included, 
                             pos_SNP_filtered, 
-                            highHetVarRegions, chr;
+                            highViSHetRegions, chr;
                             windowSize = 500)
 
-# inspect values for mean IndHetStan per individual for that high HetVar region
+# inspect values for mean IndHetStan per individual for that high ViSHet region
 plot(meanAcrossRegionIndHetStan)
 
 # Add column to metadata containing the regionIndHetStan for this highHet region:
@@ -7504,12 +7517,12 @@ plot(ind_with_metadata_included.numMissings, meanAcrossRegionIndHetStan)
 
 # PCA of all individuals:
 
-genos_highHetVarRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highHetVarRegion))
+genos_highViSHetRegion_imputed = Impute.svd(Matrix{Union{Missing, Float32}}(genos_highViSHetRegion))
 
 flipPC1 = true
 flipPC2 = true
 
-PCAmodelAll = plotPCA(genos_highHetVarRegion_imputed, ind_with_metadata_included, 
+PCAmodelAll = plotPCA(genos_highViSHetRegion_imputed, ind_with_metadata_included, 
             groups_to_plot_PCA, group_colors_PCA; 
             sampleSet = "greenish warblers", regionText = regionText,
             flip1 = flipPC1, flip2 = flipPC2,
@@ -7536,7 +7549,7 @@ PCAmodelAll.metadata.PC3 = PCAmodelAll.values[3,:]
 # For the next bit to work with above, make sure that all individuals in the above `plotPCA` command
 # are included in the `groups_to_plot_PCA`
 
-# choose inds with low IndHet in high HetVar region:
+# choose inds with low IndHet in high ViSHet region:
 indSelection_lowIndHetStan = (meanAcrossRegionIndHetStan .< 1.4) 
 
 #Plot only the lowIndHetStan individuals:
@@ -8226,10 +8239,6 @@ plotHaploblockSummary(integerToColorCodes,
 ```
 
 
-#########################
-EDIT / REVISE THIS PART BELOW TO PROPERLY INCORPORATE THE Z CHROM FILTERING
-
-
 ## Produce Fst plot across genome
 
 #### Calculate allele freqs and sample sizes (use column Fst_group)
@@ -8315,6 +8324,12 @@ figHandle_GenomeFst1 = plotGenomeFst(scaffolds_to_plot,
                                     lineTransparency = 0.8,
                                     fillTransparency = 0.2,
                                     figureSize=(1200, 800))
+
+if true  # set to true to save plot
+    filename = string("FigureS33_GenomeFst_fromJulia.png")
+    save(filename, figHandle_GenomeFst1, px_per_unit = 2.0)
+    println("Saved ", filename)
+end 
 ```
 
 ## Plot ViSHet vs. Fst
@@ -8324,7 +8339,7 @@ figHandle_GenomeFst1 = plotGenomeFst(scaffolds_to_plot,
 groupsToCompareUsingFst = "vir_plumb"
 FstRow = findfirst(pairwiseNamesFst .== groupsToCompareUsingFst)
 windowedFstValues = windowed_Fst_all[FstRow, :]
-#plot(windowedFstValues, windowed_HetVariance_all)
+#plot(windowedFstValues, windowed_ViSHet_all)
 
 fillOpacity = 0.3
 lineOpacity = 0.8
@@ -8334,15 +8349,20 @@ ax = Axis(f[1, 1],
     xlabel = "windowed Fst", xlabelsize = 24,
     ylabel = "windowed VisHet", ylabelsize = 24)
 # hidedecorations!(ax, label = false, ticklabels = false, ticks = false) # hide background lattice
-plot!(ax, windowedFstValues, windowed_HetVariance_all,
+plot!(ax, windowedFstValues, windowed_ViSHet_all,
     marker = :circle, color = ("black", fillOpacity), markersize = 8, strokewidth=0.5, strokecolor = ("black", lineOpacity))
 
 display(f)
 
-hist(windowedFstValues)
+if true  # set to true to save plot
+    filename = string("FigureS34_windowedFstvViSHet_fromJulia.png")
+    save(filename, f, px_per_unit = 2.0)
+    println("Saved ", filename)
+end 
 
-hist(windowed_HetVariance_all)
-
+# to see histograms of each distribution:
+# hist(windowedFstValues)
+# hist(windowed_ViSHet_all)
 ```
 
 
@@ -8437,10 +8457,10 @@ clusterNames_gw4A = ["virLud",
 chr = "gw4A"
 positionMin_chr4A_LHBR, positionMax_chr4A_LHBR, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
                         getWindowedIndHetStanRegion(genosOnly_included, 
                                                     pos_SNP_filtered, 
-                                                    highHetVarRegions, chr;
+                                                    highViSHetRegions, chr;
                                                     windowSize = 500)
 
 # select the loci within the gw4A LHBR:
@@ -8688,10 +8708,10 @@ clusterNames_gw3 = ["virLud",
 chr = "gw3"
 positionMin_chr3_LHBR, positionMax_chr3_LHBR, regionText, 
     windowedIndHetStanRegion, meanAcrossRegionIndHetStan,
-    genos_highHetVarRegion, pos_highHetVarRegion, regionInfo = 
+    genos_highViSHetRegion, pos_highViSHetRegion, regionInfo = 
                         getWindowedIndHetStanRegion(genosOnly_included, 
                                                     pos_SNP_filtered, 
-                                                    highHetVarRegions, chr;
+                                                    highViSHetRegions, chr;
                                                     windowSize = 500)
 
 # select the loci within the gw3 LHBR:
@@ -8891,7 +8911,7 @@ for i in 1:length(scaffolds_to_plot)
     chr = scaffolds_to_plot[i]
     regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
     # get info for lines for LHBRs
-    highHetVarRegions_thisScaffold = highHetVarRegions[highHetVarRegions.regionChrom .== chr, :]
+    highViSHetRegions_thisScaffold = highViSHetRegions[highViSHetRegions.regionChrom .== chr, :]
 
     plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
         missingFractionAllowed, regionInfo,
@@ -8899,8 +8919,8 @@ for i in 1:length(scaffolds_to_plot)
         genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
         plotGroups, plotGroupColors;
         indFontSize=4, figureSize=(1200,1600), plotTitle = "",
-        highlightRegionStarts = highHetVarRegions_thisScaffold.regionStart,
-        highlightRegionEnds = highHetVarRegions_thisScaffold.regionEnd,
+        highlightRegionStarts = highViSHetRegions_thisScaffold.regionStart,
+        highlightRegionEnds = highViSHetRegions_thisScaffold.regionEnd,
         highlightRegionColor = "magenta")
 
     println("Completed the figure for ", chr, ".")
@@ -8920,7 +8940,7 @@ for i in 1:length(scaffolds_to_plot)
     chr = scaffolds_to_plot[i]
     regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
     # get info for lines for LHBRs
-    highHetVarRegions_thisScaffold = highHetVarRegions[highHetVarRegions.regionChrom .== chr, :]
+    highViSHetRegions_thisScaffold = highViSHetRegions[highViSHetRegions.regionChrom .== chr, :]
 
     #= ##### for testing function
     pos=pos_SNP_filtered
@@ -8933,8 +8953,8 @@ for i in 1:length(scaffolds_to_plot)
     show_SNP_density = true 
     densityPlotColor = :steelblue1
     plotTitle = ""
-    highlightRegionStarts = highHetVarRegions_thisScaffold.regionStart
-    highlightRegionEnds = highHetVarRegions_thisScaffold.regionEnd
+    highlightRegionStarts = highViSHetRegions_thisScaffold.regionStart
+    highlightRegionEnds = highViSHetRegions_thisScaffold.regionEnd
     ############ =#
 
     plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
@@ -8943,8 +8963,8 @@ for i in 1:length(scaffolds_to_plot)
         genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
         plotGroups, plotGroupColors;
         indFontSize=4, figureSize=(1200,1600), plotTitle = "",
-        highlightRegionStarts = highHetVarRegions_thisScaffold.regionStart,
-        highlightRegionEnds = highHetVarRegions_thisScaffold.regionEnd,
+        highlightRegionStarts = highViSHetRegions_thisScaffold.regionStart,
+        highlightRegionEnds = highViSHetRegions_thisScaffold.regionEnd,
         highlightRegionColor = "magenta")
 
     println("Completed the figure for ", chr, ".")
@@ -8976,11 +8996,11 @@ end
 
 ind_with_metadata_included # this is the list of all individuals prior to choosing low IndHet
 
-genos_highHetVarRegion_imputed # these are the genotypes of all individuals (imputed)
+genos_highViSHetRegion_imputed # these are the genotypes of all individuals (imputed)
 
 
 # the key command, from another place in my code (to expand to multiple samples, matrix should have individuals as columns):
-matrixForPCAplot = Matrix{Float32}(transpose(genos_highHetVarRegion_imputed))
+matrixForPCAplot = Matrix{Float32}(transpose(genos_highViSHetRegion_imputed))
 PCvalues = transpose(predict(PCAmodel.model, matrixForPCAplot))
 
 f = CairoMakie.Figure()
@@ -9095,19 +9115,19 @@ geno_indFiltered = view(genotypes_region, selection, :)
 println("Specific individuals chosen as requested: ")
 display(filtered_in)
 
-# choose the loci in the high HetVar region:
+# choose the loci in the high ViSHet region:
 
 selection = (positionMin .< pos_region.position .< positionMax)
 
-geno_indFiltered_highHetVarRegion = geno_indFiltered[:, selection]
+geno_indFiltered_highViSHetRegion = geno_indFiltered[:, selection]
 
 # put in plot order:
 
 indexOrder = sortperm(ind_with_metadata_chosenInds.plot_order)
-geno_indFiltered_highHetVarRegion_ordered = geno_indFiltered_highHetVarRegion[indexOrder, :]
+geno_indFiltered_highViSHetRegion_ordered = geno_indFiltered_highViSHetRegion[indexOrder, :]
 ind_with_metadata_chosenInds_ordered = ind_with_metadata_chosenInds[indexOrder, :]
 
-# ABOVE HAVE GENOTYPES FOR JUST THESE INDIVIDUALS IN JUST THE HIGH HETVAR REGION ON THE ONE CHR. NEXT DO GENETIC DISTANCE BETWEEN ALL PAIRS OF INDIVIDUALS FOR THIS REGION. 
+# ABOVE HAVE GENOTYPES FOR JUST THESE INDIVIDUALS IN JUST THE HIGH ViSHet REGION ON THE ONE CHR. NEXT DO GENETIC DISTANCE BETWEEN ALL PAIRS OF INDIVIDUALS FOR THIS REGION. 
 # count mismatches and divide by total number of sites.
 # mismatches of genotype 0 to genotype 2 count as 1 mismatch.
 # genotype 0 or 2 to genotype 1 (het) counts as 0.5 mismatch.
@@ -9135,7 +9155,7 @@ function getIndGenDistances(genotypeMatrix)
     return distanceMatrix
 end
 
-indGenDistances = getIndGenDistances(geno_indFiltered_highHetVarRegion_ordered)
+indGenDistances = getIndGenDistances(geno_indFiltered_highViSHetRegion_ordered)
 
 mds = fit(MDS, indGenDistances; distances=true)
 pco_coords = predict(mds)

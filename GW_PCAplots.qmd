@@ -9,30 +9,81 @@ format:
   html:
     code-fold: false
     fig-width: 8
-    fig-height: 10
-  pdf:
-    keep-tex: false
-    monofont: "JuliaMono"
-    fig-width: 8
-    fig-height: 10
+    fig-height: 6
 jupyter: julia-1.11
 ---
 
-This script depends on `GreenishWarblerGenomics2023.qmd` and `GW_Zchromosome_analysis.qmd`
+The scripts, data, and figures shown in this document were used as part of the analysis for the paper listed below, which should be cited as the source of information from this document:
+
+Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_.
+
+This page shows the code used to generate PCA plots for the whole genome (and also for each chromosome, although those aren't shown in the paper).
+
+Prior to examining the code on this page, readers should look at `GreenishWarblerGenomics.qmd` (or `.html`) and `GW_Zchromosome_analysis.qmd` (or `.html`), as this current page depends on the code on those pages being run first.
+
+##### A note about plots in this document
+
+The plots shown below may different somewhat in appearance between the version produced by Quarto (i.e., in this published document) and the version you would get if you run this code without using Quarto. In particular, the dimensions and font sizes of labels and titles may differ. So if you want the versions identical to those used in the paper, run the code directly in the Julia REPL (or using an environment such as VS Code) without using Quarto.
+
+In the rendered (`.html`) version of this Quarto notebook, each figure may be accompanied by a warning caused by an interaction between Quarto and the Makie plotting package. Ignore these warnings as they do not affect the calculations or plots.
+
+## Load packages
+
+```{julia}
+using JLD2 # for loading saved data
+using DataFrames # for storing data as type DataFrame
+using CairoMakie # for plots
+using Statistics # for var() function
+using MultivariateStats # for getting variances from PCA model
+using CSV # for reading in delimited files
+# using Impute # for imputing missing genotypes
+```
+
+Load my custom package `GenomicDiversity`:
+
+```{julia}
+using GenomicDiversity
+```
+
+## Choose working directory
+
+```{julia}
+dataDirectory = "/Users/darrenirwin/Dropbox/Darren's current work/"
+cd(dataDirectory)
+```
 
 ## Load the filtered dataset
 
-This dataset was produced through filtering in GreenishWarblerGenomics2023.qmd
+This dataset was produced through filtering in `GreenishWarblerGenomics2023.qmd`:
 
 ```{julia}
+baseName = "GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"
+tagName = ".Jan2025."
 filename = string(baseName, tagName, "ind_SNP_ind_filtered.jld2")
-genosOnly = load(filename, "genosOnly_ind_SNP_ind_filtered")
-ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
-pos_SNP_filtered = load(filename, "pos_SNP_filtered")
+# load info into a dictionary (and check for errors):
+d = load(filename)
+if baseName != d["baseName"]
+    println("WARNING: baseNames don't match between that defined above and in the saved file")
+end
+if tagName != d["tagName"]
+    println("WARNING: tagNames don't match don't match between that defined above and in the saved file")
+end
+genosOnly = d["genosOnly_ind_SNP_ind_filtered"]
+ind_with_metadata_indFiltered = d["ind_with_metadata_indFiltered"]
+pos_SNP_filtered = d["pos_SNP_filtered"]
+repoDirectory = d["repoDirectory"]
+dataDirectory = d["dataDirectory"]
+scaffold_info = d["scaffold_info"]
+scaffold_lengths = d["scaffold_lengths"]
+filenameTextMiddle = d["filenameTextMiddle"]
+missingGenotypeThreshold = d["missingGenotypeThreshold"]
+filenameTextEnd = d["filenameTextEnd"]
+chromosomes_to_process =d["chromosomes_to_process"]
 println("Loaded the filtered data.")
 ```
 
-# Make final whole-genome PCA 
+
+## Make final whole-genome PCA 
 
 Now that the Z-chromosome problem has been solved (by removing SNPs 
 that had a divergent W sequence mapped onto that Z location), we can construct
@@ -50,18 +101,19 @@ group_colors_PCA = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen
 
 ```{julia}
 scaffolds_to_include = "gw" .* string.(vcat(28:-1:17, 15:-1:1))
-push!(scaffolds_to_include, "gw1A", "gw4A", "gwZ_cleaned")  # add two other scaffolds
+push!(scaffolds_to_include, "gw1A", "gw4A", "gwZ_cleaned")  # add three other scaffolds
 ```
 
 ```{julia}
-#chromosomes_to_process[chromosomes_to_process .== "gwZ"] .= "gwZ_cleaned"
-# initialize data structures for gneotypes and positions
+# initialize data structures for genotypes and positions
+imputeMethod = "KNN"  # choices are KNN or SVD
+
 genos_imputed_loaded = Matrix{Union{Missing, Float32}}(undef, nrow(ind_with_metadata_indFiltered), 0)
 pos_SNP_loaded = DataFrame(chrom = String[], position = Int64[])
 for i in eachindex(scaffolds_to_include)
     chrom = scaffolds_to_include[i]
     regionText = string("chr", chrom)
-    filename = string(baseName, tagName, regionText, ".SVDimputedMissing.jld2")
+    filename = string(baseName, tagName, regionText, ".", imputeMethod, "imputedMissing.jld2")
     imputed_genos_one_chr = load(filename, "imputed_genos")
     genos_imputed_loaded = hcat(genos_imputed_loaded, imputed_genos_one_chr)
     if ind_with_metadata_indFiltered.ind != load(filename, "ind_with_metadata_indFiltered")[:, :ind]
@@ -69,11 +121,11 @@ for i in eachindex(scaffolds_to_include)
     end
     pos_SNP_filtered_region = load(filename, "pos_SNP_filtered_region")
     pos_SNP_loaded = vcat(pos_SNP_loaded, pos_SNP_filtered_region)
-    # println(string("Loaded ",filename))
-    # println(string(regionText, ": ", size(imputed_genos_one_chr,2), " SNPs from ", size(imputed_genos_one_chr,1), " individuals"))
+    println(string("Loaded ",filename))
+    println(string(regionText, ": ", size(imputed_genos_one_chr,2), " SNPs from ", size(imputed_genos_one_chr,1), " individuals"))
 end
-flipPC1 = false
-flipPC2 = false
+flipPC1 = true
+flipPC2 = true
 PCA_wholeGenome = plotPCA(genos_imputed_loaded, ind_with_metadata_indFiltered, 
         groups_to_plot_PCA, group_colors_PCA; 
         sampleSet = "greenish warblers", regionText = "wholeGenome",
@@ -101,8 +153,8 @@ catch
     println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
 end
 
-if false  #set to true to save
-    save("Figure1B_PCAwholeGenome_fromJulia.png", PCA_wholeGenome.PCAfig, px_per_unit = 2.0)
+if true  #set to true to save
+    save(string("Figure1B_PCAwholeGenome_", imputeMethod,"imputed_fromJulia.png"), PCA_wholeGenome.PCAfig, px_per_unit = 2.0)
 end
 ```
 
@@ -130,7 +182,7 @@ CairoMakie.scatter!(refGenome_location, refGenomePCAposition[1], marker = :diamo
 cd(dataDirectory)
 display(f)
 
-if false  #set to true to save
+if true  #set to true to save
     save("Figure1C_PCAwholeGenomeAroundRing_fromJulia.png", f, px_per_unit = 2.0)
 end
 ```
@@ -153,10 +205,6 @@ PC1_prop_variance = PC1_variance / totalObservationVariance
 PC2_prop_variance = PC2_variance / totalObservationVariance
 println("PC1 explains ", 100 * PC1_prop_variance, "% of the total variance.
     PC2 explains ", 100 * PC2_prop_variance, "%.")
-
-if false  #set to true to save
-    save("Figure_3a_from_Julia.png", PCA_wholeGenome.PCAfig, px_per_unit = 2.0)
-end
 ```
 
 
@@ -179,21 +227,6 @@ PC1_prop_variance = PC1_variance / totalObservationVariance
 PC2_prop_variance = PC2_variance / totalObservationVariance
 println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
 PC2 explains ", 100*PC2_prop_variance, "%.")
-
-if false  #set to true to save
-    save("Figure_3b_from_Julia.png", PCA_wholeGenome.PCAfig, px_per_unit = 2.0)
-end
-
-# # add position of reference genome
-# refGenomePCAposition = predict(PCA_wholeGenome.model, zeros(size(genos_imputed_loaded, 2)))
-# flipPC1 && (refGenomePCAposition[1] *= -1)  # this flips PC1 if flipPC1 = true
-# flipPC2 && (refGenomePCAposition[2] *= -1)  # same for PC2
-# CairoMakie.scatter!(refGenomePCAposition[1], refGenomePCAposition[2], marker = :diamond, color="black", markersize=15, strokewidth=0.5)
-# try
-#     display(PCA_wholeGenome.PCAfig)
-# catch
-#     println("NOTICE: Figure for ", regionText, " could not be shown due to an unknown error.")
-# end
 ```
 
 
@@ -201,11 +234,11 @@ end
 
 Define a function for plotting one PCA for a scaffold:
 ```{julia}
-function plotOneScaffoldPCA( groups_to_plot_PCA, group_colors_PCA,
+function plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,
                         baseName, tagName, scaffold; 
                         flipPC1, flipPC2, showTitle)
 
-    regionText = string("chrgw", scaffold)
+    regionText = string("chr", scaffold)
     filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
     imputed_genos = load(filename, "imputed_genos")
     ind_with_metadata_indFiltered = load(filename, "ind_with_metadata_indFiltered")
@@ -244,37 +277,7 @@ function plotOneScaffoldPCA( groups_to_plot_PCA, group_colors_PCA,
 end
 ```
  
-```{julia}
-scaffold = "23"    
-PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
-                            baseName, tagName, scaffold;
-                            flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
-    save("Figure_4lowerleft_chrgw23_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
-end
-```
-
-```{julia}
-scaffold = "26"    
-PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
-                            baseName, tagName, scaffold;
-                            flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
-    save("Figure_4lowerright_chrgw26_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
-end
-```
-
-```{julia}
-scaffold = "28"    
-PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
-                            baseName, tagName, scaffold;
-                            flipPC1=true, flipPC2=true, showTitle=false)
-if false  #set to true to save
-    save("Figure_6lower_chrgw28_from_Julia.png", PCAmodel.PCAfig, px_per_unit = 2.0)
-end
-```
-
-### Make other PCA plots for supplement:
+### Make PCA plots for each chromosome, with option to save:
 
 ```{julia}
 savefig = false  #set to true to save the figures from cells below
@@ -282,354 +285,354 @@ savefig = false  #set to true to save the figures from cells below
 
 
 ```{julia}
-scaffold = "1"    
+scaffold = "gw1"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=false, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "1A"    
+scaffold = "gw1A"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=false, flipPC2=false, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "2"    
+scaffold = "gw2"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "3"    
+scaffold = "gw3"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "4"    
+scaffold = "gw4"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=false, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "4A"    
+scaffold = "gw4A"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "5"    
+scaffold = "gw5"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "6"    
+scaffold = "gw6"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "7"    
+scaffold = "gw7"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=false, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "8"    
+scaffold = "gw8"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=false, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "9"    
+scaffold = "gw9"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "10"    
+scaffold = "gw10"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "11"    
+scaffold = "gw11"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=false, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "12"    
+scaffold = "gw12"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "13"    
+scaffold = "gw13"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=false, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "14"    
+scaffold = "gw14"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "15"    
+scaffold = "gw15"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=false, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "17"    
+scaffold = "gw17"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "18"    
+scaffold = "gw18"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "19"    
+scaffold = "gw19"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "20"    
+scaffold = "gw20"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "21"    
+scaffold = "gw21"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "22"    
+scaffold = "gw22"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=false, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "23"    
+scaffold = "gw23"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "24"    
+scaffold = "gw24"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "25"    
+scaffold = "gw25"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "26"    
+scaffold = "gw26"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "27"    
+scaffold = "gw27"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
 ```{julia}
-scaffold = "28"    
+scaffold = "gw28"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
                             baseName, tagName, scaffold;
                             flipPC1=true, flipPC2=true, showTitle=false)
 if savefig  #set to true to save
-    filename = string("Figure_gw", scaffold, "_PCA_allInds_from_Julia.png")
+    filename = string("Figure_", scaffold, "_PCA_allInds_from_Julia.png")
     save(filename, PCAmodel.PCAfig, px_per_unit = 2.0)
     println("Saved ", filename)
 end
 ```
 
-# Make Z chromosome PCA:
+## Make Z chromosome PCA:
 
 ```{julia}
 regionText = "chrgwZ_cleaned"
@@ -675,17 +678,17 @@ end
 ```
 
 
+##### The below script will produce a bunch of PCAs for different scaffolds, but will not appropriately flip the axes of each as the above ones do (so making inactive):
 
+```julia
+scaffolds_to_show_PCA = "gw" .* string.(vcat(1:15, 17:28))
+push!(scaffolds_to_show_PCA, "gw1A", "gw4A", "gwZ_cleaned")  # add three other scaffolds
 
-# To produce a bunch of PCAs for different scaffolds:
-
-```{julia}
-for i in eachindex(chromosomes_to_process)
-    chrom = chromosomes_to_process[i]
-    PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    
+for i in eachindex(scaffolds_to_show_PCA)
+    chrom = scaffolds_to_show_PCA[i]
+    PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA,
+                                group_colors_PCA,    
                                 baseName, tagName, chrom;
                                 flipPC1=true, flipPC2=true, showTitle=true)
 end
 ```
-
-

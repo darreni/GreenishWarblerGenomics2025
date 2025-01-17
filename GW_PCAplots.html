@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Darren Irwin">
-<meta name="dcterms.date" content="2025-01-12">
+<meta name="dcterms.date" content="2025-01-17">
 
 <title>Greenish Warbler PCA plots</title>
 <style>
@@ -98,7 +98,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">January 12, 2025</p>
+      <p class="date">January 17, 2025</p>
     </div>
   </div>
   
@@ -113,7 +113,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The scripts, data, and figures shown in this document were used as part of the analysis for the paper listed below, which should be cited as the source of information from this document:</p>
 <p>Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. <em>Molecular Ecology</em>.</p>
 <p>This page shows the code used to generate PCA plots for the whole genome (and also for each chromosome, although those aren’t shown in the paper).</p>
-<p>Prior to examining the code on this page, readers should look at <code>GreenishWarblerGenomics.qmd</code> (or <code>.html</code>) and <code>GW_Zchromosome_analysis.qmd</code> (or <code>.html</code>), as this current page depends on the code on those pages being run first.</p>
+<p>Prior to examining the code on this page, readers should look at <code>GreenishWarblerGenomics2025.qmd</code> (or <code>.html</code>) and <code>GW_Zchromosome_analysis.qmd</code> (or <code>.html</code>), as this current page depends on the code on those pages being run first.</p>
 <section id="a-note-about-plots-in-this-document" class="level5">
 <h5 class="anchored" data-anchor-id="a-note-about-plots-in-this-document">A note about plots in this document</h5>
 <p>The plots shown below may different somewhat in appearance between the version produced by Quarto (i.e., in this published document) and the version you would get if you run this code without using Quarto. In particular, the dimensions and font sizes of labels and titles may differ. So if you want the versions identical to those used in the paper, run the code directly in the Julia REPL (or using an environment such as VS Code) without using Quarto.</p>
@@ -121,7 +121,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="load-packages" class="level2">
 <h2 class="anchored" data-anchor-id="load-packages">Load packages</h2>
-<div id="04fdcfd3" class="cell" data-execution_count="1">
+<div id="72625786" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">JLD2</span> <span class="co"># for loading saved data</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">DataFrames</span> <span class="co"># for storing data as type DataFrame</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CairoMakie</span> <span class="co"># for plots</span></span>
@@ -131,21 +131,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># using Impute # for imputing missing genotypes</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Load my custom package <code>GenomicDiversity</code>:</p>
-<div id="81340c63" class="cell" data-execution_count="2">
+<div id="855a41dc" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">GenomicDiversity</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="choose-working-directory" class="level2">
 <h2 class="anchored" data-anchor-id="choose-working-directory">Choose working directory</h2>
-<div id="ac194803" class="cell" data-execution_count="3">
+<div id="13a67ecd" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>dataDirectory <span class="op">=</span> <span class="st">"/Users/darrenirwin/Dropbox/Darren's current work/"</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(dataDirectory)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="load-the-filtered-dataset" class="level2">
 <h2 class="anchored" data-anchor-id="load-the-filtered-dataset">Load the filtered dataset</h2>
-<p>This dataset was produced through filtering in <code>GreenishWarblerGenomics2023.qmd</code>:</p>
-<div id="a49b558c" class="cell" data-execution_count="4">
+<p>This dataset was produced through filtering in <code>GreenishWarblerGenomics2025.qmd</code>:</p>
+<div id="e9d69945" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>baseName <span class="op">=</span> <span class="st">"GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>tagName <span class="op">=</span> <span class="st">".Jan2025."</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, <span class="st">"ind_SNP_ind_filtered.jld2"</span>)</span>
@@ -178,13 +178,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="make-final-whole-genome-pca">Make final whole-genome PCA</h2>
 <p>Now that the Z-chromosome problem has been solved (by removing SNPs that had a divergent W sequence mapped onto that Z location), we can construct a new whole-genome PCA. I will combine the saved imputed genotypes for each chromosome into a large data matrix, and conduct PCA on that.</p>
 <p>We need to first specify some groups to include in the plot, and their colors:</p>
-<div id="1dbc6abb" class="cell" data-execution_count="5">
+<div id="34077399" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>groups_to_plot_PCA <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>,<span class="st">"troch_west"</span>,<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>,<span class="st">"plumb_vir"</span>]</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>group_colors_PCA <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"grey"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"olivedrab3"</span>,<span class="st">"olivedrab2"</span>,<span class="st">"olivedrab1"</span>,<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>,<span class="st">"purple"</span>];</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="make-list-of-scaffolds-to-include-in-the-whole-genome-pca" class="level4">
 <h4 class="anchored" data-anchor-id="make-list-of-scaffolds-to-include-in-the-whole-genome-pca">Make list of scaffolds to include in the whole-genome PCA:</h4>
-<div id="ada82dc4" class="cell" data-execution_count="6">
+<div id="77e73f39" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>scaffolds_to_include <span class="op">=</span> <span class="st">"gw"</span> <span class="op">.*</span> <span class="fu">string</span>.(<span class="fu">vcat</span>(<span class="fl">28</span><span class="op">:-</span><span class="fl">1</span><span class="op">:</span><span class="fl">17</span>, <span class="fl">15</span><span class="op">:-</span><span class="fl">1</span><span class="op">:</span><span class="fl">1</span>))</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">push!</span>(scaffolds_to_include, <span class="st">"gw1A"</span>, <span class="st">"gw4A"</span>, <span class="st">"gwZ_cleaned"</span>)  <span class="co"># add three other scaffolds</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="7">
@@ -217,7 +217,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
  "gwZ_cleaned"</code></pre>
 </div>
 </div>
-<div id="7cdfcc24" class="cell" data-execution_count="7">
+<div id="abd2b611" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># initialize data structures for genotypes and positions</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>imputeMethod <span class="op">=</span> <span class="st">"KNN"</span>  <span class="co"># choices are KNN or SVD</span></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -360,7 +360,7 @@ PC2 explains 6.3917747%.</code></pre>
 </section>
 <section id="plot-location-around-ring-vs.-pc1" class="level4">
 <h4 class="anchored" data-anchor-id="plot-location-around-ring-vs.-pc1">Plot location around ring vs.&nbsp;PC1:</h4>
-<div id="48df23ac" class="cell" data-execution_count="8">
+<div id="9916713f" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> <span class="fu">Axis</span>(f[<span class="fl">1</span>, <span class="fl">1</span>],</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    title <span class="op">=</span> <span class="st">""</span>,    <span class="co">#"Genomic PC1 around ring"</span></span>
@@ -403,7 +403,7 @@ PC2 explains 6.3917747%.</code></pre>
 </section>
 <section id="make-a-whole-genome-pca-just-for-the-western-side-of-the-ring" class="level4">
 <h4 class="anchored" data-anchor-id="make-a-whole-genome-pca-just-for-the-western-side-of-the-ring">Make a whole-genome PCA just for the western side of the ring</h4>
-<div id="5a08e261" class="cell" data-execution_count="9">
+<div id="1d5c5e2f" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>western_groups_to_plot_PCA <span class="op">=</span> [<span class="st">"vir"</span>, <span class="st">"vir_misID"</span>, <span class="st">"vir_S"</span>, <span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>, <span class="st">"troch_west"</span>, <span class="st">"troch_LN"</span>]</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>western_group_colors_PCA <span class="op">=</span> [<span class="st">"blue"</span>, <span class="st">"blue"</span>, <span class="st">"turquoise1"</span>, <span class="st">"grey"</span>, <span class="st">"seagreen4"</span>, <span class="st">"seagreen3"</span>, <span class="st">"seagreen2"</span>, <span class="st">"olivedrab3"</span>, <span class="st">"olivedrab2"</span>, <span class="st">"olivedrab1"</span>, <span class="st">"yellow"</span>]</span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>PCA_wholeGenome <span class="op">=</span> <span class="fu">plotPCA</span>(genos_imputed_loaded, ind_with_metadata_indFiltered,</span>
@@ -437,7 +437,7 @@ PC2 explains 6.3917747%.</code></pre>
 </section>
 <section id="make-a-whole-genome-pca-just-for-the-eastern-side-of-the-ring" class="level4">
 <h4 class="anchored" data-anchor-id="make-a-whole-genome-pca-just-for-the-eastern-side-of-the-ring">Make a whole-genome PCA just for the eastern side of the ring</h4>
-<div id="4630494b" class="cell" data-execution_count="10">
+<div id="2b07455b" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>eastern_groups_to_plot_PCA <span class="op">=</span> [<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>]</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>eastern_group_colors_PCA <span class="op">=</span> [<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>]</span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>flipPC1 <span class="op">=</span> <span class="cn">false</span></span>
@@ -475,7 +475,7 @@ PC2 explains 1.8479686%.</code></pre>
 <section id="make-pca-plots-for-individual-scaffolds" class="level2">
 <h2 class="anchored" data-anchor-id="make-pca-plots-for-individual-scaffolds">Make PCA plots for individual scaffolds</h2>
 <p>Define a function for plotting one PCA for a scaffold:</p>
-<div id="8c9f69d0" class="cell" data-execution_count="11">
+<div id="0c5cef29" class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                        baseName, tagName, scaffold; </span>
 <span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                        flipPC1, flipPC2, showTitle)</span>
@@ -523,13 +523,13 @@ PC2 explains 1.8479686%.</code></pre>
 </div>
 <section id="make-pca-plots-for-each-chromosome-with-option-to-save" class="level3">
 <h3 class="anchored" data-anchor-id="make-pca-plots-for-each-chromosome-with-option-to-save">Make PCA plots for each chromosome, with option to save:</h3>
-<div id="160c70c7" class="cell" data-execution_count="12">
+<div id="a80cfe19" class="cell" data-execution_count="12">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>savefig <span class="op">=</span> <span class="cn">false</span>  <span class="co">#set to true to save the figures from cells below</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="13">
 <pre><code>false</code></pre>
 </div>
 </div>
-<div id="60970faa" class="cell" data-execution_count="13">
+<div id="0172b37c" class="cell" data-execution_count="13">
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw1"</span>    </span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -559,7 +559,7 @@ chrgw1: 80862 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="150dc308" class="cell" data-execution_count="14">
+<div id="3492129d" class="cell" data-execution_count="14">
 <div class="sourceCode cell-code" id="cb31"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw1A"</span>    </span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -589,7 +589,7 @@ chrgw1A: 50051 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="2ffadb89" class="cell" data-execution_count="15">
+<div id="ea3899a3" class="cell" data-execution_count="15">
 <div class="sourceCode cell-code" id="cb35"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw2"</span>    </span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -619,7 +619,7 @@ chrgw2: 93292 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="69a3217a" class="cell" data-execution_count="16">
+<div id="4d83f8a5" class="cell" data-execution_count="16">
 <div class="sourceCode cell-code" id="cb39"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw3"</span>    </span>
 <span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -649,7 +649,7 @@ chrgw3: 82372 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="f2c406d4" class="cell" data-execution_count="17">
+<div id="ffc0e6a8" class="cell" data-execution_count="17">
 <div class="sourceCode cell-code" id="cb43"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw4"</span>    </span>
 <span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -679,7 +679,7 @@ chrgw4: 49980 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="6ce2a3d5" class="cell" data-execution_count="18">
+<div id="f32a627b" class="cell" data-execution_count="18">
 <div class="sourceCode cell-code" id="cb47"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw4A"</span>    </span>
 <span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -709,7 +709,7 @@ chrgw4A: 18467 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="b2103aaf" class="cell" data-execution_count="19">
+<div id="0163865f" class="cell" data-execution_count="19">
 <div class="sourceCode cell-code" id="cb51"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw5"</span>    </span>
 <span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -739,7 +739,7 @@ chrgw5: 55329 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="abafc06e" class="cell" data-execution_count="20">
+<div id="f8213015" class="cell" data-execution_count="20">
 <div class="sourceCode cell-code" id="cb55"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw6"</span>    </span>
 <span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -769,7 +769,7 @@ chrgw6: 40175 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="90e3c09b" class="cell" data-execution_count="21">
+<div id="77d22029" class="cell" data-execution_count="21">
 <div class="sourceCode cell-code" id="cb59"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw7"</span>    </span>
 <span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -799,7 +799,7 @@ chrgw7: 36575 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="85e4b850" class="cell" data-execution_count="22">
+<div id="25a396aa" class="cell" data-execution_count="22">
 <div class="sourceCode cell-code" id="cb63"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw8"</span>    </span>
 <span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -829,7 +829,7 @@ chrgw8: 37818 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="df1ffa95" class="cell" data-execution_count="23">
+<div id="4bcd333a" class="cell" data-execution_count="23">
 <div class="sourceCode cell-code" id="cb67"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw9"</span>    </span>
 <span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -859,7 +859,7 @@ chrgw9: 38180 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="337f341a" class="cell" data-execution_count="24">
+<div id="64386d52" class="cell" data-execution_count="24">
 <div class="sourceCode cell-code" id="cb71"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw10"</span>    </span>
 <span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -889,7 +889,7 @@ chrgw10: 26962 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="7f3c4da3" class="cell" data-execution_count="25">
+<div id="2aed2920" class="cell" data-execution_count="25">
 <div class="sourceCode cell-code" id="cb75"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw11"</span>    </span>
 <span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -919,7 +919,7 @@ chrgw11: 27683 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="af4cdfb0" class="cell" data-execution_count="26">
+<div id="8dc12650" class="cell" data-execution_count="26">
 <div class="sourceCode cell-code" id="cb79"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw12"</span>    </span>
 <span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb79-3"><a href="#cb79-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -949,7 +949,7 @@ chrgw12: 33294 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="252db1a8" class="cell" data-execution_count="27">
+<div id="4dd54488" class="cell" data-execution_count="27">
 <div class="sourceCode cell-code" id="cb83"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw13"</span>    </span>
 <span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -979,7 +979,7 @@ chrgw13: 33543 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="d7ff97a6" class="cell" data-execution_count="28">
+<div id="0a22235b" class="cell" data-execution_count="28">
 <div class="sourceCode cell-code" id="cb87"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw14"</span>    </span>
 <span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -1009,7 +1009,7 @@ chrgw14: 30969 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="66f96c60" class="cell" data-execution_count="29">
+<div id="9dcaea1a" class="cell" data-execution_count="29">
 <div class="sourceCode cell-code" id="cb91"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw15"</span>    </span>
 <span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb91-3"><a href="#cb91-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -1039,7 +1039,7 @@ chrgw15: 27517 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="53f4373a" class="cell" data-execution_count="30">
+<div id="a4b06774" class="cell" data-execution_count="30">
 <div class="sourceCode cell-code" id="cb95"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw17"</span>    </span>
 <span id="cb95-2"><a href="#cb95-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb95-3"><a href="#cb95-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -1069,7 +1069,7 @@ chrgw17: 26313 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="1b9ba34a" class="cell" data-execution_count="31">
+<div id="f19b4237" class="cell" data-execution_count="31">
 <div class="sourceCode cell-code" id="cb99"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw18"</span>    </span>
 <span id="cb99-2"><a href="#cb99-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb99-3"><a href="#cb99-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -1099,7 +1099,7 @@ chrgw18: 19359 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="f1c06b70" class="cell" data-execution_count="32">
+<div id="5c7173a9" class="cell" data-execution_count="32">
 <div class="sourceCode cell-code" id="cb103"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw19"</span>    </span>
 <span id="cb103-2"><a href="#cb103-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb103-3"><a href="#cb103-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -1129,7 +1129,7 @@ chrgw19: 25414 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="99be59e6" class="cell" data-execution_count="33">
+<div id="1577695e" class="cell" data-execution_count="33">
 <div class="sourceCode cell-code" id="cb107"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb107-1"><a href="#cb107-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw20"</span>    </span>
 <span id="cb107-2"><a href="#cb107-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb107-3"><a href="#cb107-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -1159,7 +1159,7 @@ chrgw20: 32739 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="5ba022d4" class="cell" data-execution_count="34">
+<div id="a77ef265" class="cell" data-execution_count="34">
 <div class="sourceCode cell-code" id="cb111"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw21"</span>    </span>
 <span id="cb111-2"><a href="#cb111-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb111-3"><a href="#cb111-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -1172,34 +1172,31 @@ chrgw20: 32739 SNPs from 257 individuals</code></pre>
 <div class="cell-output cell-output-stdout">
 <pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw21.KNNimputedMissing.jld2
 chrgw21: 13321 SNPs from 257 individuals
-PC1 explains 10.157121</code></pre>
+PC1 explains 10.157121% of the total variance.
+    PC2 explains 5.943965%.</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
 └ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
 </div>
-<div class="cell-output cell-output-stdout">
-<pre><code>% of the total variance.
-    PC2 explains 5.943965%.</code></pre>
-</div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="GW_PCAplots_files/figure-html/cell-35-output-4.svg" class="img-fluid figure-img"></p>
+<p><img src="GW_PCAplots_files/figure-html/cell-35-output-3.svg" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
-<div id="82af8e41" class="cell" data-execution_count="35">
-<div class="sourceCode cell-code" id="cb115"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb115-1"><a href="#cb115-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw22"</span>    </span>
-<span id="cb115-2"><a href="#cb115-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
-<span id="cb115-3"><a href="#cb115-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
-<span id="cb115-4"><a href="#cb115-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">false</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
-<span id="cb115-5"><a href="#cb115-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
-<span id="cb115-6"><a href="#cb115-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
-<span id="cb115-7"><a href="#cb115-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
-<span id="cb115-8"><a href="#cb115-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
-<span id="cb115-9"><a href="#cb115-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="fc52ece7" class="cell" data-execution_count="35">
+<div class="sourceCode cell-code" id="cb114"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw22"</span>    </span>
+<span id="cb114-2"><a href="#cb114-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb114-3"><a href="#cb114-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb114-4"><a href="#cb114-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">false</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb114-5"><a href="#cb114-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb114-6"><a href="#cb114-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb114-7"><a href="#cb114-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb114-8"><a href="#cb114-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb114-9"><a href="#cb114-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw22.KNNimputedMissing.jld2
 chrgw22: 5473 SNPs from 257 individuals
@@ -1218,16 +1215,16 @@ PC1 explains 13.285248% of the total variance.
 </div>
 </div>
 </div>
-<div id="2a4ecba4" class="cell" data-execution_count="36">
-<div class="sourceCode cell-code" id="cb118"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb118-1"><a href="#cb118-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw23"</span>    </span>
-<span id="cb118-2"><a href="#cb118-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
-<span id="cb118-3"><a href="#cb118-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
-<span id="cb118-4"><a href="#cb118-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
-<span id="cb118-5"><a href="#cb118-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
-<span id="cb118-6"><a href="#cb118-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
-<span id="cb118-7"><a href="#cb118-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
-<span id="cb118-8"><a href="#cb118-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
-<span id="cb118-9"><a href="#cb118-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="06a03dfe" class="cell" data-execution_count="36">
+<div class="sourceCode cell-code" id="cb117"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw23"</span>    </span>
+<span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb117-3"><a href="#cb117-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb117-4"><a href="#cb117-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb117-5"><a href="#cb117-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb117-6"><a href="#cb117-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb117-7"><a href="#cb117-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb117-8"><a href="#cb117-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb117-9"><a href="#cb117-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw23.KNNimputedMissing.jld2
 chrgw23: 13949 SNPs from 257 individuals</code></pre>
@@ -1248,27 +1245,26 @@ chrgw23: 13949 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="77929122" class="cell" data-execution_count="37">
-<div class="sourceCode cell-code" id="cb122"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb122-1"><a href="#cb122-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw24"</span>    </span>
-<span id="cb122-2"><a href="#cb122-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
-<span id="cb122-3"><a href="#cb122-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
-<span id="cb122-4"><a href="#cb122-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
-<span id="cb122-5"><a href="#cb122-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
-<span id="cb122-6"><a href="#cb122-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
-<span id="cb122-7"><a href="#cb122-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
-<span id="cb122-8"><a href="#cb122-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
-<span id="cb122-9"><a href="#cb122-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="71a1529c" class="cell" data-execution_count="37">
+<div class="sourceCode cell-code" id="cb121"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb121-1"><a href="#cb121-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw24"</span>    </span>
+<span id="cb121-2"><a href="#cb121-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb121-3"><a href="#cb121-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb121-4"><a href="#cb121-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb121-5"><a href="#cb121-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb121-6"><a href="#cb121-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb121-7"><a href="#cb121-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb121-8"><a href="#cb121-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb121-9"><a href="#cb121-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw24.KNNimputedMissing.jld2
-chrgw24: 13821 SNPs from 257 individuals
-PC1 explains 8.532888</code></pre>
+chrgw24: 13821 SNPs from 257 individuals</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
 └ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>% of the total variance.
+<pre><code>PC1 explains 8.532888% of the total variance.
     PC2 explains 5.108733%.</code></pre>
 </div>
 <div class="cell-output cell-output-display">
@@ -1279,35 +1275,37 @@ PC1 explains 8.532888</code></pre>
 </div>
 </div>
 </div>
-<div id="611b60fc" class="cell" data-execution_count="38">
-<div class="sourceCode cell-code" id="cb126"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb126-1"><a href="#cb126-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw25"</span>    </span>
-<span id="cb126-2"><a href="#cb126-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
-<span id="cb126-3"><a href="#cb126-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
-<span id="cb126-4"><a href="#cb126-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
-<span id="cb126-5"><a href="#cb126-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
-<span id="cb126-6"><a href="#cb126-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
-<span id="cb126-7"><a href="#cb126-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
-<span id="cb126-8"><a href="#cb126-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
-<span id="cb126-9"><a href="#cb126-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="1c5a625f" class="cell" data-execution_count="38">
+<div class="sourceCode cell-code" id="cb125"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb125-1"><a href="#cb125-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw25"</span>    </span>
+<span id="cb125-2"><a href="#cb125-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb125-3"><a href="#cb125-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb125-4"><a href="#cb125-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb125-5"><a href="#cb125-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb125-6"><a href="#cb125-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb125-7"><a href="#cb125-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb125-8"><a href="#cb125-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb125-9"><a href="#cb125-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw25.KNNimputedMissing.jld2
-chrgw25: 3794 SNPs from 257 individuals
-PC1 explains 17.002586% of the total variance.
-    PC2 explains 11.373987%.</code></pre>
+chrgw25: 3794 SNPs from 257 individuals</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
 └ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
 </div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 17.002586% of the total variance.
+    PC2 explains 11.373987%.</code></pre>
+</div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="GW_PCAplots_files/figure-html/cell-39-output-3.svg" class="img-fluid figure-img"></p>
+<p><img src="GW_PCAplots_files/figure-html/cell-39-output-4.svg" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
-<div id="34aa31bd" class="cell" data-execution_count="39">
+<div id="1888a143" class="cell" data-execution_count="39">
 <div class="sourceCode cell-code" id="cb129"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb129-1"><a href="#cb129-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw26"</span>    </span>
 <span id="cb129-2"><a href="#cb129-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb129-3"><a href="#cb129-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -1337,7 +1335,7 @@ chrgw26: 14303 SNPs from 257 individuals</code></pre>
 </div>
 </div>
 </div>
-<div id="4077118d" class="cell" data-execution_count="40">
+<div id="12b7e512" class="cell" data-execution_count="40">
 <div class="sourceCode cell-code" id="cb133"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb133-1"><a href="#cb133-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw27"</span>    </span>
 <span id="cb133-2"><a href="#cb133-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
 <span id="cb133-3"><a href="#cb133-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
@@ -1349,42 +1347,45 @@ chrgw26: 14303 SNPs from 257 individuals</code></pre>
 <span id="cb133-9"><a href="#cb133-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw27.KNNimputedMissing.jld2
-chrgw27: 9684 SNPs from 257 individuals
-PC1 explains 12.95481% of the total variance.
-    PC2 explains 7.359955%.</code></pre>
+chrgw27: 9684 SNPs from 257 individuals</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
 └ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 12.95481% of the total variance.
+    PC2 explains 7.359955%.</code></pre>
 </div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="GW_PCAplots_files/figure-html/cell-41-output-3.svg" class="img-fluid figure-img"></p>
+<p><img src="GW_PCAplots_files/figure-html/cell-41-output-4.svg" class="img-fluid figure-img"></p>
 </figure>
 </div>
 </div>
 </div>
-<div id="dc66f356" class="cell" data-execution_count="41">
-<div class="sourceCode cell-code" id="cb136"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb136-1"><a href="#cb136-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw28"</span>    </span>
-<span id="cb136-2"><a href="#cb136-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
-<span id="cb136-3"><a href="#cb136-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
-<span id="cb136-4"><a href="#cb136-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
-<span id="cb136-5"><a href="#cb136-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
-<span id="cb136-6"><a href="#cb136-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
-<span id="cb136-7"><a href="#cb136-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
-<span id="cb136-8"><a href="#cb136-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
-<span id="cb136-9"><a href="#cb136-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="0a843c24" class="cell" data-execution_count="41">
+<div class="sourceCode cell-code" id="cb137"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb137-1"><a href="#cb137-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw28"</span>    </span>
+<span id="cb137-2"><a href="#cb137-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb137-3"><a href="#cb137-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb137-4"><a href="#cb137-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb137-5"><a href="#cb137-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb137-6"><a href="#cb137-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb137-7"><a href="#cb137-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb137-8"><a href="#cb137-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb137-9"><a href="#cb137-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw28.KNNimputedMissing.jld2
-chrgw28: 11180 SNPs from 257 individuals</code></pre>
+chrgw28: 11180 SNPs from 257 individuals
+PC1 explains 13.7301655</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
 └ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
 </div>
 <div class="cell-output cell-output-stdout">
-<pre><code>PC1 explains 13.7301655% of the total variance.
+<pre><code>% of the total variance.
     PC2 explains 8.083617%.</code></pre>
 </div>
 <div class="cell-output cell-output-display">
@@ -1399,47 +1400,47 @@ chrgw28: 11180 SNPs from 257 individuals</code></pre>
 </section>
 <section id="make-z-chromosome-pca" class="level2">
 <h2 class="anchored" data-anchor-id="make-z-chromosome-pca">Make Z chromosome PCA:</h2>
-<div id="f5df1afd" class="cell" data-execution_count="42">
-<div class="sourceCode cell-code" id="cb140"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb140-1"><a href="#cb140-1" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="st">"chrgwZ_cleaned"</span></span>
-<span id="cb140-2"><a href="#cb140-2" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".KNNimputedMissing.jld2"</span>)</span>
-<span id="cb140-3"><a href="#cb140-3" aria-hidden="true" tabindex="-1"></a>imputed_genos <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"imputed_genos"</span>)</span>
-<span id="cb140-4"><a href="#cb140-4" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"ind_with_metadata_indFiltered"</span>)</span>
-<span id="cb140-5"><a href="#cb140-5" aria-hidden="true" tabindex="-1"></a>pos_SNP_filtered_region <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"pos_SNP_filtered_region"</span>)</span>
-<span id="cb140-6"><a href="#cb140-6" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="fu">string</span>(<span class="st">"Loaded "</span>,filename))</span>
-<span id="cb140-7"><a href="#cb140-7" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="fu">string</span>(regionText, <span class="st">": "</span>, <span class="fu">size</span>(imputed_genos,<span class="fl">2</span>), <span class="st">" SNPs from "</span>, <span class="fu">size</span>(imputed_genos,<span class="fl">1</span>), <span class="st">" individuals"</span>))</span>
-<span id="cb140-8"><a href="#cb140-8" aria-hidden="true" tabindex="-1"></a>flipPC1 <span class="op">=</span> <span class="cn">true</span></span>
-<span id="cb140-9"><a href="#cb140-9" aria-hidden="true" tabindex="-1"></a>flipPC2 <span class="op">=</span> <span class="cn">true</span></span>
-<span id="cb140-10"><a href="#cb140-10" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotPCA</span>(imputed_genos, ind_with_metadata_indFiltered, </span>
-<span id="cb140-11"><a href="#cb140-11" aria-hidden="true" tabindex="-1"></a>        groups_to_plot_PCA, group_colors_PCA; </span>
-<span id="cb140-12"><a href="#cb140-12" aria-hidden="true" tabindex="-1"></a>        sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
-<span id="cb140-13"><a href="#cb140-13" aria-hidden="true" tabindex="-1"></a>        flip1 <span class="op">=</span> flipPC1, flip2 <span class="op">=</span> flipPC2,</span>
-<span id="cb140-14"><a href="#cb140-14" aria-hidden="true" tabindex="-1"></a>        lineOpacity <span class="op">=</span> <span class="fl">0.7</span>, fillOpacity <span class="op">=</span> <span class="fl">0.6</span>,</span>
-<span id="cb140-15"><a href="#cb140-15" aria-hidden="true" tabindex="-1"></a>        symbolSize <span class="op">=</span> <span class="fl">14</span>, showTitle <span class="op">=</span> <span class="cn">false</span>,</span>
-<span id="cb140-16"><a href="#cb140-16" aria-hidden="true" tabindex="-1"></a>        xLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC1"</span>), yLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC2"</span>),</span>
-<span id="cb140-17"><a href="#cb140-17" aria-hidden="true" tabindex="-1"></a>        showPlot <span class="op">=</span> <span class="cn">true</span>)</span>
-<span id="cb140-18"><a href="#cb140-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb140-19"><a href="#cb140-19" aria-hidden="true" tabindex="-1"></a>totalObservationVariance <span class="op">=</span> <span class="fu">var</span>(PCAmodel.model) </span>
-<span id="cb140-20"><a href="#cb140-20" aria-hidden="true" tabindex="-1"></a>PC1_variance, PC2_variance <span class="op">=</span> <span class="fu">principalvars</span>(PCAmodel.model)[<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>]</span>
-<span id="cb140-21"><a href="#cb140-21" aria-hidden="true" tabindex="-1"></a>PC1_prop_variance <span class="op">=</span> PC1_variance <span class="op">/</span> totalObservationVariance</span>
-<span id="cb140-22"><a href="#cb140-22" aria-hidden="true" tabindex="-1"></a>PC2_prop_variance <span class="op">=</span> PC2_variance <span class="op">/</span> totalObservationVariance</span>
-<span id="cb140-23"><a href="#cb140-23" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"PC1 explains "</span>, <span class="fl">100</span><span class="op">*</span>PC1_prop_variance, <span class="st">"% of the total variance.</span></span>
-<span id="cb140-24"><a href="#cb140-24" aria-hidden="true" tabindex="-1"></a>PC2 explains <span class="st">", 100*PC2_prop_variance, "</span><span class="op">%</span>.<span class="st">")</span></span>
-<span id="cb140-25"><a href="#cb140-25" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb140-26"><a href="#cb140-26" aria-hidden="true" tabindex="-1"></a><span class="co"># add position of reference genome</span></span>
-<span id="cb140-27"><a href="#cb140-27" aria-hidden="true" tabindex="-1"></a>refGenomePCAposition <span class="op">=</span> <span class="fu">predict</span>(PCAmodel.model, <span class="fu">zeros</span>(<span class="fu">size</span>(imputed_genos, <span class="fl">2</span>)))</span>
-<span id="cb140-28"><a href="#cb140-28" aria-hidden="true" tabindex="-1"></a>flipPC1 <span class="op">&amp;&amp;</span> (refGenomePCAposition[<span class="fl">1</span>] <span class="op">*=</span> <span class="op">-</span><span class="fl">1</span>)  <span class="co"># this flips PC1 if flipPC1 = true</span></span>
-<span id="cb140-29"><a href="#cb140-29" aria-hidden="true" tabindex="-1"></a>flipPC2 <span class="op">&amp;&amp;</span> (refGenomePCAposition[<span class="fl">2</span>] <span class="op">*=</span> <span class="op">-</span><span class="fl">1</span>)  <span class="co"># same for PC2</span></span>
-<span id="cb140-30"><a href="#cb140-30" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(refGenomePCAposition[<span class="fl">1</span>], refGenomePCAposition[<span class="fl">2</span>], marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">14</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
-<span id="cb140-31"><a href="#cb140-31" aria-hidden="true" tabindex="-1"></a>try</span>
-<span id="cb140-32"><a href="#cb140-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">display</span>(PCAmodel.PCAfig)</span>
-<span id="cb140-33"><a href="#cb140-33" aria-hidden="true" tabindex="-1"></a>catch</span>
-<span id="cb140-34"><a href="#cb140-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"NOTICE: Figure for "</span>, regionText, <span class="st">" could not be shown due to an unknown error."</span>)</span>
-<span id="cb140-35"><a href="#cb140-35" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
-<span id="cb140-36"><a href="#cb140-36" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
-<span id="cb140-37"><a href="#cb140-37" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_gwZ_PCA_allInds_from_Julia.png"</span>)</span>
-<span id="cb140-38"><a href="#cb140-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
-<span id="cb140-39"><a href="#cb140-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
-<span id="cb140-40"><a href="#cb140-40" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="99907634" class="cell" data-execution_count="42">
+<div class="sourceCode cell-code" id="cb141"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb141-1"><a href="#cb141-1" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="st">"chrgwZ_cleaned"</span></span>
+<span id="cb141-2"><a href="#cb141-2" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".KNNimputedMissing.jld2"</span>)</span>
+<span id="cb141-3"><a href="#cb141-3" aria-hidden="true" tabindex="-1"></a>imputed_genos <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"imputed_genos"</span>)</span>
+<span id="cb141-4"><a href="#cb141-4" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"ind_with_metadata_indFiltered"</span>)</span>
+<span id="cb141-5"><a href="#cb141-5" aria-hidden="true" tabindex="-1"></a>pos_SNP_filtered_region <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"pos_SNP_filtered_region"</span>)</span>
+<span id="cb141-6"><a href="#cb141-6" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="fu">string</span>(<span class="st">"Loaded "</span>,filename))</span>
+<span id="cb141-7"><a href="#cb141-7" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="fu">string</span>(regionText, <span class="st">": "</span>, <span class="fu">size</span>(imputed_genos,<span class="fl">2</span>), <span class="st">" SNPs from "</span>, <span class="fu">size</span>(imputed_genos,<span class="fl">1</span>), <span class="st">" individuals"</span>))</span>
+<span id="cb141-8"><a href="#cb141-8" aria-hidden="true" tabindex="-1"></a>flipPC1 <span class="op">=</span> <span class="cn">true</span></span>
+<span id="cb141-9"><a href="#cb141-9" aria-hidden="true" tabindex="-1"></a>flipPC2 <span class="op">=</span> <span class="cn">true</span></span>
+<span id="cb141-10"><a href="#cb141-10" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotPCA</span>(imputed_genos, ind_with_metadata_indFiltered, </span>
+<span id="cb141-11"><a href="#cb141-11" aria-hidden="true" tabindex="-1"></a>        groups_to_plot_PCA, group_colors_PCA; </span>
+<span id="cb141-12"><a href="#cb141-12" aria-hidden="true" tabindex="-1"></a>        sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
+<span id="cb141-13"><a href="#cb141-13" aria-hidden="true" tabindex="-1"></a>        flip1 <span class="op">=</span> flipPC1, flip2 <span class="op">=</span> flipPC2,</span>
+<span id="cb141-14"><a href="#cb141-14" aria-hidden="true" tabindex="-1"></a>        lineOpacity <span class="op">=</span> <span class="fl">0.7</span>, fillOpacity <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span id="cb141-15"><a href="#cb141-15" aria-hidden="true" tabindex="-1"></a>        symbolSize <span class="op">=</span> <span class="fl">14</span>, showTitle <span class="op">=</span> <span class="cn">false</span>,</span>
+<span id="cb141-16"><a href="#cb141-16" aria-hidden="true" tabindex="-1"></a>        xLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC1"</span>), yLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC2"</span>),</span>
+<span id="cb141-17"><a href="#cb141-17" aria-hidden="true" tabindex="-1"></a>        showPlot <span class="op">=</span> <span class="cn">true</span>)</span>
+<span id="cb141-18"><a href="#cb141-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb141-19"><a href="#cb141-19" aria-hidden="true" tabindex="-1"></a>totalObservationVariance <span class="op">=</span> <span class="fu">var</span>(PCAmodel.model) </span>
+<span id="cb141-20"><a href="#cb141-20" aria-hidden="true" tabindex="-1"></a>PC1_variance, PC2_variance <span class="op">=</span> <span class="fu">principalvars</span>(PCAmodel.model)[<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>]</span>
+<span id="cb141-21"><a href="#cb141-21" aria-hidden="true" tabindex="-1"></a>PC1_prop_variance <span class="op">=</span> PC1_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb141-22"><a href="#cb141-22" aria-hidden="true" tabindex="-1"></a>PC2_prop_variance <span class="op">=</span> PC2_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb141-23"><a href="#cb141-23" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"PC1 explains "</span>, <span class="fl">100</span><span class="op">*</span>PC1_prop_variance, <span class="st">"% of the total variance.</span></span>
+<span id="cb141-24"><a href="#cb141-24" aria-hidden="true" tabindex="-1"></a>PC2 explains <span class="st">", 100*PC2_prop_variance, "</span><span class="op">%</span>.<span class="st">")</span></span>
+<span id="cb141-25"><a href="#cb141-25" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb141-26"><a href="#cb141-26" aria-hidden="true" tabindex="-1"></a><span class="co"># add position of reference genome</span></span>
+<span id="cb141-27"><a href="#cb141-27" aria-hidden="true" tabindex="-1"></a>refGenomePCAposition <span class="op">=</span> <span class="fu">predict</span>(PCAmodel.model, <span class="fu">zeros</span>(<span class="fu">size</span>(imputed_genos, <span class="fl">2</span>)))</span>
+<span id="cb141-28"><a href="#cb141-28" aria-hidden="true" tabindex="-1"></a>flipPC1 <span class="op">&amp;&amp;</span> (refGenomePCAposition[<span class="fl">1</span>] <span class="op">*=</span> <span class="op">-</span><span class="fl">1</span>)  <span class="co"># this flips PC1 if flipPC1 = true</span></span>
+<span id="cb141-29"><a href="#cb141-29" aria-hidden="true" tabindex="-1"></a>flipPC2 <span class="op">&amp;&amp;</span> (refGenomePCAposition[<span class="fl">2</span>] <span class="op">*=</span> <span class="op">-</span><span class="fl">1</span>)  <span class="co"># same for PC2</span></span>
+<span id="cb141-30"><a href="#cb141-30" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(refGenomePCAposition[<span class="fl">1</span>], refGenomePCAposition[<span class="fl">2</span>], marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">14</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb141-31"><a href="#cb141-31" aria-hidden="true" tabindex="-1"></a>try</span>
+<span id="cb141-32"><a href="#cb141-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">display</span>(PCAmodel.PCAfig)</span>
+<span id="cb141-33"><a href="#cb141-33" aria-hidden="true" tabindex="-1"></a>catch</span>
+<span id="cb141-34"><a href="#cb141-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"NOTICE: Figure for "</span>, regionText, <span class="st">" could not be shown due to an unknown error."</span>)</span>
+<span id="cb141-35"><a href="#cb141-35" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb141-36"><a href="#cb141-36" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb141-37"><a href="#cb141-37" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_gwZ_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb141-38"><a href="#cb141-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb141-39"><a href="#cb141-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb141-40"><a href="#cb141-40" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgwZ_cleaned.KNNimputedMissing.jld2
 chrgwZ_cleaned: 51505 SNPs from 257 individuals</code></pre>
@@ -1469,16 +1470,16 @@ PC2 explains 9.7906275%.</code></pre>
 </div>
 <section id="the-below-script-will-produce-a-bunch-of-pcas-for-different-scaffolds-but-will-not-appropriately-flip-the-axes-of-each-as-the-above-ones-do-so-making-inactive" class="level5">
 <h5 class="anchored" data-anchor-id="the-below-script-will-produce-a-bunch-of-pcas-for-different-scaffolds-but-will-not-appropriately-flip-the-axes-of-each-as-the-above-ones-do-so-making-inactive">The below script will produce a bunch of PCAs for different scaffolds, but will not appropriately flip the axes of each as the above ones do (so making inactive):</h5>
-<div class="sourceCode" id="cb144"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb144-1"><a href="#cb144-1" aria-hidden="true" tabindex="-1"></a>scaffolds_to_show_PCA <span class="op">=</span> <span class="st">"gw"</span> <span class="op">.*</span> <span class="fu">string</span>.(<span class="fu">vcat</span>(<span class="fl">1</span><span class="op">:</span><span class="fl">15</span>, <span class="fl">17</span><span class="op">:</span><span class="fl">28</span>))</span>
-<span id="cb144-2"><a href="#cb144-2" aria-hidden="true" tabindex="-1"></a><span class="fu">push!</span>(scaffolds_to_show_PCA, <span class="st">"gw1A"</span>, <span class="st">"gw4A"</span>, <span class="st">"gwZ_cleaned"</span>)  <span class="co"># add three other scaffolds</span></span>
-<span id="cb144-3"><a href="#cb144-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb144-4"><a href="#cb144-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="fu">eachindex</span>(scaffolds_to_show_PCA)</span>
-<span id="cb144-5"><a href="#cb144-5" aria-hidden="true" tabindex="-1"></a>    chrom <span class="op">=</span> scaffolds_to_show_PCA[i]</span>
-<span id="cb144-6"><a href="#cb144-6" aria-hidden="true" tabindex="-1"></a>    PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA,</span>
-<span id="cb144-7"><a href="#cb144-7" aria-hidden="true" tabindex="-1"></a>                                group_colors_PCA,    </span>
-<span id="cb144-8"><a href="#cb144-8" aria-hidden="true" tabindex="-1"></a>                                baseName, tagName, chrom;</span>
-<span id="cb144-9"><a href="#cb144-9" aria-hidden="true" tabindex="-1"></a>                                flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">true</span>)</span>
-<span id="cb144-10"><a href="#cb144-10" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb145"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb145-1"><a href="#cb145-1" aria-hidden="true" tabindex="-1"></a>scaffolds_to_show_PCA <span class="op">=</span> <span class="st">"gw"</span> <span class="op">.*</span> <span class="fu">string</span>.(<span class="fu">vcat</span>(<span class="fl">1</span><span class="op">:</span><span class="fl">15</span>, <span class="fl">17</span><span class="op">:</span><span class="fl">28</span>))</span>
+<span id="cb145-2"><a href="#cb145-2" aria-hidden="true" tabindex="-1"></a><span class="fu">push!</span>(scaffolds_to_show_PCA, <span class="st">"gw1A"</span>, <span class="st">"gw4A"</span>, <span class="st">"gwZ_cleaned"</span>)  <span class="co"># add three other scaffolds</span></span>
+<span id="cb145-3"><a href="#cb145-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb145-4"><a href="#cb145-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="fu">eachindex</span>(scaffolds_to_show_PCA)</span>
+<span id="cb145-5"><a href="#cb145-5" aria-hidden="true" tabindex="-1"></a>    chrom <span class="op">=</span> scaffolds_to_show_PCA[i]</span>
+<span id="cb145-6"><a href="#cb145-6" aria-hidden="true" tabindex="-1"></a>    PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA,</span>
+<span id="cb145-7"><a href="#cb145-7" aria-hidden="true" tabindex="-1"></a>                                group_colors_PCA,    </span>
+<span id="cb145-8"><a href="#cb145-8" aria-hidden="true" tabindex="-1"></a>                                baseName, tagName, chrom;</span>
+<span id="cb145-9"><a href="#cb145-9" aria-hidden="true" tabindex="-1"></a>                                flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">true</span>)</span>
+<span id="cb145-10"><a href="#cb145-10" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 </section>
 

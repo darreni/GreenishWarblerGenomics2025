@@ -19,7 +19,7 @@ Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr,
 
 This page shows the code used to generate PCA plots for the whole genome (and also for each chromosome, although those aren't shown in the paper).
 
-Prior to examining the code on this page, readers should look at `GreenishWarblerGenomics.qmd` (or `.html`) and `GW_Zchromosome_analysis.qmd` (or `.html`), as this current page depends on the code on those pages being run first.
+Prior to examining the code on this page, readers should look at `GreenishWarblerGenomics2025.qmd` (or `.html`) and `GW_Zchromosome_analysis.qmd` (or `.html`), as this current page depends on the code on those pages being run first.
 
 ##### A note about plots in this document
 
@@ -54,7 +54,7 @@ cd(dataDirectory)
 
 ## Load the filtered dataset
 
-This dataset was produced through filtering in `GreenishWarblerGenomics2023.qmd`:
+This dataset was produced through filtering in `GreenishWarblerGenomics2025.qmd`:
 
 ```{julia}
 baseName = "GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"

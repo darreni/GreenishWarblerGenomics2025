@@ -1,0 +1,2079 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.39">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Darren Irwin">
+<meta name="dcterms.date" content="2025-01-17">
+
+<title>Greenish Warbler PCA plots – GreenishWarblerGenomics2025</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./GW_Heterozygosity_Variance.html" rel="next">
+<link href="./GW_Zchromosome_analysis.html" rel="prev">
+<script src="site_libs/quarto-html/quarto.js"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-e26003cea8cd680ca0c55a263523d882.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-8e2ff42e21970f6ffb759f3711bfd93b.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="nav-sidebar docked nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">GreenishWarblerGenomics2025</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item">
+    <a class="nav-link active" href="./index.html" aria-current="page"> 
+<span class="menu-text">Home</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <a class="flex-grow-1 no-decor" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+          <h1 class="quarto-secondary-nav-title">Greenish Warbler PCA plots</h1>
+        </a>     
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation docked overflow-auto">
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Home</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./GreenishWarblerGenomics2025.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Greenish Warbler Genomic Analysis</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./GW_Zchromosome_analysis.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Greenish Warbler Z-chromosome analysis</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./GW_PCAplots.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Greenish Warbler PCA plots</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./GW_Heterozygosity_Variance.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Greenish Warbler heterozygosity variance analysis</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#load-packages" id="toc-load-packages" class="nav-link active" data-scroll-target="#load-packages">Load packages</a></li>
+  <li><a href="#choose-working-directory" id="toc-choose-working-directory" class="nav-link" data-scroll-target="#choose-working-directory">Choose working directory</a></li>
+  <li><a href="#load-the-filtered-dataset" id="toc-load-the-filtered-dataset" class="nav-link" data-scroll-target="#load-the-filtered-dataset">Load the filtered dataset</a></li>
+  <li><a href="#make-final-whole-genome-pca" id="toc-make-final-whole-genome-pca" class="nav-link" data-scroll-target="#make-final-whole-genome-pca">Make final whole-genome PCA</a></li>
+  <li><a href="#make-pca-plots-for-individual-scaffolds" id="toc-make-pca-plots-for-individual-scaffolds" class="nav-link" data-scroll-target="#make-pca-plots-for-individual-scaffolds">Make PCA plots for individual scaffolds</a>
+  <ul class="collapse">
+  <li><a href="#make-pca-plots-for-each-chromosome-with-option-to-save" id="toc-make-pca-plots-for-each-chromosome-with-option-to-save" class="nav-link" data-scroll-target="#make-pca-plots-for-each-chromosome-with-option-to-save">Make PCA plots for each chromosome, with option to save:</a></li>
+  </ul></li>
+  <li><a href="#make-z-chromosome-pca" id="toc-make-z-chromosome-pca" class="nav-link" data-scroll-target="#make-z-chromosome-pca">Make Z chromosome PCA:</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title d-none d-lg-block">Greenish Warbler PCA plots</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Darren Irwin </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">January 17, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>The scripts, data, and figures shown in this document were used as part of the analysis for the paper listed below, which should be cited as the source of information from this document:</p>
+<p>Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. <em>Molecular Ecology</em>.</p>
+<p>This page shows the code used to generate PCA plots for the whole genome (and also for each chromosome, although those aren’t shown in the paper).</p>
+<p>Prior to examining the code on this page, readers should look at <code>GreenishWarblerGenomics2025.qmd</code> (or <code>.html</code>) and <code>GW_Zchromosome_analysis.qmd</code> (or <code>.html</code>), as this current page depends on the code on those pages being run first.</p>
+<section id="a-note-about-plots-in-this-document" class="level5">
+<h5 class="anchored" data-anchor-id="a-note-about-plots-in-this-document">A note about plots in this document</h5>
+<p>The plots shown below may different somewhat in appearance between the version produced by Quarto (i.e., in this published document) and the version you would get if you run this code without using Quarto. In particular, the dimensions and font sizes of labels and titles may differ. So if you want the versions identical to those used in the paper, run the code directly in the Julia REPL (or using an environment such as VS Code) without using Quarto.</p>
+<p>In the rendered (<code>.html</code>) version of this Quarto notebook, each figure may be accompanied by a warning caused by an interaction between Quarto and the Makie plotting package. Ignore these warnings as they do not affect the calculations or plots.</p>
+</section>
+<section id="load-packages" class="level2">
+<h2 class="anchored" data-anchor-id="load-packages">Load packages</h2>
+<div id="e4c24169" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">JLD2</span> <span class="co"># for loading saved data</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">DataFrames</span> <span class="co"># for storing data as type DataFrame</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CairoMakie</span> <span class="co"># for plots</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">Statistics</span> <span class="co"># for var() function</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">MultivariateStats</span> <span class="co"># for getting variances from PCA model</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CSV</span> <span class="co"># for reading in delimited files</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># using Impute # for imputing missing genotypes</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Load my custom package <code>GenomicDiversity</code>:</p>
+<div id="8ae3c5f4" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">GenomicDiversity</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="choose-working-directory" class="level2">
+<h2 class="anchored" data-anchor-id="choose-working-directory">Choose working directory</h2>
+<div id="194cd06d" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>dataDirectory <span class="op">=</span> <span class="st">"/Users/darrenirwin/Dropbox/Darren's current work/"</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(dataDirectory)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="load-the-filtered-dataset" class="level2">
+<h2 class="anchored" data-anchor-id="load-the-filtered-dataset">Load the filtered dataset</h2>
+<p>This dataset was produced through filtering in <code>GreenishWarblerGenomics2025.qmd</code>:</p>
+<div id="c9527cc1" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>baseName <span class="op">=</span> <span class="st">"GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>tagName <span class="op">=</span> <span class="st">".Jan2025."</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, <span class="st">"ind_SNP_ind_filtered.jld2"</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co"># load info into a dictionary (and check for errors):</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>d <span class="op">=</span> <span class="fu">load</span>(filename)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> baseName <span class="op">!=</span> d[<span class="st">"baseName"</span>]</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"WARNING: baseNames don't match between that defined above and in the saved file"</span>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> tagName <span class="op">!=</span> d[<span class="st">"tagName"</span>]</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"WARNING: tagNames don't match don't match between that defined above and in the saved file"</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>genosOnly <span class="op">=</span> d[<span class="st">"genosOnly_ind_SNP_ind_filtered"</span>]</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered <span class="op">=</span> d[<span class="st">"ind_with_metadata_indFiltered"</span>]</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>pos_SNP_filtered <span class="op">=</span> d[<span class="st">"pos_SNP_filtered"</span>]</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>repoDirectory <span class="op">=</span> d[<span class="st">"repoDirectory"</span>]</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>dataDirectory <span class="op">=</span> d[<span class="st">"dataDirectory"</span>]</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>scaffold_info <span class="op">=</span> d[<span class="st">"scaffold_info"</span>]</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>scaffold_lengths <span class="op">=</span> d[<span class="st">"scaffold_lengths"</span>]</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>filenameTextMiddle <span class="op">=</span> d[<span class="st">"filenameTextMiddle"</span>]</span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>missingGenotypeThreshold <span class="op">=</span> d[<span class="st">"missingGenotypeThreshold"</span>]</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>filenameTextEnd <span class="op">=</span> d[<span class="st">"filenameTextEnd"</span>]</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>chromosomes_to_process <span class="op">=</span>d[<span class="st">"chromosomes_to_process"</span>]</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"Loaded the filtered data."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded the filtered data.</code></pre>
+</div>
+</div>
+</section>
+<section id="make-final-whole-genome-pca" class="level2">
+<h2 class="anchored" data-anchor-id="make-final-whole-genome-pca">Make final whole-genome PCA</h2>
+<p>Now that the Z-chromosome problem has been solved (by removing SNPs that had a divergent W sequence mapped onto that Z location), we can construct a new whole-genome PCA. I will combine the saved imputed genotypes for each chromosome into a large data matrix, and conduct PCA on that.</p>
+<p>We need to first specify some groups to include in the plot, and their colors:</p>
+<div id="cec79fa2" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>groups_to_plot_PCA <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>,<span class="st">"troch_west"</span>,<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>,<span class="st">"plumb_vir"</span>]</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>group_colors_PCA <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"grey"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"olivedrab3"</span>,<span class="st">"olivedrab2"</span>,<span class="st">"olivedrab1"</span>,<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>,<span class="st">"purple"</span>];</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="make-list-of-scaffolds-to-include-in-the-whole-genome-pca" class="level4">
+<h4 class="anchored" data-anchor-id="make-list-of-scaffolds-to-include-in-the-whole-genome-pca">Make list of scaffolds to include in the whole-genome PCA:</h4>
+<div id="aeb7f8a6" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>scaffolds_to_include <span class="op">=</span> <span class="st">"gw"</span> <span class="op">.*</span> <span class="fu">string</span>.(<span class="fu">vcat</span>(<span class="fl">28</span><span class="op">:-</span><span class="fl">1</span><span class="op">:</span><span class="fl">17</span>, <span class="fl">15</span><span class="op">:-</span><span class="fl">1</span><span class="op">:</span><span class="fl">1</span>))</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">push!</span>(scaffolds_to_include, <span class="st">"gw1A"</span>, <span class="st">"gw4A"</span>, <span class="st">"gwZ_cleaned"</span>)  <span class="co"># add three other scaffolds</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="7">
+<pre><code>30-element Vector{String}:
+ "gw28"
+ "gw27"
+ "gw26"
+ "gw25"
+ "gw24"
+ "gw23"
+ "gw22"
+ "gw21"
+ "gw20"
+ "gw19"
+ "gw18"
+ "gw17"
+ "gw15"
+ ⋮
+ "gw9"
+ "gw8"
+ "gw7"
+ "gw6"
+ "gw5"
+ "gw4"
+ "gw3"
+ "gw2"
+ "gw1"
+ "gw1A"
+ "gw4A"
+ "gwZ_cleaned"</code></pre>
+</div>
+</div>
+<div id="f13c687a" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># initialize data structures for genotypes and positions</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>imputeMethod <span class="op">=</span> <span class="st">"KNN"</span>  <span class="co"># choices are KNN or SVD</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>genos_imputed_loaded <span class="op">=</span> <span class="fu">Matrix</span><span class="dt">{Union{Missing, Float32}}</span>(<span class="cn">undef</span>, <span class="fu">nrow</span>(ind_with_metadata_indFiltered), <span class="fl">0</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>pos_SNP_loaded <span class="op">=</span> <span class="fu">DataFrame</span>(chrom <span class="op">=</span> <span class="dt">String</span>[], position <span class="op">=</span> <span class="dt">Int64</span>[])</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="fu">eachindex</span>(scaffolds_to_include)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    chrom <span class="op">=</span> scaffolds_to_include[i]</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    regionText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"chr"</span>, chrom)</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">"."</span>, imputeMethod, <span class="st">"imputedMissing.jld2"</span>)</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    imputed_genos_one_chr <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"imputed_genos"</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    genos_imputed_loaded <span class="op">=</span> <span class="fu">hcat</span>(genos_imputed_loaded, imputed_genos_one_chr)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> ind_with_metadata_indFiltered.ind <span class="op">!=</span> <span class="fu">load</span>(filename, <span class="st">"ind_with_metadata_indFiltered"</span>)[<span class="op">:</span>, <span class="op">:</span>ind]</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>        <span class="fu">println</span>(<span class="st">"""Warning: "ind" columns in loaded data and memory data don't match."""</span>)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">end</span></span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_region <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"pos_SNP_filtered_region"</span>)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    pos_SNP_loaded <span class="op">=</span> <span class="fu">vcat</span>(pos_SNP_loaded, pos_SNP_filtered_region)</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(<span class="st">"Loaded "</span>,filename))</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(regionText, <span class="st">": "</span>, <span class="fu">size</span>(imputed_genos_one_chr,<span class="fl">2</span>), <span class="st">" SNPs from "</span>, <span class="fu">size</span>(imputed_genos_one_chr,<span class="fl">1</span>), <span class="st">" individuals"</span>))</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>flipPC1 <span class="op">=</span> <span class="cn">true</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>flipPC2 <span class="op">=</span> <span class="cn">true</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>PCA_wholeGenome <span class="op">=</span> <span class="fu">plotPCA</span>(genos_imputed_loaded, ind_with_metadata_indFiltered, </span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>        groups_to_plot_PCA, group_colors_PCA; </span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>        sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText <span class="op">=</span> <span class="st">"wholeGenome"</span>,</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>        flip1 <span class="op">=</span> flipPC1, flip2 <span class="op">=</span> flipPC2,</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>        lineOpacity <span class="op">=</span> <span class="fl">0.7</span>, fillOpacity <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>        symbolSize <span class="op">=</span> <span class="fl">14</span>, showTitle <span class="op">=</span> <span class="cn">false</span>)</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>totalObservationVariance <span class="op">=</span> <span class="fu">var</span>(PCA_wholeGenome.model) </span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>PC1_variance, PC2_variance <span class="op">=</span> <span class="fu">principalvars</span>(PCA_wholeGenome.model)[<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>]</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>PC1_prop_variance <span class="op">=</span> PC1_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>PC2_prop_variance <span class="op">=</span> PC2_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"PC1 explains "</span>, <span class="fl">100</span><span class="op">*</span>PC1_prop_variance, <span class="st">"% of the total variance.</span></span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>PC2 explains <span class="st">", 100*PC2_prop_variance, "</span><span class="op">%</span>.<span class="st">")</span></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered.PC1 <span class="op">=</span> PCA_wholeGenome.PC1</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered.PC2 <span class="op">=</span> PCA_wholeGenome.PC2</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a><span class="co"># add position of reference genome</span></span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>refGenomePCAposition <span class="op">=</span> <span class="fu">predict</span>(PCA_wholeGenome.model, <span class="fu">zeros</span>(<span class="fu">size</span>(genos_imputed_loaded, <span class="fl">2</span>)))</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>flipPC1 <span class="op">&amp;&amp;</span> (refGenomePCAposition[<span class="fl">1</span>] <span class="op">*=</span> <span class="op">-</span><span class="fl">1</span>)  <span class="co"># this flips PC1 if flipPC1 = true</span></span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>flipPC2 <span class="op">&amp;&amp;</span> (refGenomePCAposition[<span class="fl">2</span>] <span class="op">*=</span> <span class="op">-</span><span class="fl">1</span>)  <span class="co"># same for PC2</span></span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(refGenomePCAposition[<span class="fl">1</span>], refGenomePCAposition[<span class="fl">2</span>], marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">15</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>try</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>    <span class="fu">display</span>(PCA_wholeGenome.PCAfig)</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>catch</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"NOTICE: Figure for "</span>, regionText, <span class="st">" could not be shown due to an unknown error."</span>)</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="cn">true</span>  <span class="co">#set to true to save</span></span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(<span class="fu">string</span>(<span class="st">"Figure1B_PCAwholeGenome_"</span>, imputeMethod,<span class="st">"imputed_fromJulia.png"</span>), PCA_wholeGenome.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw28.KNNimputedMissing.jld2
+chrgw28: 11180 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw27.KNNimputedMissing.jld2
+chrgw27: 9684 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw26.KNNimputedMissing.jld2
+chrgw26: 14303 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw25.KNNimputedMissing.jld2
+chrgw25: 3794 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw24.KNNimputedMissing.jld2
+chrgw24: 13821 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw23.KNNimputedMissing.jld2
+chrgw23: 13949 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw22.KNNimputedMissing.jld2
+chrgw22: 5473 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw21.KNNimputedMissing.jld2
+chrgw21: 13321 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw20.KNNimputedMissing.jld2
+chrgw20: 32739 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw19.KNNimputedMissing.jld2
+chrgw19: 25414 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw18.KNNimputedMissing.jld2
+chrgw18: 19359 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw17.KNNimputedMissing.jld2
+chrgw17: 26313 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw15.KNNimputedMissing.jld2
+chrgw15: 27517 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw14.KNNimputedMissing.jld2
+chrgw14: 30969 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw13.KNNimputedMissing.jld2
+chrgw13: 33543 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw12.KNNimputedMissing.jld2
+chrgw12: 33294 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw11.KNNimputedMissing.jld2
+chrgw11: 27683 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw10.KNNimputedMissing.jld2
+chrgw10: 26962 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw9.KNNimputedMissing.jld2
+chrgw9: 38180 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw8.KNNimputedMissing.jld2
+chrgw8: 37818 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw7.KNNimputedMissing.jld2
+chrgw7: 36575 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw6.KNNimputedMissing.jld2
+chrgw6: 40175 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw5.KNNimputedMissing.jld2
+chrgw5: 55329 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw4.KNNimputedMissing.jld2
+chrgw4: 49980 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw3.KNNimputedMissing.jld2
+chrgw3: 82372 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw2.KNNimputedMissing.jld2
+chrgw2: 93292 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw1.KNNimputedMissing.jld2
+chrgw1: 80862 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw1A.KNNimputedMissing.jld2
+chrgw1A: 50051 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw4A.KNNimputedMissing.jld2
+chrgw4A: 18467 SNPs from 257 individuals
+Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgwZ_cleaned.KNNimputedMissing.jld2
+chrgwZ_cleaned: 51505 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-8-output-3.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 12.08685% of the total variance.
+PC2 explains 6.3917747%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-8-output-5.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="8">
+<pre><code>CairoMakie.Screen{IMAGE}</code></pre>
+</div>
+</div>
+</section>
+<section id="plot-location-around-ring-vs.-pc1" class="level4">
+<h4 class="anchored" data-anchor-id="plot-location-around-ring-vs.-pc1">Plot location around ring vs.&nbsp;PC1:</h4>
+<div id="3067dc2a" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> <span class="fu">Axis</span>(f[<span class="fl">1</span>, <span class="fl">1</span>],</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    title <span class="op">=</span> <span class="st">""</span>,    <span class="co">#"Genomic PC1 around ring"</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    xlabel <span class="op">=</span> <span class="st">"Location around ring (km)"</span>, xlabelsize <span class="op">=</span> <span class="fl">24</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    ylabel <span class="op">=</span> <span class="st">"Genomic PC1"</span>, ylabelsize <span class="op">=</span> <span class="fl">24</span>)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu">hidedecorations!</span>(ax, label <span class="op">=</span> <span class="cn">false</span>, ticklabels <span class="op">=</span> <span class="cn">false</span>, ticks <span class="op">=</span> <span class="cn">false</span>) <span class="co"># hide background lattice</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>jitterSize <span class="op">=</span> <span class="fl">100</span>   <span class="co"># in km</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>x_plot_values <span class="op">=</span> ind_with_metadata_indFiltered.ring_km <span class="op">.+</span> jitterSize <span class="op">.*</span> (<span class="fu">rand</span>(<span class="fu">length</span>(ind_with_metadata_indFiltered.PC1)) <span class="op">.-</span> <span class="fl">0.5</span>)</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>y_plot_values <span class="op">=</span> ind_with_metadata_indFiltered.PC1</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="fu">eachindex</span>(groups_to_plot_PCA) </span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    selection <span class="op">=</span> ind_with_metadata_indFiltered.Fst_group <span class="op">.==</span> groups_to_plot_PCA[i]</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    CairoMakie.<span class="fu">scatter!</span>(ax, x_plot_values[selection], y_plot_values[selection], marker <span class="op">=</span> <span class="op">:</span>diamond, color <span class="op">=</span> (group_colors_PCA[i], <span class="fl">0.6</span>), markersize<span class="op">=</span><span class="fl">14</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>, strokecolor <span class="op">=</span> (<span class="st">"black"</span>, <span class="fl">0.7</span>))</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="co"># add position of reference genome</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(repoDirectory)</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>ring_locations <span class="op">=</span> <span class="fu">DataFrame</span>(CSV.<span class="fu">File</span>(<span class="st">"metadata/GW2023_ring_locations.txt"</span>))</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>refGenome_location <span class="op">=</span> ring_locations.LocationAroundRing[ring_locations.location_short <span class="op">.==</span> <span class="st">"GG"</span>][<span class="fl">1</span>]</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(refGenome_location, refGenomePCAposition[<span class="fl">1</span>], marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">15</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(dataDirectory)</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a><span class="fu">display</span>(f)</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="cn">true</span>  <span class="co">#set to true to save</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(<span class="st">"Figure1C_PCAwholeGenomeAroundRing_fromJulia.png"</span>, f, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-9-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="9">
+<pre><code>CairoMakie.Screen{IMAGE}</code></pre>
+</div>
+</div>
+</section>
+<section id="make-a-whole-genome-pca-just-for-the-western-side-of-the-ring" class="level4">
+<h4 class="anchored" data-anchor-id="make-a-whole-genome-pca-just-for-the-western-side-of-the-ring">Make a whole-genome PCA just for the western side of the ring</h4>
+<div id="d3bcf296" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>western_groups_to_plot_PCA <span class="op">=</span> [<span class="st">"vir"</span>, <span class="st">"vir_misID"</span>, <span class="st">"vir_S"</span>, <span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>, <span class="st">"troch_west"</span>, <span class="st">"troch_LN"</span>]</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>western_group_colors_PCA <span class="op">=</span> [<span class="st">"blue"</span>, <span class="st">"blue"</span>, <span class="st">"turquoise1"</span>, <span class="st">"grey"</span>, <span class="st">"seagreen4"</span>, <span class="st">"seagreen3"</span>, <span class="st">"seagreen2"</span>, <span class="st">"olivedrab3"</span>, <span class="st">"olivedrab2"</span>, <span class="st">"olivedrab1"</span>, <span class="st">"yellow"</span>]</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>PCA_wholeGenome <span class="op">=</span> <span class="fu">plotPCA</span>(genos_imputed_loaded, ind_with_metadata_indFiltered,</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>    western_groups_to_plot_PCA, western_group_colors_PCA;</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    sampleSet<span class="op">=</span><span class="st">"greenish warblers"</span>, regionText<span class="op">=</span><span class="st">"wholeGenome"</span>,</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>    flip1<span class="op">=</span><span class="cn">false</span>, flip2<span class="op">=</span><span class="cn">false</span>,</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    lineOpacity <span class="op">=</span> <span class="fl">0.7</span>, fillOpacity <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a>    symbolSize <span class="op">=</span> <span class="fl">14</span>, showTitle <span class="op">=</span> <span class="cn">false</span>)</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>totalObservationVariance <span class="op">=</span> <span class="fu">var</span>(PCA_wholeGenome.model)</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a>PC1_variance, PC2_variance <span class="op">=</span> <span class="fu">principalvars</span>(PCA_wholeGenome.model)[<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>]</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>PC1_prop_variance <span class="op">=</span> PC1_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>PC2_prop_variance <span class="op">=</span> PC2_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"PC1 explains "</span>, <span class="fl">100</span> <span class="op">*</span> PC1_prop_variance, <span class="st">"% of the total variance.</span></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a>    PC2 explains <span class="st">", 100 * PC2_prop_variance, "</span><span class="op">%</span>.<span class="st">")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-10-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 11.394545% of the total variance.
+    PC2 explains 1.7678221%.</code></pre>
+</div>
+</div>
+</section>
+<section id="make-a-whole-genome-pca-just-for-the-eastern-side-of-the-ring" class="level4">
+<h4 class="anchored" data-anchor-id="make-a-whole-genome-pca-just-for-the-eastern-side-of-the-ring">Make a whole-genome PCA just for the eastern side of the ring</h4>
+<div id="66cd26cb" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>eastern_groups_to_plot_PCA <span class="op">=</span> [<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>]</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>eastern_group_colors_PCA <span class="op">=</span> [<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>]</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>flipPC1 <span class="op">=</span> <span class="cn">false</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>flipPC2 <span class="op">=</span> <span class="cn">true</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>PCA_wholeGenome <span class="op">=</span> <span class="fu">plotPCA</span>(genos_imputed_loaded, ind_with_metadata_indFiltered, </span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>        eastern_groups_to_plot_PCA, eastern_group_colors_PCA; </span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>        sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText <span class="op">=</span> <span class="st">"wholeGenome"</span>,</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>        flip1 <span class="op">=</span> flipPC1, flip2 <span class="op">=</span> flipPC2,</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>        lineOpacity <span class="op">=</span> <span class="fl">0.7</span>, fillOpacity <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>        symbolSize <span class="op">=</span> <span class="fl">14</span>, showTitle <span class="op">=</span> <span class="cn">false</span>)</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>totalObservationVariance <span class="op">=</span> <span class="fu">var</span>(PCA_wholeGenome.model) </span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>PC1_variance, PC2_variance <span class="op">=</span> <span class="fu">principalvars</span>(PCA_wholeGenome.model)[<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>]</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>PC1_prop_variance <span class="op">=</span> PC1_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>PC2_prop_variance <span class="op">=</span> PC2_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"PC1 explains "</span>, <span class="fl">100</span><span class="op">*</span>PC1_prop_variance, <span class="st">"% of the total variance.</span></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>PC2 explains <span class="st">", 100*PC2_prop_variance, "</span><span class="op">%</span>.<span class="st">")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-11-output-2.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 9.740206% of the total variance.
+PC2 explains 1.8479686%.</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="make-pca-plots-for-individual-scaffolds" class="level2">
+<h2 class="anchored" data-anchor-id="make-pca-plots-for-individual-scaffolds">Make PCA plots for individual scaffolds</h2>
+<p>Define a function for plotting one PCA for a scaffold:</p>
+<div id="019ef5da" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>                        baseName, tagName, scaffold; </span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>                        flipPC1, flipPC2, showTitle)</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    regionText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"chr"</span>, scaffold)</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".KNNimputedMissing.jld2"</span>)</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    imputed_genos <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"imputed_genos"</span>)</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    ind_with_metadata_indFiltered <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"ind_with_metadata_indFiltered"</span>)</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    pos_SNP_filtered_region <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"pos_SNP_filtered_region"</span>)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(<span class="st">"Loaded "</span>,filename))</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="fu">string</span>(regionText, <span class="st">": "</span>, <span class="fu">size</span>(imputed_genos,<span class="fl">2</span>), <span class="st">" SNPs from "</span>, <span class="fu">size</span>(imputed_genos,<span class="fl">1</span>), <span class="st">" individuals"</span>))</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># flipPC1 = true</span></span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># flipPC2 = true</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>    PCAmodel <span class="op">=</span> <span class="fu">plotPCA</span>(imputed_genos, ind_with_metadata_indFiltered, </span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>            groups_to_plot_PCA, group_colors_PCA; </span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>            sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>            flip1 <span class="op">=</span> flipPC1, flip2 <span class="op">=</span> flipPC2,</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>            lineOpacity <span class="op">=</span> <span class="fl">0.7</span>, fillOpacity <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>            symbolSize <span class="op">=</span> <span class="fl">14</span>, showTitle <span class="op">=</span> showTitle,</span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>            xLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome "</span>, scaffold,<span class="st">" PC1"</span>), yLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome "</span>, scaffold,<span class="st">" PC2"</span>),</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>            showPlot <span class="op">=</span> <span class="cn">false</span>)</span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>    totalObservationVariance <span class="op">=</span> <span class="fu">var</span>(PCAmodel.model) </span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>    PC1_variance, PC2_variance <span class="op">=</span> <span class="fu">principalvars</span>(PCAmodel.model)[<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>]</span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>    PC1_prop_variance <span class="op">=</span> PC1_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a>    PC2_prop_variance <span class="op">=</span> PC2_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"PC1 explains "</span>, <span class="fl">100</span><span class="op">*</span>PC1_prop_variance, <span class="st">"% of the total variance.</span></span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a>    PC2 explains <span class="st">", 100*PC2_prop_variance, "</span><span class="op">%</span>.<span class="st">")</span></span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb23-30"><a href="#cb23-30" aria-hidden="true" tabindex="-1"></a>    <span class="co"># add position of reference genome</span></span>
+<span id="cb23-31"><a href="#cb23-31" aria-hidden="true" tabindex="-1"></a>    refGenomePCAposition <span class="op">=</span> <span class="fu">predict</span>(PCAmodel.model, <span class="fu">zeros</span>(<span class="fu">size</span>(imputed_genos, <span class="fl">2</span>)))</span>
+<span id="cb23-32"><a href="#cb23-32" aria-hidden="true" tabindex="-1"></a>    flipPC1 <span class="op">&amp;&amp;</span> (refGenomePCAposition[<span class="fl">1</span>] <span class="op">*=</span> <span class="op">-</span><span class="fl">1</span>)  <span class="co"># this flips PC1 if flipPC1 = true</span></span>
+<span id="cb23-33"><a href="#cb23-33" aria-hidden="true" tabindex="-1"></a>    flipPC2 <span class="op">&amp;&amp;</span> (refGenomePCAposition[<span class="fl">2</span>] <span class="op">*=</span> <span class="op">-</span><span class="fl">1</span>)  <span class="co"># same for PC2</span></span>
+<span id="cb23-34"><a href="#cb23-34" aria-hidden="true" tabindex="-1"></a>    CairoMakie.<span class="fu">scatter!</span>(refGenomePCAposition[<span class="fl">1</span>], refGenomePCAposition[<span class="fl">2</span>], marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">14</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb23-35"><a href="#cb23-35" aria-hidden="true" tabindex="-1"></a>    try</span>
+<span id="cb23-36"><a href="#cb23-36" aria-hidden="true" tabindex="-1"></a>        <span class="fu">display</span>(PCAmodel.PCAfig)</span>
+<span id="cb23-37"><a href="#cb23-37" aria-hidden="true" tabindex="-1"></a>    catch</span>
+<span id="cb23-38"><a href="#cb23-38" aria-hidden="true" tabindex="-1"></a>        <span class="fu">println</span>(<span class="st">"NOTICE: Figure for "</span>, regionText, <span class="st">" could not be shown due to an unknown error."</span>)</span>
+<span id="cb23-39"><a href="#cb23-39" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb23-40"><a href="#cb23-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> PCAmodel   </span>
+<span id="cb23-41"><a href="#cb23-41" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="12">
+<pre><code>plotOneScaffoldPCA (generic function with 1 method)</code></pre>
+</div>
+</div>
+<section id="make-pca-plots-for-each-chromosome-with-option-to-save" class="level3">
+<h3 class="anchored" data-anchor-id="make-pca-plots-for-each-chromosome-with-option-to-save">Make PCA plots for each chromosome, with option to save:</h3>
+<div id="cd981145" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>savefig <span class="op">=</span> <span class="cn">false</span>  <span class="co">#set to true to save the figures from cells below</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="13">
+<pre><code>false</code></pre>
+</div>
+</div>
+<div id="8522c3b0" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw1"</span>    </span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">false</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw1.KNNimputedMissing.jld2
+chrgw1: 80862 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 11.790371% of the total variance.
+    PC2 explains 6.068956%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-14-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="e0516d8d" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw1A"</span>    </span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">false</span>, flipPC2<span class="op">=</span><span class="cn">false</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw1A.KNNimputedMissing.jld2
+chrgw1A: 50051 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 14.3619375% of the total variance.
+    PC2 explains 8.243913%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-15-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="97a19b7f" class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw2"</span>    </span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw2.KNNimputedMissing.jld2
+chrgw2: 93292 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 13.293323% of the total variance.
+    PC2 explains 6.3256464%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-16-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="1b5a7cad" class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw3"</span>    </span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb39-6"><a href="#cb39-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb39-7"><a href="#cb39-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb39-8"><a href="#cb39-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb39-9"><a href="#cb39-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw3.KNNimputedMissing.jld2
+chrgw3: 82372 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 12.753571% of the total variance.
+    PC2 explains 6.4516797%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-17-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="fac9a484" class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw4"</span>    </span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">false</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw4.KNNimputedMissing.jld2
+chrgw4: 49980 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 11.8756075% of the total variance.
+    PC2 explains 6.052506%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-18-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="eee10d24" class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw4A"</span>    </span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb47-5"><a href="#cb47-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb47-6"><a href="#cb47-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb47-7"><a href="#cb47-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb47-8"><a href="#cb47-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb47-9"><a href="#cb47-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw4A.KNNimputedMissing.jld2
+chrgw4A: 18467 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 8.10225% of the total variance.
+    PC2 explains 6.4409094%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-19-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="ad9f16bf" class="cell" data-execution_count="19">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw5"</span>    </span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw5.KNNimputedMissing.jld2
+chrgw5: 55329 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 12.462368% of the total variance.
+    PC2 explains 6.6817045%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-20-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="c80b4ca3" class="cell" data-execution_count="20">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw6"</span>    </span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw6.KNNimputedMissing.jld2
+chrgw6: 40175 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 10.859537% of the total variance.
+    PC2 explains 5.9476075%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-21-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="64f375de" class="cell" data-execution_count="21">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw7"</span>    </span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">false</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb59-7"><a href="#cb59-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb59-8"><a href="#cb59-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb59-9"><a href="#cb59-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw7.KNNimputedMissing.jld2
+chrgw7: 36575 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 11.095749% of the total variance.
+    PC2 explains 6.085347%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-22-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="4b484a14" class="cell" data-execution_count="22">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw8"</span>    </span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">false</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb63-7"><a href="#cb63-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb63-8"><a href="#cb63-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb63-9"><a href="#cb63-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw8.KNNimputedMissing.jld2
+chrgw8: 37818 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 11.007252% of the total variance.
+    PC2 explains 5.915666%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-23-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="9e234750" class="cell" data-execution_count="23">
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw9"</span>    </span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb67-8"><a href="#cb67-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb67-9"><a href="#cb67-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw9.KNNimputedMissing.jld2
+chrgw9: 38180 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 11.258947% of the total variance.
+    PC2 explains 5.450791%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-24-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="c0afebc6" class="cell" data-execution_count="24">
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw10"</span>    </span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb71-5"><a href="#cb71-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb71-6"><a href="#cb71-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb71-7"><a href="#cb71-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb71-8"><a href="#cb71-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb71-9"><a href="#cb71-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw10.KNNimputedMissing.jld2
+chrgw10: 26962 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 11.141077% of the total variance.
+    PC2 explains 5.4113245%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-25-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="bd6a3494" class="cell" data-execution_count="25">
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw11"</span>    </span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb75-4"><a href="#cb75-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">false</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb75-5"><a href="#cb75-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb75-6"><a href="#cb75-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb75-7"><a href="#cb75-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb75-8"><a href="#cb75-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb75-9"><a href="#cb75-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw11.KNNimputedMissing.jld2
+chrgw11: 27683 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 10.932791% of the total variance.
+    PC2 explains 5.910336%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-26-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="89eb9357" class="cell" data-execution_count="26">
+<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw12"</span>    </span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb79-3"><a href="#cb79-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb79-4"><a href="#cb79-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb79-5"><a href="#cb79-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb79-6"><a href="#cb79-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb79-7"><a href="#cb79-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb79-8"><a href="#cb79-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb79-9"><a href="#cb79-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw12.KNNimputedMissing.jld2
+chrgw12: 33294 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 11.808325% of the total variance.
+    PC2 explains 5.742847%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-27-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="948b7fd9" class="cell" data-execution_count="27">
+<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw13"</span>    </span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">false</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb83-5"><a href="#cb83-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb83-6"><a href="#cb83-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb83-7"><a href="#cb83-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb83-8"><a href="#cb83-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb83-9"><a href="#cb83-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw13.KNNimputedMissing.jld2
+chrgw13: 33543 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 13.365666% of the total variance.
+    PC2 explains 7.26101%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-28-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="ffe1ad45" class="cell" data-execution_count="28">
+<div class="sourceCode cell-code" id="cb87"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw14"</span>    </span>
+<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb87-4"><a href="#cb87-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb87-5"><a href="#cb87-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb87-6"><a href="#cb87-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb87-7"><a href="#cb87-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb87-8"><a href="#cb87-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb87-9"><a href="#cb87-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw14.KNNimputedMissing.jld2
+chrgw14: 30969 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 11.530412% of the total variance.
+    PC2 explains 6.537424%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-29-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="82b7dd6b" class="cell" data-execution_count="29">
+<div class="sourceCode cell-code" id="cb91"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb91-1"><a href="#cb91-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw15"</span>    </span>
+<span id="cb91-2"><a href="#cb91-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb91-3"><a href="#cb91-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb91-4"><a href="#cb91-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">false</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb91-5"><a href="#cb91-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb91-6"><a href="#cb91-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb91-7"><a href="#cb91-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb91-8"><a href="#cb91-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb91-9"><a href="#cb91-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw15.KNNimputedMissing.jld2
+chrgw15: 27517 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 12.024455% of the total variance.
+    PC2 explains 6.3510194%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-30-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="d80a46ee" class="cell" data-execution_count="30">
+<div class="sourceCode cell-code" id="cb95"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw17"</span>    </span>
+<span id="cb95-2"><a href="#cb95-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb95-3"><a href="#cb95-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb95-4"><a href="#cb95-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb95-5"><a href="#cb95-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb95-6"><a href="#cb95-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb95-7"><a href="#cb95-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb95-8"><a href="#cb95-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb95-9"><a href="#cb95-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw17.KNNimputedMissing.jld2
+chrgw17: 26313 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 10.918732% of the total variance.
+    PC2 explains 6.300656%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-31-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="307810ef" class="cell" data-execution_count="31">
+<div class="sourceCode cell-code" id="cb99"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw18"</span>    </span>
+<span id="cb99-2"><a href="#cb99-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb99-3"><a href="#cb99-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb99-4"><a href="#cb99-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb99-5"><a href="#cb99-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb99-6"><a href="#cb99-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb99-7"><a href="#cb99-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb99-8"><a href="#cb99-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb99-9"><a href="#cb99-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw18.KNNimputedMissing.jld2
+chrgw18: 19359 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 13.948867% of the total variance.
+    PC2 explains 8.864708%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-32-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="b02036c0" class="cell" data-execution_count="32">
+<div class="sourceCode cell-code" id="cb103"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw19"</span>    </span>
+<span id="cb103-2"><a href="#cb103-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb103-3"><a href="#cb103-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb103-4"><a href="#cb103-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb103-5"><a href="#cb103-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb103-6"><a href="#cb103-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb103-7"><a href="#cb103-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb103-8"><a href="#cb103-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb103-9"><a href="#cb103-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw19.KNNimputedMissing.jld2
+chrgw19: 25414 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 9.869666% of the total variance.
+    PC2 explains 5.4673886%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-33-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="4e99bdfe" class="cell" data-execution_count="33">
+<div class="sourceCode cell-code" id="cb107"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb107-1"><a href="#cb107-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw20"</span>    </span>
+<span id="cb107-2"><a href="#cb107-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb107-3"><a href="#cb107-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb107-4"><a href="#cb107-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb107-5"><a href="#cb107-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb107-6"><a href="#cb107-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb107-7"><a href="#cb107-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb107-8"><a href="#cb107-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb107-9"><a href="#cb107-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw20.KNNimputedMissing.jld2
+chrgw20: 32739 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 13.309981% of the total variance.
+    PC2 explains 8.098767%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-34-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="d2f0a5b4" class="cell" data-execution_count="34">
+<div class="sourceCode cell-code" id="cb111"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb111-1"><a href="#cb111-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw21"</span>    </span>
+<span id="cb111-2"><a href="#cb111-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb111-3"><a href="#cb111-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb111-4"><a href="#cb111-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb111-5"><a href="#cb111-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb111-6"><a href="#cb111-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb111-7"><a href="#cb111-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb111-8"><a href="#cb111-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb111-9"><a href="#cb111-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw21.KNNimputedMissing.jld2
+chrgw21: 13321 SNPs from 257 individuals
+PC1 explains 10.157121% of the total variance.
+    PC2 explains 5.943965%.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-35-output-3.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="8b671463" class="cell" data-execution_count="35">
+<div class="sourceCode cell-code" id="cb114"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb114-1"><a href="#cb114-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw22"</span>    </span>
+<span id="cb114-2"><a href="#cb114-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb114-3"><a href="#cb114-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb114-4"><a href="#cb114-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">false</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb114-5"><a href="#cb114-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb114-6"><a href="#cb114-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb114-7"><a href="#cb114-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb114-8"><a href="#cb114-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb114-9"><a href="#cb114-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw22.KNNimputedMissing.jld2
+chrgw22: 5473 SNPs from 257 individuals
+PC1 explains 13.285248% of the total variance.
+    PC2 explains 8.581498%.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-36-output-3.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="1ed78074" class="cell" data-execution_count="36">
+<div class="sourceCode cell-code" id="cb117"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw23"</span>    </span>
+<span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb117-3"><a href="#cb117-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb117-4"><a href="#cb117-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb117-5"><a href="#cb117-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb117-6"><a href="#cb117-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb117-7"><a href="#cb117-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb117-8"><a href="#cb117-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb117-9"><a href="#cb117-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw23.KNNimputedMissing.jld2
+chrgw23: 13949 SNPs from 257 individuals
+PC1 explains 10.519924</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>% of the total variance.
+    PC2 explains 6.485574%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-37-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="2f5d611e" class="cell" data-execution_count="37">
+<div class="sourceCode cell-code" id="cb121"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb121-1"><a href="#cb121-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw24"</span>    </span>
+<span id="cb121-2"><a href="#cb121-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb121-3"><a href="#cb121-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb121-4"><a href="#cb121-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb121-5"><a href="#cb121-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb121-6"><a href="#cb121-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb121-7"><a href="#cb121-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb121-8"><a href="#cb121-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb121-9"><a href="#cb121-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw24.KNNimputedMissing.jld2
+chrgw24: 13821 SNPs from 257 individuals
+PC1 explains 8.532888</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>% of the total variance.
+    PC2 explains 5.108733%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-38-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="b2800b12" class="cell" data-execution_count="38">
+<div class="sourceCode cell-code" id="cb125"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb125-1"><a href="#cb125-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw25"</span>    </span>
+<span id="cb125-2"><a href="#cb125-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb125-3"><a href="#cb125-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb125-4"><a href="#cb125-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb125-5"><a href="#cb125-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb125-6"><a href="#cb125-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb125-7"><a href="#cb125-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb125-8"><a href="#cb125-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb125-9"><a href="#cb125-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw25.KNNimputedMissing.jld2
+chrgw25: 3794 SNPs from 257 individuals
+PC1 explains 17.002586% of the total variance.
+    PC2 explains 11.373987%.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-39-output-3.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="6f5f2b92" class="cell" data-execution_count="39">
+<div class="sourceCode cell-code" id="cb128"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb128-1"><a href="#cb128-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw26"</span>    </span>
+<span id="cb128-2"><a href="#cb128-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb128-3"><a href="#cb128-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb128-4"><a href="#cb128-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb128-5"><a href="#cb128-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb128-6"><a href="#cb128-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb128-7"><a href="#cb128-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb128-8"><a href="#cb128-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb128-9"><a href="#cb128-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw26.KNNimputedMissing.jld2
+chrgw26: 14303 SNPs from 257 individuals
+PC1 explains 14.828697</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>% of the total variance.
+    PC2 explains 7.8627186%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-40-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="cf78f520" class="cell" data-execution_count="40">
+<div class="sourceCode cell-code" id="cb132"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb132-1"><a href="#cb132-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw27"</span>    </span>
+<span id="cb132-2"><a href="#cb132-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb132-3"><a href="#cb132-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb132-4"><a href="#cb132-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb132-5"><a href="#cb132-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb132-6"><a href="#cb132-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb132-7"><a href="#cb132-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb132-8"><a href="#cb132-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb132-9"><a href="#cb132-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw27.KNNimputedMissing.jld2
+chrgw27: 9684 SNPs from 257 individuals
+PC1 explains 12.95481</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>% of the total variance.
+    PC2 explains 7.359955%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-41-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="a1b9f122" class="cell" data-execution_count="41">
+<div class="sourceCode cell-code" id="cb136"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb136-1"><a href="#cb136-1" aria-hidden="true" tabindex="-1"></a>scaffold <span class="op">=</span> <span class="st">"gw28"</span>    </span>
+<span id="cb136-2"><a href="#cb136-2" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA, group_colors_PCA,    </span>
+<span id="cb136-3"><a href="#cb136-3" aria-hidden="true" tabindex="-1"></a>                            baseName, tagName, scaffold;</span>
+<span id="cb136-4"><a href="#cb136-4" aria-hidden="true" tabindex="-1"></a>                            flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">false</span>)</span>
+<span id="cb136-5"><a href="#cb136-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb136-6"><a href="#cb136-6" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_"</span>, scaffold, <span class="st">"_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb136-7"><a href="#cb136-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb136-8"><a href="#cb136-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb136-9"><a href="#cb136-9" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgw28.KNNimputedMissing.jld2
+chrgw28: 11180 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 13.7301655% of the total variance.
+    PC2 explains 8.083617%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-42-output-4.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="make-z-chromosome-pca" class="level2">
+<h2 class="anchored" data-anchor-id="make-z-chromosome-pca">Make Z chromosome PCA:</h2>
+<div id="3467c3c4" class="cell" data-execution_count="42">
+<div class="sourceCode cell-code" id="cb140"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb140-1"><a href="#cb140-1" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="st">"chrgwZ_cleaned"</span></span>
+<span id="cb140-2"><a href="#cb140-2" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".KNNimputedMissing.jld2"</span>)</span>
+<span id="cb140-3"><a href="#cb140-3" aria-hidden="true" tabindex="-1"></a>imputed_genos <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"imputed_genos"</span>)</span>
+<span id="cb140-4"><a href="#cb140-4" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"ind_with_metadata_indFiltered"</span>)</span>
+<span id="cb140-5"><a href="#cb140-5" aria-hidden="true" tabindex="-1"></a>pos_SNP_filtered_region <span class="op">=</span> <span class="fu">load</span>(filename, <span class="st">"pos_SNP_filtered_region"</span>)</span>
+<span id="cb140-6"><a href="#cb140-6" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="fu">string</span>(<span class="st">"Loaded "</span>,filename))</span>
+<span id="cb140-7"><a href="#cb140-7" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="fu">string</span>(regionText, <span class="st">": "</span>, <span class="fu">size</span>(imputed_genos,<span class="fl">2</span>), <span class="st">" SNPs from "</span>, <span class="fu">size</span>(imputed_genos,<span class="fl">1</span>), <span class="st">" individuals"</span>))</span>
+<span id="cb140-8"><a href="#cb140-8" aria-hidden="true" tabindex="-1"></a>flipPC1 <span class="op">=</span> <span class="cn">true</span></span>
+<span id="cb140-9"><a href="#cb140-9" aria-hidden="true" tabindex="-1"></a>flipPC2 <span class="op">=</span> <span class="cn">true</span></span>
+<span id="cb140-10"><a href="#cb140-10" aria-hidden="true" tabindex="-1"></a>PCAmodel <span class="op">=</span> <span class="fu">plotPCA</span>(imputed_genos, ind_with_metadata_indFiltered, </span>
+<span id="cb140-11"><a href="#cb140-11" aria-hidden="true" tabindex="-1"></a>        groups_to_plot_PCA, group_colors_PCA; </span>
+<span id="cb140-12"><a href="#cb140-12" aria-hidden="true" tabindex="-1"></a>        sampleSet <span class="op">=</span> <span class="st">"greenish warblers"</span>, regionText<span class="op">=</span>regionText,</span>
+<span id="cb140-13"><a href="#cb140-13" aria-hidden="true" tabindex="-1"></a>        flip1 <span class="op">=</span> flipPC1, flip2 <span class="op">=</span> flipPC2,</span>
+<span id="cb140-14"><a href="#cb140-14" aria-hidden="true" tabindex="-1"></a>        lineOpacity <span class="op">=</span> <span class="fl">0.7</span>, fillOpacity <span class="op">=</span> <span class="fl">0.6</span>,</span>
+<span id="cb140-15"><a href="#cb140-15" aria-hidden="true" tabindex="-1"></a>        symbolSize <span class="op">=</span> <span class="fl">14</span>, showTitle <span class="op">=</span> <span class="cn">false</span>,</span>
+<span id="cb140-16"><a href="#cb140-16" aria-hidden="true" tabindex="-1"></a>        xLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC1"</span>), yLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC2"</span>),</span>
+<span id="cb140-17"><a href="#cb140-17" aria-hidden="true" tabindex="-1"></a>        showPlot <span class="op">=</span> <span class="cn">true</span>)</span>
+<span id="cb140-18"><a href="#cb140-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb140-19"><a href="#cb140-19" aria-hidden="true" tabindex="-1"></a>totalObservationVariance <span class="op">=</span> <span class="fu">var</span>(PCAmodel.model) </span>
+<span id="cb140-20"><a href="#cb140-20" aria-hidden="true" tabindex="-1"></a>PC1_variance, PC2_variance <span class="op">=</span> <span class="fu">principalvars</span>(PCAmodel.model)[<span class="fl">1</span><span class="op">:</span><span class="fl">2</span>]</span>
+<span id="cb140-21"><a href="#cb140-21" aria-hidden="true" tabindex="-1"></a>PC1_prop_variance <span class="op">=</span> PC1_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb140-22"><a href="#cb140-22" aria-hidden="true" tabindex="-1"></a>PC2_prop_variance <span class="op">=</span> PC2_variance <span class="op">/</span> totalObservationVariance</span>
+<span id="cb140-23"><a href="#cb140-23" aria-hidden="true" tabindex="-1"></a><span class="fu">println</span>(<span class="st">"PC1 explains "</span>, <span class="fl">100</span><span class="op">*</span>PC1_prop_variance, <span class="st">"% of the total variance.</span></span>
+<span id="cb140-24"><a href="#cb140-24" aria-hidden="true" tabindex="-1"></a>PC2 explains <span class="st">", 100*PC2_prop_variance, "</span><span class="op">%</span>.<span class="st">")</span></span>
+<span id="cb140-25"><a href="#cb140-25" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb140-26"><a href="#cb140-26" aria-hidden="true" tabindex="-1"></a><span class="co"># add position of reference genome</span></span>
+<span id="cb140-27"><a href="#cb140-27" aria-hidden="true" tabindex="-1"></a>refGenomePCAposition <span class="op">=</span> <span class="fu">predict</span>(PCAmodel.model, <span class="fu">zeros</span>(<span class="fu">size</span>(imputed_genos, <span class="fl">2</span>)))</span>
+<span id="cb140-28"><a href="#cb140-28" aria-hidden="true" tabindex="-1"></a>flipPC1 <span class="op">&amp;&amp;</span> (refGenomePCAposition[<span class="fl">1</span>] <span class="op">*=</span> <span class="op">-</span><span class="fl">1</span>)  <span class="co"># this flips PC1 if flipPC1 = true</span></span>
+<span id="cb140-29"><a href="#cb140-29" aria-hidden="true" tabindex="-1"></a>flipPC2 <span class="op">&amp;&amp;</span> (refGenomePCAposition[<span class="fl">2</span>] <span class="op">*=</span> <span class="op">-</span><span class="fl">1</span>)  <span class="co"># same for PC2</span></span>
+<span id="cb140-30"><a href="#cb140-30" aria-hidden="true" tabindex="-1"></a>CairoMakie.<span class="fu">scatter!</span>(refGenomePCAposition[<span class="fl">1</span>], refGenomePCAposition[<span class="fl">2</span>], marker <span class="op">=</span> <span class="op">:</span>diamond, color<span class="op">=</span><span class="st">"black"</span>, markersize<span class="op">=</span><span class="fl">14</span>, strokewidth<span class="op">=</span><span class="fl">0.5</span>)</span>
+<span id="cb140-31"><a href="#cb140-31" aria-hidden="true" tabindex="-1"></a>try</span>
+<span id="cb140-32"><a href="#cb140-32" aria-hidden="true" tabindex="-1"></a>    <span class="fu">display</span>(PCAmodel.PCAfig)</span>
+<span id="cb140-33"><a href="#cb140-33" aria-hidden="true" tabindex="-1"></a>catch</span>
+<span id="cb140-34"><a href="#cb140-34" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"NOTICE: Figure for "</span>, regionText, <span class="st">" could not be shown due to an unknown error."</span>)</span>
+<span id="cb140-35"><a href="#cb140-35" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span>
+<span id="cb140-36"><a href="#cb140-36" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> savefig  <span class="co">#set to true to save</span></span>
+<span id="cb140-37"><a href="#cb140-37" aria-hidden="true" tabindex="-1"></a>    filename <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Figure_gwZ_PCA_allInds_from_Julia.png"</span>)</span>
+<span id="cb140-38"><a href="#cb140-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">save</span>(filename, PCAmodel.PCAfig, px_per_unit <span class="op">=</span> <span class="fl">2.0</span>)</span>
+<span id="cb140-39"><a href="#cb140-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">println</span>(<span class="st">"Saved "</span>, filename)</span>
+<span id="cb140-40"><a href="#cb140-40" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgwZ_cleaned.KNNimputedMissing.jld2
+chrgwZ_cleaned: 51505 SNPs from 257 individuals</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
+└ @ Makie ~/.julia/packages/Makie/pFPBw/src/scenes.jl:238</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-43-output-3.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>PC1 explains 17.929323% of the total variance.
+PC2 explains 9.7906275%.</code></pre>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="GW_PCAplots_files/figure-html/cell-43-output-5.svg" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<section id="the-below-script-will-produce-a-bunch-of-pcas-for-different-scaffolds-but-will-not-appropriately-flip-the-axes-of-each-as-the-above-ones-do-so-making-inactive" class="level5">
+<h5 class="anchored" data-anchor-id="the-below-script-will-produce-a-bunch-of-pcas-for-different-scaffolds-but-will-not-appropriately-flip-the-axes-of-each-as-the-above-ones-do-so-making-inactive">The below script will produce a bunch of PCAs for different scaffolds, but will not appropriately flip the axes of each as the above ones do (so making inactive):</h5>
+<div class="sourceCode" id="cb144"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb144-1"><a href="#cb144-1" aria-hidden="true" tabindex="-1"></a>scaffolds_to_show_PCA <span class="op">=</span> <span class="st">"gw"</span> <span class="op">.*</span> <span class="fu">string</span>.(<span class="fu">vcat</span>(<span class="fl">1</span><span class="op">:</span><span class="fl">15</span>, <span class="fl">17</span><span class="op">:</span><span class="fl">28</span>))</span>
+<span id="cb144-2"><a href="#cb144-2" aria-hidden="true" tabindex="-1"></a><span class="fu">push!</span>(scaffolds_to_show_PCA, <span class="st">"gw1A"</span>, <span class="st">"gw4A"</span>, <span class="st">"gwZ_cleaned"</span>)  <span class="co"># add three other scaffolds</span></span>
+<span id="cb144-3"><a href="#cb144-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb144-4"><a href="#cb144-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="fu">eachindex</span>(scaffolds_to_show_PCA)</span>
+<span id="cb144-5"><a href="#cb144-5" aria-hidden="true" tabindex="-1"></a>    chrom <span class="op">=</span> scaffolds_to_show_PCA[i]</span>
+<span id="cb144-6"><a href="#cb144-6" aria-hidden="true" tabindex="-1"></a>    PCAmodel <span class="op">=</span> <span class="fu">plotOneScaffoldPCA</span>(groups_to_plot_PCA,</span>
+<span id="cb144-7"><a href="#cb144-7" aria-hidden="true" tabindex="-1"></a>                                group_colors_PCA,    </span>
+<span id="cb144-8"><a href="#cb144-8" aria-hidden="true" tabindex="-1"></a>                                baseName, tagName, chrom;</span>
+<span id="cb144-9"><a href="#cb144-9" aria-hidden="true" tabindex="-1"></a>                                flipPC1<span class="op">=</span><span class="cn">true</span>, flipPC2<span class="op">=</span><span class="cn">true</span>, showTitle<span class="op">=</span><span class="cn">true</span>)</span>
+<span id="cb144-10"><a href="#cb144-10" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+          // target, if specified
+          link.setAttribute("target", "_blank");
+          if (link.getAttribute("rel") === null) {
+            link.setAttribute("rel", "noopener");
+          }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<nav class="page-navigation">
+  <div class="nav-page nav-page-previous">
+      <a href="./GW_Zchromosome_analysis.html" class="pagination-link" aria-label="Greenish Warbler Z-chromosome analysis">
+        <i class="bi bi-arrow-left-short"></i> <span class="nav-page-text">Greenish Warbler Z-chromosome analysis</span>
+      </a>          
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./GW_Heterozygosity_Variance.html" class="pagination-link" aria-label="Greenish Warbler heterozygosity variance analysis">
+        <span class="nav-page-text">Greenish Warbler heterozygosity variance analysis</span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+<p>Copyright 2025, Darren Irwin</p>
+</div>
+    <div class="nav-footer-right">
+      &nbsp;
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

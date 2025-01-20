@@ -1,0 +1,21 @@
+---
+title: "Greenish Warbler Genomics 2025"
+author: "Darren Irwin"
+date: last-modified
+---
+
+This website contains notes and code describing the data analysis for a manuscript on Greenish Warbler genomics. I've been working with the data for several years, and the R and then Julia code has been in development for a while. This website is a Quarto project and each page is a Quarto notebook, which can run and display the results of Julia (or other) code blocks, along with text narration, and output in html, pdf, Word, etc.
+
+The Julia code here is loosely based on R code written for Greenish Warbler analysis (Irwin et al. 2016, _Molecular Ecology_), and then the North American warbler analyses (Irwin et al. 2018, _Molecular Ecology_). Since then, I've rewritten the code in Julia, where it is orders of magnitude faster. I've packaged many of the functions into a Julia package, `GenomicDiversity.jl`, that is now officially registered and easily installed (via this command entered into the Julia REPL: `import Pkg; Pkg.add("GenomicDiversity")`) 
+
+The SNP data used in this analysis are a result of GBS reads mapped to our new Biozeron genome assembly for a greenish warbler from southern China (`GW2022ref.fa`).
+
+#### Citation
+
+The scripts, data, and figures shown in this website were used as the basis for the paper listed below, which should be cited as the source of information from this website:
+
+Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_, minor revision requested.
+
+#### Pages in this website
+
+The analysis contained within these pages contains far more than is shown in the paper cited above. To facilitate efficient display of the information by your web browser, I have divided the analysis into four pages, as seen in the index on the left side of this page. You can also navigate through them using the arrowed links below each page.

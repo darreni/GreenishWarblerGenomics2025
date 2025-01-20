@@ -1,0 +1,30 @@
+project:
+  type: website
+  output-dir: docs
+
+website:
+  title: "Greenish Warbler Genomics 2025"
+  page-navigation: true
+  bread-crumbs: false
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+  sidebar:
+    style: "docked"
+    search: true
+    contents:
+      - text: "Home"
+        file: index.qmd
+      - GreenishWarblerGenomics2025.qmd
+      - GW_Zchromosome_analysis.qmd
+      - GW_PCAplots.qmd
+      - GW_Heterozygosity_Variance.qmd
+  page-footer: "Copyright 2025, Darren Irwin" 
+
+format:
+  html:
+    theme: lumen
+    css: styles.css
+    toc: true
+    link-external-newwindow: true

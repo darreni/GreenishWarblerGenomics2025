@@ -1,2 +1,2 @@
-# GWgenomics2023
+# GreenishWarblerGenomics2025
 Analysis of greenish warbler genomic variation

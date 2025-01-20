@@ -13,15 +13,17 @@ format:
 jupyter: julia-1.11
 ---
 
-The scripts, data, and figures shown in this document were used as part of the analysis for the paper listed below, which should be cited as the source of information from this document:
-
-Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_.
-
 This page shows the code used to generate PCA plots for the whole genome (and also for each chromosome, although those aren't shown in the paper).
 
 Prior to examining the code on this page, readers should look at `GreenishWarblerGenomics2025.qmd` (or `.html`) and `GW_Zchromosome_analysis.qmd` (or `.html`), as this current page depends on the code on those pages being run first.
 
-##### A note about plots in this document
+#### Citation
+
+The scripts, data, and figures shown in this website were used as the basis for the paper listed below, which should be cited as the source of information from this website:
+
+Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_, minor revision requested.
+
+#### A note about plots in this document
 
 The plots shown below may different somewhat in appearance between the version produced by Quarto (i.e., in this published document) and the version you would get if you run this code without using Quarto. In particular, the dimensions and font sizes of labels and titles may differ. So if you want the versions identical to those used in the paper, run the code directly in the Julia REPL (or using an environment such as VS Code) without using Quarto.
 
@@ -47,6 +49,8 @@ using GenomicDiversity
 ```
 
 ## Choose working directory
+
+Adjust as appropriate for your computer:
 
 ```{julia}
 dataDirectory = "/Users/darrenirwin/Dropbox/Darren's current work/"
@@ -137,7 +141,9 @@ ind_with_metadata_indFiltered.sex = ind_with_metadata_indFiltered_chrgwZ_cleaned
 
 ```
 
-## switch plot order to ring_km, and set nitidus (set to -2500 km) and the Siberian hybrid (set to 5000 km) plot order:
+#### Adjust sample plotting order
+
+This sets the genotype-by-individual plots to arrange sample sites according to `ring_km`, and sets the _nitidus_ samples to -2500 km and the Siberian hybrid to 5000 km (just for plotting):
 
 ```{julia}
 ind_with_metadata_indFiltered.original_plot_order = ind_with_metadata_indFiltered.plot_order
@@ -155,13 +161,13 @@ genosOnly_with_missing = Matrix{Union{Missing, Int16}}(genosOnly)
 genosOnly_with_missing = replace(genosOnly_with_missing, -1 => missing)
 ```
 
-## Make list of scaffolds to plot:
+#### Make list of scaffolds to plot:
 
 ```{julia}
 scaffolds_to_plot = "gw" .* string.(vcat(1, "1A", 2:4, "4A", 5:15, 17:28, "Z"))
 ```
 
-## Determine number of SNPs in the chromosomes above
+#### Determine number of SNPs in the chromosomes above
 
 ```{julia}
 sum(map(in(scaffolds_to_plot), pos_SNP_filtered.chrom))
@@ -170,16 +176,15 @@ sum(map(in(scaffolds_to_plot), pos_SNP_filtered.chrom))
 This reports that 1003924 SNPs are within the listed chromosomes.
 (Good because that matches the number as determined in GW_PCAplots.qmd)
 
-## Choose groups and colors
+#### Choose groups and colors
 
 ```{julia}
 groups_to_plot_PCA = ["vir","vir_S","nit", "lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troch_west","troch_LN","troch_EM","obs","plumb_BJ","plumb","plumb_vir"]
 group_colors_PCA = ["blue","turquoise1","grey","seagreen4","seagreen3","seagreen2","olivedrab3","olivedrab2","olivedrab1","yellow","gold","orange","pink","red","purple"];
 ```
 
-###############
 
-## Show windowed heterozygosity for individuals
+## Show windowed heterozygosity for individuals (for one example scaffold)
 
 ```{julia}
 
@@ -260,7 +265,9 @@ display(h)
 ```
 
 
-## Make heterozygosity variance plot for whole genome:
+## Make ViSHet plot for whole genome:
+
+(**ViSHet** is Variance in Standardized Heterozygosity.)
 
 ```{julia}
 
@@ -304,7 +311,7 @@ end
 # plot(windowed_pos_all.mean_position, windowed_ViSHet_all)
 ```
 
-## Identify "haploblock regions" as those that have high ViSHet
+### Identify "haploblock regions" as those that have high ViSHet
 
 ```{julia}
 threshold_ViSHet = 0.4
@@ -341,7 +348,7 @@ end
 highViSHetRegions
 ```
 
-## Determine fraction of genome that has high ViSHet
+### Determine fraction of genome that has high ViSHet
 
 ```{julia}
 # get total length of high ViSHet regions 
@@ -361,137 +368,9 @@ println("The percent of the genome in high ViSHet regions is $percentGenomeHighV
 ```
 
 
-## Plot "haploblock regions" for whole genome
+### Plot LHBRs (Large Haploblock Regions) for whole genome
 
 ```{julia}
-#= """
-    plotGenomeViSHet(scaffolds_to_plot, 
-                    windowed_ViSHet_all,
-                    windowed_pos_all;
-                    fillColor = "purple",
-                    lineTransparency = 0.8,
-                    fillTransparency = 0.2,
-                    figureSize = (1200, 1200),
-                    plotRegions = false,
-                    regionsToPlot = [],
-                    regionColor = "red")
-
-Plot windowed Variance in Standardized Heterozygosity (ViSHet) along multiple scaffolds.
-
-​# Arguments
-- `scaffolds_to_plot`: a vector of the scaffold names to include in the plot.
-- `windowed_ViSHet_all`: a vector of ViSHet values for windows of the genome.
-- `windowed_pos_all`: dataframe containing genomic locations of windows (must have columns `chrom` and `mean_position`).
-- `fillColor` (optional): the color for the lines and fill (default `"purple"`).
-- `lineTransparency` (optional): transparency of the lines.
-- `fillTransparency` (optional): transparency of the fill color.
-- `figureSize` (optional): size of the figure (height, width).
-- `plotRegions` (optional): choose `true` to highlight regions.
-- `regionsToPlot` (optional): a DataFrame with three columns: `regionChrom` containing names of scaffolds, `regionStart` and `regionEnd` giving start and end of regions to highlight.
-- `regionColor` (optional): the color for the highlighted regions.
-
-# Notes
-- Returns the figure.
-"""
-function plotGenomeViSHet(scaffolds_to_plot, 
-                            windowed_ViSHet_all,
-                            windowed_pos_all;
-                            fillColor = "purple",
-                            lineTransparency = 0.8,
-                            fillTransparency = 0.2,
-                            figureSize = (1200, 1200),
-                            plotRegions = false,
-                            regionsToPlot = [],
-                            regionColor = "red")
-    
-    # get sizes of chromosomes (note this actually isn't the true length, just the mean position of the rightmost window):
-    scaffoldLengths = repeat([-1], length(scaffolds_to_plot))	# vector of Int64
-    for i in 1:length(scaffolds_to_plot)
-        selection = windowed_pos_all.chrom .== scaffolds_to_plot[i]
-        if sum(selection) == 0
-            scaffoldLengths[i] = 0
-        else
-            scaffoldLengths[i] = round(Int, maximum(windowed_pos_all.mean_position[selection]))
-        end
-    end
-
-    # my plan is to use the layout feature of Makie to make one axis per row, and then plot
-    # multiple scaffolds to each row
-
-    scaffoldPlottedAlready = falses(length(scaffolds_to_plot))
-    bpPerRow = 200_000_000
-    bpGapBetweenScaffolds = 10_000_000
-    scaffoldInRow = Vector{Vector{String}}() # declare a vector of vectors to store the chromosome names per row
-    scaffoldBpStartInRow = Vector{Vector{Int}}()
-    row = 1
-
-    while sum(scaffoldPlottedAlready .== false) > 0  # repeat until all chr have a row to be plotted in
-        bpStart = 0
-        remainingRowLength = bpPerRow
-        push!(scaffoldInRow, []) # initialize an empty vector for the next row
-        push!(scaffoldBpStartInRow, []) # initialize an empty vector for the next row
-        placeInRow = 1
-        # look through chromosomes and find some to go in this row
-        for i in 1:length(scaffolds_to_plot)
-            # if not plotted and short enough, add to row:
-            if scaffoldPlottedAlready[i] .== false .&& scaffoldLengths[i] .<= remainingRowLength
-                push!(scaffoldInRow[row], scaffolds_to_plot[i])
-                push!(scaffoldBpStartInRow[row], bpStart)
-                remainingRowLength = remainingRowLength - scaffoldLengths[i] - bpGapBetweenScaffolds
-                scaffoldPlottedAlready[i] = true
-                placeInRow += 1
-                bpStart = bpStart + scaffoldLengths[i] + bpGapBetweenScaffolds
-            end	
-        end
-        row += 1
-    end
-    println(scaffoldInRow)
-
-    # the above works. I have the scaffolds arranged for plotting.
-
-    # Plot in the order defined above
-    f = CairoMakie.Figure(size=figureSize)
-    numRows = length(scaffoldInRow)
-    # make one axis object per row:
-    axs = [Axis(f[i, 1], limits=(0, bpPerRow,
-            -0.45, 2.0), ylabel = "ViSHet") for i in 1:numRows]
-    for i in 1:numRows
-        hidexdecorations!(axs[i]) #hide background lattice and axis labels
-        hidespines!(axs[i], :t, :r, :b) # hide box around plot
-    end
-
-    for rowNum in 1:numRows
-        numScaffoldsInRow = length(scaffoldInRow[rowNum])
-        nextPlotShiftBP = 0
-        for orderNum in 1:numScaffoldsInRow 
-            scaffoldName = scaffoldInRow[rowNum][orderNum]
-            plotBpLength = scaffoldLengths[findfirst(scaffolds_to_plot .== scaffoldName)]
-            # select one scaffold from the whole genome:
-            selection = windowed_pos_all.chrom .== scaffoldName 
-            windowed_pos_selected = view(windowed_pos_all.mean_position, selection)
-            windowed_ViSHet_selected = view(windowed_ViSHet_all, selection)
-            if length(windowed_pos_selected) > 0  # only plot if there is data for that scaffold        
-                text!(axs[rowNum], scaffoldBpStartInRow[rowNum][orderNum] + 0.005bpPerRow, -0.2; text=scaffoldName, align=(:left, :center), fontsize=20)
-                xx = vcat(first(windowed_pos_selected), windowed_pos_selected, last(windowed_pos_selected)) .+ scaffoldBpStartInRow[rowNum][orderNum]
-                yy = vcat(0, windowed_ViSHet_selected, 0)
-                poly!(axs[rowNum], Point2f.(xx, yy), color = (fillColor, fillTransparency), strokecolor = (fillColor, lineTransparency), strokewidth = 1)
-                # if indicating regions (e.g. that have high ViSHet)
-                if plotRegions
-                    regionsToPlot_thisScaffold = regionsToPlot[regionsToPlot.regionChrom .== scaffoldName, :]
-                    for i in eachindex(regionsToPlot_thisScaffold.regionStart)
-                        xValues = [regionsToPlot_thisScaffold.regionStart[i], regionsToPlot_thisScaffold.regionEnd[i]] .+ scaffoldBpStartInRow[rowNum][orderNum]
-                        yValues = [0.05, 0.05]
-                        lines!(axs[rowNum], xValues, yValues, color=regionColor, linewidth=10)
-                    end
-                end
-            end
-        end
-    end
-    display(f)
-    return f
-end
- =#
-
 fig2 = plotGenomeViSHet(scaffolds_to_plot, 
                         windowed_ViSHet_all,
                         windowed_pos_all;
@@ -507,11 +386,10 @@ if false  # set to true to save plot
     save(filename, fig2, px_per_unit = 2.0)
     println("Saved ", filename)
 end 
-
 ```
 
 
-## Make a PCA based on all non-LHBRs (that is, outside of the identified Large HaploBlock Regions):
+## Make a PCA based on all regions not in LHBRs
 
 #### First remove the LHBR regions
 
@@ -597,7 +475,7 @@ println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
 PC2 explains ", 100*PC2_prop_variance, "%.")
 ```
 
-The above looks quite similar to the whole-genome PCA including the LHBRs.
+The above looks quite similar to the whole-genome PCA including the LHBRs. There is a lot of signal outside of the LHBRs.
 
 #### Do non_LHBR for a specific chromosome:
 

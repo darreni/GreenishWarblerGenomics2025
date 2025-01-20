@@ -13,15 +13,17 @@ format:
 jupyter: julia-1.11
 ---
 
-The scripts, data, and figures shown in this document were used as part of the analysis for the paper listed below, which should be cited as the source of information from this document:
-
-Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_.
-
 This page shows the code used for filtering of SNPs that mapped to the Z chromosome.
 
 Prior to examining the code on this page, readers should look at `GreenishWarblerGenomics2025.qmd` (or `.html`), as this current page depends on the code on that page being run first.
 
-##### A note about plots in this document
+#### Citation
+
+The scripts, data, and figures shown in this website were used as the basis for the paper listed below, which should be cited as the source of information from this website:
+
+Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_, minor revision requested.
+
+#### A note about plots in this document
 
 The plots shown below may different somewhat in appearance between the version produced by Quarto (i.e., in this published document) and the version you would get if you run this code without using Quarto. In particular, the dimensions and font sizes of labels and titles may differ. So if you want the versions identical to those used in the paper, run the code directly in the Julia REPL (or using an environment such as VS Code) without using Quarto.
 
@@ -46,6 +48,8 @@ using GenomicDiversity
 ```
 
 ## Choose working directory
+
+You would need to alter this to the appropriate directory on your computer.
 
 ```{julia}
 dataDirectory = "/Users/darrenirwin/Dropbox/Darren's current work/"

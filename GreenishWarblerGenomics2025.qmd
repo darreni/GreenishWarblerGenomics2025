@@ -13,22 +13,15 @@ format:
 jupyter: julia-1.11
 ---
 
-This page contains notes and code describing the data analysis for a manuscript on Greenish Warbler genomics. I've been working with the data for several years, and the R and then Julia code has been in development for a while. This is a Quarto notebook, which can run and display the results of Julia (or other) code blocks, along with text narration, and output in html, pdf, Word, etc.
+This page covers initial setup, loading of the genotypic information, saving data for other pages, and some figure production.
 
-The Julia code here is loosely based on R code written for Greenish Warbler analysis (Irwin et al. 2016, _Molecular Ecology_), and then the North American warbler analyses (Irwin et al. 2018, _Molecular Ecology_), and then my (unpublished) 2019 Greenish Warbler analysis. Most recently, this was adapted from the scripts called GW2022_R_analysis_script.R and IrwinLabGenomicsAnalysisScript.jl but has had a lot of opimizations since then.
-The SNP data here are a result of GBS reads mapped to our new Biozeron genome assembly for a greenish warbler from southern China (`GW2022ref.fa`).
+#### Citation
 
-##### Citation
+The scripts, data, and figures shown in this website were used as the basis for the paper listed below, which should be cited as the source of information from this website:
 
-The scripts, data, and figures shown in this document were used as the basis for the paper listed below, which should be cited as the source of information from this document:
+Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_, minor revision requested.
 
-Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2024. The distribution and dispersal of large haploblocks in a superspecies. Preprint (not yet peer-reviewed) on Authorea: https://doi.org/10.22541/au.173114974.42895933/v1
-
-As of early January 2025, the above manuscript is accepted pending revision at _Molecular Ecology_, which if fully accepted will be citable as:
-
-Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_.
-
-##### A note about plots in this document
+#### A note about plots in this document
 
 The plots shown below may different somewhat in appearance between the version produced by Quarto (i.e., in this published document) and the version you would get if you run this code without using Quarto. In particular, the dimensions and font sizes of labels and titles may differ. So if you want the versions identical to those used in the paper, run the code directly in the Julia REPL (or using an environment such as VS Code) without using Quarto.
 
@@ -332,7 +325,7 @@ Remove the first column of the genotype matrix (which was an initial row number)
 genosOnly_ind_SNP_ind_filtered = geno_ind_SNP_ind_filtered[:, Not(1)]
 ```
 
-### Polish a few individual names (for more readable graphs)
+#### Polish a few individual names (for more readable graphs)
 
 This uses the `correctNames()` function, defined further above.
 
@@ -523,7 +516,7 @@ jldsave(filename; genosOnly_ind_SNP_ind_filtered,
 println("Saved the filtered data.")
 ```
 
-#### The above saves the important data for other Quarto pages, which will load data as below:
+The above saves the important data for other Quarto pages, which will load data as below:
 
 #### Load the filtered dataset
 (This block is not active here)
@@ -790,7 +783,7 @@ plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff,
     plotTitle = "");
 ```
 
-## Make list of scaffolds to plot according to above:
+#### Make list of scaffolds to plot according to above:
 
 ```{julia}
 scaffolds_to_plot = "gw" .* string.(vcat(28:-1:17, 15:-1:1))
@@ -818,11 +811,9 @@ for i in 1:length(scaffolds_to_plot)
 end
 ```
 
-## Estimate relationships of individuals using PCA
+## Impute missing genotypes, for PCA
 
 Our goal is to produce plots showing individuals in genotype space, using Principal Components Analysis. 
-
-#### Impute and save genotypes for each scaffold
 
 PCA requires imputation of missing genotypes. I did imputation for each scaffold above a certain size threshold. These are listed in `chromosomes_to_process` .
 
@@ -906,9 +897,9 @@ for i in eachindex(chromosomes_to_process)
 end
 ```
 
-## Genotype-by-individual plots (some examples)
+#### More genotype-by-individual plots (some examples)
 
-#### GBI plot showing just west individuals:
+##### GBI plot showing just west individuals:
 
 ```{julia}
 groups = ["vir","lud_PK","troch_LN"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   
@@ -942,7 +933,7 @@ for i in 1:length(scaffolds_to_plot)
 end
 ```
 
-#### Make GBI plots showing just east individuals:
+##### Make GBI plots showing just east individuals:
 
 ```{julia}
 groups = ["troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)   

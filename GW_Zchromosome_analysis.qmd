@@ -320,7 +320,7 @@ regionText = "chrgwZ_cleaned"
 filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
 # to do the imputing, do this by setting to true:
 cd(dataDirectory)
-do_imputing = true
+do_imputing = false
 if do_imputing
     #@time imputed_genos = Impute.svd(genotypes_gwZ_SNPfiltered_with_missing)
     @time imputed_genos = Impute.knn(genotypes_gwZ_SNPfiltered_with_missing; dims = :rows)
@@ -491,7 +491,6 @@ PC2_prop_variance = PC2_variance / totalObservationVariance
 println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
 PC2 explains ", 100*PC2_prop_variance, "%.")
 ```
-
 
 ## Just east side:
 

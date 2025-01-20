@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Darren Irwin">
-<meta name="dcterms.date" content="2025-01-19">
+<meta name="dcterms.date" content="2025-01-20">
 
 <title>Greenish Warbler Z-chromosome analysis – Greenish Warbler Genomics 2025</title>
 <style>
@@ -241,7 +241,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">January 19, 2025</p>
+      <p class="date">January 20, 2025</p>
     </div>
   </div>
   
@@ -267,7 +267,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="load-packages" class="level2">
 <h2 class="anchored" data-anchor-id="load-packages">Load packages</h2>
-<div id="00cba449" class="cell" data-execution_count="1">
+<div id="c0dec05f" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">JLD2</span> <span class="co"># for loading saved data</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">DataFrames</span> <span class="co"># for storing data as type DataFrame</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">CairoMakie</span> <span class="co"># for plots</span></span>
@@ -277,14 +277,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">MultivariateStats</span> <span class="co"># for getting variances from PCA model</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Load my custom package <code>GenomicDiversity</code>:</p>
-<div id="812c4b54" class="cell" data-execution_count="2">
+<div id="e7aaee83" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">using</span> <span class="bu">GenomicDiversity</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="choose-working-directory" class="level2">
 <h2 class="anchored" data-anchor-id="choose-working-directory">Choose working directory</h2>
 <p>You would need to alter this to the appropriate directory on your computer.</p>
-<div id="5f694c15" class="cell" data-execution_count="3">
+<div id="9e14cd83" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>dataDirectory <span class="op">=</span> <span class="st">"/Users/darrenirwin/Dropbox/Darren's current work/"</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(dataDirectory)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
@@ -292,7 +292,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="load-the-filtered-dataset" class="level2">
 <h2 class="anchored" data-anchor-id="load-the-filtered-dataset">Load the filtered dataset</h2>
 <p>This dataset was produced through filtering in GreenishWarblerGenomics2025.qmd</p>
-<div id="3fcf2697" class="cell" data-execution_count="4">
+<div id="a66300fd" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>baseName <span class="op">=</span> <span class="st">"GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"</span></span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>tagName <span class="op">=</span> <span class="st">".Jan2025."</span></span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, <span class="st">"ind_SNP_ind_filtered.jld2"</span>)</span>
@@ -321,7 +321,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Also define <code>correctNames()</code> function as in main script, to correct some names:</p>
-<div id="c1439466" class="cell" data-execution_count="5">
+<div id="aee760a8" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> <span class="fu">correctNames</span>(metadataColumn)</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>        metadataColumn_corrected <span class="op">=</span> <span class="fu">replace</span>(metadataColumn, <span class="st">"GW_Armando_plate1_TTGW05_rep2"</span> <span class="op">=&gt;</span> <span class="st">"GW_Armando_plate1_TTGW05r2"</span>,</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GW_Lane5_NA3-3ul"</span> <span class="op">=&gt;</span> <span class="st">"GW_Lane5_NA3"</span>,</span>
@@ -351,7 +351,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h1>Z chromosome differentiation</h1>
 <p>The initial PCA of Z chromosome variation showed some unexpected structure, with females having shifted locations (especially on PC2) compared to males. This is likely due to females having W chromosomes, reads from which are sometimes incorrectly mapped to the Z. Hence a small fraction of SNPs differ between females and males (with females called as heterozygotes, males as homozygotes, at those SNPs). However, at loci that are only on the Z, males can be heterozygous (2 alleles) whereas females can only be hemizygous (one allele).</p>
 <p>To remove this problem, we could take several approaches (e.g., remove problematic SNPs, or look at one sex at a time). Here we’ll plot only males as that will remove the W chromosome. To infer sex of the birds, we’ll try plotting heterozygosity of Z chromosome SNPs per bird.</p>
-<div id="b9b18277" class="cell" data-execution_count="6">
+<div id="7685cca8" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>chrom <span class="op">=</span> <span class="st">"gwZ"</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"chr"</span>, chrom)</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>loci_selection <span class="op">=</span> (pos_SNP_filtered.chrom <span class="op">.==</span> chrom)</span>
@@ -386,7 +386,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>That doesn’t provide super clear separation.</p>
 <p>Let’s try looking at number of missing genotypes:</p>
-<div id="bc559bac" class="cell" data-execution_count="7">
+<div id="bb34a49e" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>missingGenotypeCount <span class="op">=</span> <span class="fu">sum</span>(genotypes_gwZ <span class="op">.==</span> <span class="op">-</span><span class="fl">1</span>, dims<span class="op">=</span><span class="fl">2</span>)</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered[!, <span class="op">:</span>missingZgenotypeCount] <span class="op">.=</span> missingGenotypeCount</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
@@ -412,7 +412,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Now let’s plot those together:</p>
-<div id="9c606aed" class="cell" data-execution_count="8">
+<div id="787cca63" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> CairoMakie.<span class="fu">Figure</span>()</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> <span class="fu">Axis</span>(f[<span class="fl">1</span>, <span class="fl">1</span>],</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    title <span class="op">=</span> <span class="st">"Missing vs. fraction heterozygous Z SNPs"</span>,</span>
@@ -451,7 +451,7 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 # After filtering, kept 229227 out of a possible 2431709 Sites
 # Run Time = 155.00 seconds</code></pre>
 <p>We then load these read depth files into Julia and determine sex of individuals from the ratio of read depth on chromosome Z to chromosome 2:</p>
-<div id="e8291a8e" class="cell" data-execution_count="9">
+<div id="79c38549" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(repoDirectory)</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>filename_gwZ <span class="op">=</span> <span class="st">"metadata/GW2022_all4plates.genotypes.SNPs_only.chrgwZ.max2allele_noindel.vcf.maxmiss60.MQ20.lowHet.vcf.idepth"</span></span>
@@ -485,7 +485,7 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 </div>
 <p>That is quite a clear difference. The cluster with the lower Z / autosome read depth ratio should correspond to females (one copy of Z), whereas the higher Z / autosome ratio should be males. Interestingly, the ratios are a little higher than the expected 0.5 and 1, likely due to some repetitive elements (on the Z) and some W fragments being mapped to Z. Additional, the pseudoautosomal region, which is homologous and recombines between Z and W, will drive up Z read depth in females.</p>
 <p>It is these SNPs with a W copy that I will now try to detect and remove. They should show high heterozygosity in females.</p>
-<div id="d88038b1" class="cell" data-execution_count="10">
+<div id="a35ff376" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_sex.sex <span class="op">.=</span> <span class="st">"na"</span> </span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>females <span class="op">=</span> ind_with_metadata_indFiltered_sex.depthRatio <span class="op">.&lt;</span> <span class="fl">0.8</span></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>ind_with_metadata_indFiltered_sex.sex[females] <span class="op">.=</span> <span class="st">"F"</span></span>
@@ -538,7 +538,7 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 </div>
 <p>This really clarifies things. The SNPs in the middle of the graph, with similar heterozygosity in females and males, are consistent with being pseudoautosomal SNPs. But the SNPs that have much higher female heterozygosity than male heterozygosity could be non-pseudoautosomal SNPs with reads from the W mapping to the Z, and giving appearance of Z heterozygosity in females (and not males). It is these SNPs we should remove. Also, there are a few with &gt; 0.5 heterozygosity in males, which should be removed because they are likely due to paralogs.</p>
 <p>So, we will remove SNPs according to these rules: If (female heterozygosity is above 0.05) AND (ratio of male to female heterozygosity is less than 1/2), REMOVE the SNP from consideration. If (male heterozygosity is above 0.5), REMOVE the SNP.</p>
-<div id="9a349156" class="cell" data-execution_count="11">
+<div id="fa984f55" class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>removed_SNPs <span class="op">=</span> (male_heterozygosity <span class="op">.&gt;</span> <span class="fl">0.5</span>) <span class="op">.||</span></span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>                ((female_heterozygosity <span class="op">.&gt;</span> <span class="fl">0.05</span>) <span class="op">.&amp;&amp;</span> </span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>                ((male_heterozygosity <span class="op">./</span> female_heterozygosity) <span class="op">.&lt;</span> <span class="fl">0.5</span> ))</span>
@@ -550,7 +550,7 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 </div>
 </div>
 <p>Check that the filtering did remove the problematic SNPs:</p>
-<div id="3416ec49" class="cell" data-execution_count="12">
+<div id="9b245d30" class="cell" data-execution_count="12">
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>females_genotypes_gwZ <span class="op">=</span> <span class="fu">view</span>(genotypes_gwZ_SNPfiltered, females, <span class="op">:</span>)</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>numHetsPerSNP_females <span class="op">=</span> <span class="fu">vec</span>(<span class="fu">sum</span>(females_genotypes_gwZ <span class="op">.==</span> <span class="fl">1</span>, dims<span class="op">=</span><span class="fl">1</span>))</span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>female_heterozygosity <span class="op">=</span> numHetsPerSNP_females <span class="op">./</span> num_females</span>
@@ -597,7 +597,7 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 <p>The filtering worked well!</p>
 <section id="save-the-filtered-z-chromosome-genotypes" class="level2">
 <h2 class="anchored" data-anchor-id="save-the-filtered-z-chromosome-genotypes">Save the filtered Z chromosome genotypes</h2>
-<div id="4d45e6b3" class="cell" data-execution_count="13">
+<div id="9d6c8690" class="cell" data-execution_count="13">
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(dataDirectory)</span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>regionText <span class="op">=</span> <span class="st">"chrgwZ_cleaned"</span></span>
 <span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".notImputed.jld2"</span>)</span>
@@ -608,7 +608,7 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 </div>
 </div>
 <p>Looks good. Now impute and do the PCA. I did the imputing previously (to do it again, set <code>do_imputing = true</code> below).</p>
-<div id="29c650de" class="cell" data-execution_count="14">
+<div id="a430b97b" class="cell" data-execution_count="14">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ_SNPfiltered_with_missing <span class="op">=</span> <span class="fu">Matrix</span><span class="dt">{Union{Missing, Float32}}</span>(genotypes_gwZ_SNPfiltered)</span>
 <span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="co"># change "-1" to "missing":</span></span>
 <span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>genotypes_gwZ_SNPfiltered_with_missing[genotypes_gwZ_SNPfiltered_with_missing <span class="op">.==</span> <span class="op">-</span><span class="fl">1</span>] <span class="op">.=</span> <span class="cn">missing</span>;</span>
@@ -616,7 +616,7 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 <span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>filename <span class="op">=</span> <span class="fu">string</span>(baseName, tagName, regionText, <span class="st">".KNNimputedMissing.jld2"</span>)</span>
 <span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="co"># to do the imputing, do this by setting to true:</span></span>
 <span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="fu">cd</span>(dataDirectory)</span>
-<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>do_imputing <span class="op">=</span> <span class="cn">true</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>do_imputing <span class="op">=</span> <span class="cn">false</span></span>
 <span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> do_imputing</span>
 <span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">#@time imputed_genos = Impute.svd(genotypes_gwZ_SNPfiltered_with_missing)</span></span>
 <span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>    <span class="pp">@time</span> imputed_genos <span class="op">=</span> Impute.<span class="fu">knn</span>(genotypes_gwZ_SNPfiltered_with_missing; dims <span class="op">=</span> <span class="op">:</span>rows)</span>
@@ -644,9 +644,8 @@ vcftools --vcf GW2022_all4plates.genotypes.SNPs_only.whole_genome.max2allele_noi
 <span id="cb25-33"><a href="#cb25-33" aria-hidden="true" tabindex="-1"></a>            xLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC1"</span>), yLabelText <span class="op">=</span> <span class="fu">string</span>(<span class="st">"Chromosome Z PC2"</span>),</span>
 <span id="cb25-34"><a href="#cb25-34" aria-hidden="true" tabindex="-1"></a>            showPlot <span class="op">=</span> <span class="cn">true</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>110.909818 seconds (13.83 M allocations: 1.097 GiB, 0.65% gc time, 5.57% compilation time)
-Saved matrix of real and imputed Z chromosome genotypes. 
-</code></pre>
+<pre><code>Loaded GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome.Jan2025.chrgwZ_cleaned.KNNimputedMissing.jld2
+chrgwZ_cleaned: 51505 SNPs from 257 individuals</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code>┌ Warning: Found `resolution` in the theme when creating a `Scene`. The `resolution` keyword for `Scene`s and `Figure`s has been deprecated. Use `Figure(; size = ...` or `Scene(; size = ...)` instead, which better reflects that this is a unitless size and not a pixel resolution. The key could also come from `set_theme!` calls or related theming functions.
@@ -697,7 +696,7 @@ Saved matrix of real and imputed Z chromosome genotypes.
 <p>Looks Great!! Now have a Z chromosome PCA with both males and females, based on only Z-chromosome markers.</p>
 <section id="genotype-by-individual-plots-for-z-chromosome" class="level4">
 <h4 class="anchored" data-anchor-id="genotype-by-individual-plots-for-z-chromosome">Genotype-by-individual plots for Z chromosome</h4>
-<div id="ec0e4543" class="cell" data-execution_count="15">
+<div id="4df15bc2" class="cell" data-execution_count="15">
 <div class="sourceCode cell-code" id="cb28"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>groups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"lud_PK"</span>,<span class="st">"troch_LN"</span>,<span class="st">"obs"</span>,<span class="st">"plumb"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)    </span></span>
 <span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>plotGroups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"lud_PK"</span>,<span class="st">"lud_KS"</span>,<span class="st">"lud_central"</span>,<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>,<span class="st">"plumb_vir"</span>]</span>
 <span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>plotGroupColors <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>, <span class="st">"pink"</span>,<span class="st">"red"</span>,<span class="st">"purple"</span>]</span>
@@ -767,7 +766,7 @@ Calculated Fst values</code></pre>
 </section>
 <section id="now-make-one-of-all-individuals-for-the-supplement" class="level4">
 <h4 class="anchored" data-anchor-id="now-make-one-of-all-individuals-for-the-supplement">Now make one of all individuals, for the supplement</h4>
-<div id="82398ac1" class="cell" data-execution_count="16">
+<div id="f8218351" class="cell" data-execution_count="16">
 <div class="sourceCode cell-code" id="cb32"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>groups_to_plot_all <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>,<span class="st">"troch_west"</span>,<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>,<span class="st">"plumb_vir"</span>]</span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>group_colors_all <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"grey"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"olivedrab3"</span>,<span class="st">"olivedrab2"</span>,<span class="st">"olivedrab1"</span>,<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>,<span class="st">"purple"</span>];</span>
 <span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -819,7 +818,7 @@ Calculated Fst values</code></pre>
 <section id="just-west-side" class="level2">
 <h2 class="anchored" data-anchor-id="just-west-side">Just west side</h2>
 <p>One of the nitidus is a female, so including both sexes here, and no additional filtering for missing data:</p>
-<div id="15dce299" class="cell" data-execution_count="17">
+<div id="254d53f2" class="cell" data-execution_count="17">
 <div class="sourceCode cell-code" id="cb35"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>groups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"troch_LN"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)</span></span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>plotGroups <span class="op">=</span> [<span class="st">"vir"</span>,<span class="st">"vir_S"</span>,<span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>,<span class="st">"troch_west"</span>,<span class="st">"troch_LN"</span>]</span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>plotGroupColors <span class="op">=</span> [<span class="st">"blue"</span>,<span class="st">"turquoise1"</span>,<span class="st">"grey"</span>,<span class="st">"seagreen4"</span>,<span class="st">"seagreen3"</span>,<span class="st">"seagreen2"</span>,<span class="st">"olivedrab3"</span>,<span class="st">"olivedrab2"</span>,<span class="st">"olivedrab1"</span>,<span class="st">"yellow"</span>]</span>
@@ -882,7 +881,7 @@ Calculated Fst values</code></pre>
 </div>
 <section id="do-z-chromosome-pca-on-west-side" class="level3">
 <h3 class="anchored" data-anchor-id="do-z-chromosome-pca-on-west-side">Do Z-chromosome PCA on west side</h3>
-<div id="88c33874" class="cell" data-execution_count="18">
+<div id="f8402471" class="cell" data-execution_count="18">
 <div class="sourceCode cell-code" id="cb39"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>groups_to_plot_PCA <span class="op">=</span> [<span class="st">"vir"</span>, <span class="st">"vir_S"</span>, <span class="st">"nit"</span>, <span class="st">"lud_PK"</span>, <span class="st">"lud_KS"</span>, <span class="st">"lud_central"</span>, <span class="st">"lud_Sath"</span>, <span class="st">"lud_ML"</span>, <span class="st">"troch_west"</span>, <span class="st">"troch_LN"</span>]</span>
 <span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>group_colors_PCA <span class="op">=</span> [<span class="st">"blue"</span>, <span class="st">"turquoise1"</span>, <span class="st">"grey"</span>, <span class="st">"seagreen4"</span>, <span class="st">"seagreen3"</span>, <span class="st">"seagreen2"</span>, <span class="st">"olivedrab3"</span>, <span class="st">"olivedrab2"</span>, <span class="st">"olivedrab1"</span>, <span class="st">"yellow"</span>]</span>
 <span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>PCA_Zchrom_west <span class="op">=</span> <span class="fu">plotPCA</span>(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, </span>
@@ -920,7 +919,7 @@ PC2 explains 3.087952%.</code></pre>
 <section id="just-east-side" class="level2">
 <h2 class="anchored" data-anchor-id="just-east-side">Just east side:</h2>
 <p>One of obscuratus is female, so also showing both males and females here:</p>
-<div id="902566d2" class="cell" data-execution_count="19">
+<div id="f9d015cc" class="cell" data-execution_count="19">
 <div class="sourceCode cell-code" id="cb42"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>groups <span class="op">=</span> [<span class="st">"troch_LN"</span>,<span class="st">"obs"</span>,<span class="st">"plumb"</span>] <span class="co"># for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)</span></span>
 <span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>plotGroups <span class="op">=</span> [<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>]</span>
 <span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>plotGroupColors <span class="op">=</span> [<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>]</span>
@@ -983,7 +982,7 @@ Calculated Fst values</code></pre>
 </div>
 <section id="do-z-chromosome-pca-on-east-side" class="level3">
 <h3 class="anchored" data-anchor-id="do-z-chromosome-pca-on-east-side">Do Z-chromosome PCA on east side</h3>
-<div id="4e1fa92a" class="cell" data-execution_count="20">
+<div id="69128a0e" class="cell" data-execution_count="20">
 <div class="sourceCode cell-code" id="cb46"><pre class="sourceCode julia code-with-copy"><code class="sourceCode julia"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>groups_to_plot_PCA <span class="op">=</span> [<span class="st">"troch_LN"</span>,<span class="st">"troch_EM"</span>,<span class="st">"obs"</span>,<span class="st">"plumb_BJ"</span>,<span class="st">"plumb"</span>]</span>
 <span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>group_colors_PCA <span class="op">=</span> [<span class="st">"yellow"</span>,<span class="st">"gold"</span>,<span class="st">"orange"</span>,<span class="st">"pink"</span>,<span class="st">"red"</span>]</span>
 <span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>PCA_Zchrom_east <span class="op">=</span> <span class="fu">plotPCA</span>(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned, </span>

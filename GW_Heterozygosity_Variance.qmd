@@ -985,11 +985,16 @@ genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNamesWithHets, numIndsTo
                                             genos_selectedSNPs, PCAmodelAll.metadata;
                                             sortByMissing = true)
 
-plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
+fig_4 = plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
+                indFontSize=8, figureSize=(1200, 1200),
                 indColorLeftProvided = false,
                 indColorRightProvided = true)
+
+if false  # set to true to save plot
+    save("Figure4_from_Julia.png", fig_4[1], px_per_unit = 2.0)
+end
 ```
 
 #### Show GBI plot according to original groups and plot order
@@ -7807,16 +7812,19 @@ function plotHaploblockSummaryWithColors(integerToColorCodes::Dict{Int, String},
 end
 
 
-plotHaploblockSummaryWithColors(integerToColorCodes,
+fig_5 = plotHaploblockSummaryWithColors(integerToColorCodes,
                             genosSummary, 
                             ind_with_metadata_included,
                             plotGroupsForSummary_all, groupColorsForSummary_all;
                             regionNames = haploblockRegions,
-                            indFontSize = 8, figureSize = (1000, 2000),
+                            indFontSize = 7, figureSize = (1000, 2000),
                             plotTitle = nothing,
                             indColorLeftProvided = false,
                             indColorRightProvided = false)
 
+if false  # set to true to save plot
+    save("Figure5_from_Julia.png", fig_5[1], px_per_unit = 3.0)
+end
 ```
 
 

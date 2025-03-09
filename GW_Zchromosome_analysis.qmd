@@ -142,6 +142,7 @@ To remove this problem, we could take several approaches (e.g., remove problemat
 
 ```{julia}
 chrom = "gwZ"
+regionText = string("chr", chrom)
 lociSelection = (GW_GenoData_indFiltered.positions.chrom .== chrom)
 GW_GenoData_indFiltered_Zonly = GenomicDiversity.filterLoci(GW_GenoData_indFiltered, lociSelection; direction = "in");
 numHetSNPs = sum(GW_GenoData_indFiltered_Zonly.genotypes .== 1, dims=2)
@@ -239,7 +240,9 @@ readDepthRatioZto2 = innerjoin(readDepthZ, readDepth2, on = :INDV, renamecols = 
 
 readDepthRatioZto2[!, :depthRatio] = readDepthRatioZto2.MEAN_DEPTH_gwZ ./ readDepthRatioZto2.MEAN_DEPTH_gw2
 
-ind_with_metadata_indFiltered_sex = leftjoin(GW_GenoData_indFiltered.indInfo, readDepthRatioZto2, on = :ind => :INDV)
+GW_GenoData_indFiltered_Zonly.indInfo = leftjoin(GW_GenoData_indFiltered_Zonly.indInfo, readDepthRatioZto2, on = :ind => :INDV)
+
+# ind_with_metadata_indFiltered_sex = leftjoin(GW_GenoData_indFiltered.indInfo, readDepthRatioZto2, on = :ind => :INDV)
 
 f = CairoMakie.Figure()
 ax = Axis(f[1, 1],
@@ -247,8 +250,11 @@ ax = Axis(f[1, 1],
     xlabel = "Individual (order as in metadata)",
     ylabel = "Ratio of read depths on Z and chr 2")
 
-x_plot_values = eachindex(ind_with_metadata_indFiltered_sex.depthRatio)
-y_plot_values = ind_with_metadata_indFiltered_sex.depthRatio
+x_plot_values = eachindex(GW_GenoData_indFiltered_Zonly.indInfo.depthRatio)
+y_plot_values = GW_GenoData_indFiltered_Zonly.indInfo.depthRatio
+
+# x_plot_values = eachindex(ind_with_metadata_indFiltered_sex.depthRatio)
+# y_plot_values = ind_with_metadata_indFiltered_sex.depthRatio
 CairoMakie.scatter!(ax, x_plot_values, y_plot_values, marker = :diamond, color="black", markersize=10, strokewidth=0.5)
 
 display(f)
@@ -259,27 +265,27 @@ That is quite a clear difference. The cluster with the lower Z / autosome read d
 It is these SNPs with a W copy that I will now try to detect and remove. They should show high heterozygosity in females.
 
 ```{julia}
-ind_with_metadata_indFiltered_sex.sex .= "na" 
-females = ind_with_metadata_indFiltered_sex.depthRatio .< 0.8
-ind_with_metadata_indFiltered_sex.sex[females] .= "F"
+GW_GenoData_indFiltered_Zonly.indInfo.sex .= "na" 
+females = GW_GenoData_indFiltered_Zonly.indInfo.depthRatio .< 0.8
+GW_GenoData_indFiltered_Zonly.indInfo.sex[females] .= "F"
+
+# ind_with_metadata_indFiltered_sex.sex .= "na" 
+# females = ind_with_metadata_indFiltered_sex.depthRatio .< 0.8
+# ind_with_metadata_indFiltered_sex.sex[females] .= "F"
 num_females = sum(females)
 females_genotypes_gwZ = view(GW_GenoData_indFiltered_Zonly.genotypes, females, :)
 # females_genotypes_gwZ = view(genotypes_gwZ, females, :)
 numHetsPerSNP_females = vec(sum(females_genotypes_gwZ .== 1, dims=1))
 female_heterozygosity = numHetsPerSNP_females ./ num_females
-CairoMakie.hist(female_heterozygosity)
-CairoMakie.plot(female_heterozygosity)
 
 # compare with males:
-males = ind_with_metadata_indFiltered_sex.depthRatio .> 0.9
-ind_with_metadata_indFiltered_sex.sex[males] .= "M"
+males = GW_GenoData_indFiltered_Zonly.indInfo.depthRatio .> 0.9
+GW_GenoData_indFiltered_Zonly.indInfo.sex[males] .= "M"
 num_males = sum(males)
 males_genotypes_gwZ = view(GW_GenoData_indFiltered_Zonly.genotypes, males, :)
 # males_genotypes_gwZ = view(genotypes_gwZ, males, :)
 numHetsPerSNP_males = vec(sum(males_genotypes_gwZ .== 1, dims=1))
 male_heterozygosity = numHetsPerSNP_males ./ num_males
-CairoMakie.hist(male_heterozygosity)
-CairoMakie.plot(male_heterozygosity)
 
 f = CairoMakie.Figure()
 ax = Axis(f[1, 1],
@@ -299,41 +305,26 @@ So, we will remove SNPs according to these rules:
 If (female heterozygosity is above 0.05) AND (ratio of male to female heterozygosity is less than 1/2), REMOVE the SNP from consideration.
 If (male heterozygosity is above 0.5), REMOVE the SNP.
 
-
-
-
-
-
--------------- START MODIFYING HERE ---------------
-
-
-
-
-
 ```{julia}
 removed_SNPs = (male_heterozygosity .> 0.5) .||
                 ((female_heterozygosity .> 0.05) .&& 
                 ((male_heterozygosity ./ female_heterozygosity) .< 0.5 ))
-genotypes_gwZ_SNPfiltered = genotypes_gwZ[:, Not(removed_SNPs)]
-pos_SNP_filtered_gwZ_SNPfiltered = pos_SNP_filtered_gwZ[Not(removed_SNPs),:]
+GW_GenoData_indFiltered_Zonly_SNPfiltered = GenomicDiversity.filterLoci(GW_GenoData_indFiltered_Zonly, removed_SNPs);
 println("This filtering removed ", sum(removed_SNPs), " SNPs.")
 ```
 
 Check that the filtering did remove the problematic SNPs:
 
 ```{julia}
-females_genotypes_gwZ = view(genotypes_gwZ_SNPfiltered, females, :)
+# calculate female heterozygosity
+females_genotypes_gwZ = view(GW_GenoData_indFiltered_Zonly_SNPfiltered.genotypes, females, :)
 numHetsPerSNP_females = vec(sum(females_genotypes_gwZ .== 1, dims=1))
 female_heterozygosity = numHetsPerSNP_females ./ num_females
-CairoMakie.hist(female_heterozygosity)
-CairoMakie.plot(female_heterozygosity)
 
 # compare with males:
-males_genotypes_gwZ = view(genotypes_gwZ_SNPfiltered, males, :)
+males_genotypes_gwZ = view(GW_GenoData_indFiltered_Zonly_SNPfiltered.genotypes, males, :)
 numHetsPerSNP_males = vec(sum(males_genotypes_gwZ .== 1, dims=1))
 male_heterozygosity = numHetsPerSNP_males ./ num_males
-CairoMakie.hist(male_heterozygosity)
-CairoMakie.plot(male_heterozygosity)
 
 f = CairoMakie.Figure()
 ax = Axis(f[1, 1],
@@ -355,7 +346,15 @@ The filtering worked well!
 cd(dataDirectory)
 regionText = "chrgwZ_cleaned"
 filename = string(baseName, tagName, regionText, ".notImputed.jld2")
-jldsave(filename; genotypes_gwZ_SNPfiltered, ind_with_metadata_indFiltered = ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region = pos_SNP_filtered_gwZ_SNPfiltered)
+genotypes_gwZ_SNPfiltered = GW_GenoData_indFiltered_Zonly_SNPfiltered.genotypes
+ind_with_metadata_indFiltered = GW_GenoData_indFiltered_Zonly_SNPfiltered.indInfo
+pos_SNP_filtered_region = GW_GenoData_indFiltered_Zonly_SNPfiltered.positions
+jldsave(filename; 
+    genotypes_gwZ_SNPfiltered,
+    ind_with_metadata_indFiltered,
+    pos_SNP_filtered_region)
+
+# jldsave(filename; genotypes_gwZ_SNPfiltered, ind_with_metadata_indFiltered = ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region = pos_SNP_filtered_gwZ_SNPfiltered)
 println("Saved matrix of real Z chromosome genotypes (without imputation).")
 ```
 
@@ -363,21 +362,22 @@ Looks good. Now impute and do the PCA. I did the imputing previously (to do it a
 
 ```{julia}
 genotypes_gwZ_SNPfiltered_with_missing = Matrix{Union{Missing, Float32}}(genotypes_gwZ_SNPfiltered)
+
 # change "-1" to "missing":
 genotypes_gwZ_SNPfiltered_with_missing[genotypes_gwZ_SNPfiltered_with_missing .== -1] .= missing;
 regionText = "chrgwZ_cleaned"
 filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
-# to do the imputing, do this by setting to true:
 cd(dataDirectory)
-do_imputing = false
+# to do the imputing, do this by setting to true:
+do_imputing = true
 if do_imputing
     #@time imputed_genos = Impute.svd(genotypes_gwZ_SNPfiltered_with_missing)
     @time imputed_genos = Impute.knn(genotypes_gwZ_SNPfiltered_with_missing; dims = :rows)
     # took 46 sec
-    jldsave(filename; imputed_genos, ind_with_metadata_indFiltered = ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region = pos_SNP_filtered_gwZ_SNPfiltered)
+    jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_region)
     imputed_genos_chrZcleaned = imputed_genos
-    ind_with_metadata_indFiltered_sex_chrZcleaned = ind_with_metadata_indFiltered_sex
-    pos_SNP_filtered_chZcleaned = pos_SNP_filtered_gwZ_SNPfiltered
+    ind_with_metadata_indFiltered_sex_chrZcleaned = ind_with_metadata_indFiltered
+    pos_SNP_filtered_chZcleaned = pos_SNP_filtered_region
     println("Saved matrix of real and imputed Z chromosome genotypes. \n")
 else # load the already saved imputing
     imputed_genos_chrZcleaned = load(filename, "imputed_genos")
@@ -395,7 +395,7 @@ plotPCA(imputed_genos_chrZcleaned, ind_with_metadata_indFiltered_sex_chrZcleaned
             lineOpacity = 0.7, fillOpacity = 0.6,
             symbolSize = 14, showTitle = true,
             xLabelText = string("Chromosome Z PC1"), yLabelText = string("Chromosome Z PC2"),
-            showPlot = true)
+            showPlot = true);
 ```
 
 Looks Great!! Now have a Z chromosome PCA with both males and females, based on only Z-chromosome markers.

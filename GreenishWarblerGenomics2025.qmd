@@ -101,8 +101,7 @@ cd(dataDirectory)
 
 ```{julia}
 # choose path and filename for the 012 files
-pathName = dataDirectory * "GW_genomics_2022_with_new_genome/"
-baseName = pathName * "GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"
+baseName = "GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"
 filenameTextMiddle = ".max2allele_noindel.vcf.maxmiss"
 # indicate percent threshold for missing genotypes for each SNP--
 # this was set by earlier filtering, and is just a record-keeper for the filenames:
@@ -111,7 +110,7 @@ filenameTextEnd = ".MQ20.lowHet.tab"
 tagName = ".Jan2025."   # choose a tag name for this analysis
 # indicate name of metadata file, a text file with these column headings:
 # ID	location	group	Fst_group	plot_order
-metadataFile = pathName * "GW_all4plates.Fst_groups.txt"
+metadataFile = "GW_genomics_2022_with_new_genome/GW_all4plates.Fst_groups.txt"
 # assemble paths and filenames for data files: 
 individualsFile = string(baseName, filenameTextMiddle, missingGenotypeThreshold, filenameTextEnd, ".012.indv")
 positionsFile = string(baseName, filenameTextMiddle, missingGenotypeThreshold, filenameTextEnd, ".012.pos")
@@ -200,7 +199,7 @@ end
 ## Load the genomic data and metadata into a `GenoData` object:
 
 ```{julia}
-GW_GenoData = GenomicDiversity.loadGenoData(metadataFile, individualsFile, genotypesFile, positionsFile)
+GW_GenoData = GenomicDiversity.loadGenoData(dataDirectory * metadataFile, dataDirectory * individualsFile, dataDirectory * genotypesFile, dataDirectory * positionsFile)
 # look at the genotype matrix:
 GW_GenoData.genotypes
 ```

@@ -683,14 +683,18 @@ metadataFile = ["metadataFile"] =#
 
 --------------------- START REVISING HERE --------------
 
+CAN DELETE IF WORKS WITHOUT:
 ## Prepare data for Genotype-by-individual plots and PCA
 
 For missing genotypes, change our code of `-1` to `missing`:
 
 ```{julia}
-genosOnly_with_missing = Matrix{Union{Missing, Int16}}(genosOnly_ind_SNP_ind_filtered)
+#= genosOnly_with_missing = Matrix{Union{Missing, Int16}}(genosOnly_ind_SNP_ind_filtered)
 genosOnly_with_missing[genosOnly_with_missing .== -1] .= missing;
+ =#
 ```
+
+
 
 
 ## Genotype-by-individual plots
@@ -714,15 +718,21 @@ missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of m
 This uses groups indicated column `Fst_group` in the metadata file.
 
 ```{julia}
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+freqs, sampleSizes = GenomicDiversity.getFreqsAndSampleSizes(GW_GenoData_indFiltered, groups)
 println("Calculated population allele frequencies and sample sizes")
 ```
 
 #### Calculate Fst 
 ```{julia}
-Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = GenomicDiversity.getFst(freqs, 
+                                    sampleSizes, groups)
 println("Calculated Fst values")
 ```
+
+
+
+--------- START REVISING HERE --------------
+
 
 #### Limit the individuals to include in plot
 

@@ -729,16 +729,21 @@ Fst, FstNumerator, FstDenominator, pairwiseNamesFst = GenomicDiversity.getFst(fr
 println("Calculated Fst values")
 ```
 
-
-
---------- START REVISING HERE --------------
-
-
 #### Limit the individuals to include in plot
 
 ```{julia}
+# Limit each group to specified numbers
+genotypes_included, indInfo_included = limitIndsToPlot(plotGroups, numIndsToPlot, GW_GenoData_indFiltered.genotypes, GW_GenoData_indFiltered.indInfo)
+# put the info for limited individuals into new GenoData object
+GW_GenoData_indFiltered_included = GenoData(indInfo_included, genotypes_included, GW_GenoData_indFiltered.positions);
+# Note to self: make this function more streamlined in next version of package,
+# so that limitIndsToPlot() can work directly on a GenoData object.
+```
+
+CAN DELETE IF WORKS WITHOUT:
+```{julia}
 # Option to filter out individuals with lots of missing genotypes
-if false  # set to true if using this option
+#= if false  # set to true if using this option
     numMissings_threshold = 50_000  # optional of number of missing, to exclude individual from plot
     selection = ind_with_metadata_indFiltered.numMissings .< numMissings_threshold
     genosOnly_with_missing_selected = view(genosOnly_with_missing, selection, :)
@@ -752,31 +757,49 @@ else
     ind_with_metadata_indFiltered_selected = ind_with_metadata_indFiltered
 end
 # Limit each group to specified numbers
-genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected);
+genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected); =#
 ```
 
 #### Choose the scaffold and region to show
+
 ```{julia}
 chr = "gw23"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+regionInfo = chooseChrRegion(GW_GenoData_indFiltered_included.positions, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 ```
+
+CAN DELETE IF WORKS WITHOUT:
+```{julia}
+#= chr = "gw23"
+regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+ =#
+ ```
 
 #### Now actually make the plot
 
 ```{julia}
-plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
+plotInfo = GenomicDiversity.plotGenotypeByIndividualWithFst(GW_GenoData_indFiltered_included, 
+    groupsToCompare, Fst_cutoff, missingFractionAllowed, 
+    regionInfo, Fst, pairwiseNamesFst, 
+    freqs, plotGroups, plotGroupColors);
+# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
+```
+
+CAN DELETE IF WORKS WITHOUT:
+```{julia}
+#= plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = ""); =#
 # plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 ```
   
 #### Choose another chromosome, and plot similarly to above
 ```{julia}
 chr = "gw26"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
-    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst,
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+regionInfo = chooseChrRegion(GW_GenoData_indFiltered_included.positions, chr; positionMin=1, positionMax=scaffold_lengths[chr])
+plotInfo = GenomicDiversity.plotGenotypeByIndividualWithFst(GW_GenoData_indFiltered_included, 
+    groupsToCompare, Fst_cutoff, missingFractionAllowed, 
+    regionInfo, Fst, pairwiseNamesFst, 
+    freqs, plotGroups, plotGroupColors);
 ```
 
 #### Make a GBI plot to illustrate variation along west side of ring
@@ -793,38 +816,28 @@ Fst_cutoff = 0.9
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
 # Calculate allele freqs and sample sizes (use column Fst_group)
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+freqs, sampleSizes = GenomicDiversity.getFreqsAndSampleSizes(GW_GenoData_indFiltered, groups)
 println("Calculated population allele frequencies and sample sizes")
 
 # calculate Fst 
-Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = GenomicDiversity.getFst(freqs, 
+                                    sampleSizes, groups)
 println("Calculated Fst values")
 
-# Option to filter out individuals with lots of missing genotypes
-if false  # set to true if using this option
-    numMissings_threshold = 50_000  # optional of number of missing, to exclude individual from plot
-    selection = ind_with_metadata_indFiltered.numMissings .< numMissings_threshold
-    genosOnly_with_missing_selected = view(genosOnly_with_missing, selection, :)
-    ind_with_metadata_indFiltered_selected = view(ind_with_metadata_indFiltered, selection, :)
-
-    println("Filtering out these individuals based on too many missing genotypes: ")
-    filtered_inds = ind_with_metadata_indFiltered.ind[selection .== false]
-    println(DataFrame(filtered_inds = filtered_inds)) # did this to print all lines
-else
-    genosOnly_with_missing_selected = genosOnly_with_missing
-    ind_with_metadata_indFiltered_selected = ind_with_metadata_indFiltered
-end
 # Limit each group to specified numbers
-genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected);
+genotypes_included, indInfo_included = limitIndsToPlot(plotGroups, numIndsToPlot, GW_GenoData_indFiltered.genotypes, GW_GenoData_indFiltered.indInfo)
+# put the info for limited individuals into new GenoData object
+GW_GenoData_indFiltered_included = GenoData(indInfo_included, genotypes_included, GW_GenoData_indFiltered.positions);
 
 # choose the scaffold and region to show
 chr = "gw26"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) 
+regionInfo = chooseChrRegion(GW_GenoData_indFiltered_included.positions, chr; positionMin=1, positionMax=scaffold_lengths[chr])
 
 #### Now actually make the plot
-plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
-    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+plotInfo = GenomicDiversity.plotGenotypeByIndividualWithFst(GW_GenoData_indFiltered_included, 
+    groupsToCompare, Fst_cutoff, missingFractionAllowed, 
+    regionInfo, Fst, pairwiseNamesFst, 
+    freqs, plotGroups, plotGroupColors);
 ```
 
 #### Show another chromosome along west side of ring:
@@ -832,12 +845,13 @@ plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingF
 ```{julia}
 # choose the scaffold and region to show
 chr = "gw28"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) 
+regionInfo = chooseChrRegion(GW_GenoData_indFiltered_included.positions, chr; positionMin=1, positionMax=scaffold_lengths[chr])
 
 #### Now actually make the plot
-plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
-    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+plotInfo = GenomicDiversity.plotGenotypeByIndividualWithFst(GW_GenoData_indFiltered_included, 
+    groupsToCompare, Fst_cutoff, missingFractionAllowed, 
+    regionInfo, Fst, pairwiseNamesFst, 
+    freqs, plotGroups, plotGroupColors);
 ```
 
 #### Make a GBI plot to illustrate variation along east side of ring
@@ -854,43 +868,32 @@ Fst_cutoff = 0.9
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
 # Calculate allele freqs and sample sizes (use column Fst_group)
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+freqs, sampleSizes = GenomicDiversity.getFreqsAndSampleSizes(GW_GenoData_indFiltered, groups)
 println("Calculated population allele frequencies and sample sizes")
 
 # calculate Fst 
-Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = GenomicDiversity.getFst(freqs, 
+                                    sampleSizes, groups)
 println("Calculated Fst values")
 
-# Option to filter out individuals with lots of missing genotypes
-if false  # set to true if using this option
-    numMissings_threshold = 50_000  # optional of number of missing, to exclude individual from plot
-    selection = ind_with_metadata_indFiltered.numMissings .< numMissings_threshold
-    genosOnly_with_missing_selected = view(genosOnly_with_missing, selection, :)
-    ind_with_metadata_indFiltered_selected = view(ind_with_metadata_indFiltered, selection, :)
-
-    println("Filtering out these individuals based on too many missing genotypes: ")
-    filtered_inds = ind_with_metadata_indFiltered.ind[selection .== false]
-    println(DataFrame(filtered_inds = filtered_inds)) # did this to print all lines
-else
-    genosOnly_with_missing_selected = genosOnly_with_missing
-    ind_with_metadata_indFiltered_selected = ind_with_metadata_indFiltered
-end
 # Limit each group to specified numbers
-genosOnly_included, ind_with_metadata_included = limitIndsToPlot(plotGroups, numIndsToPlot, genosOnly_with_missing_selected, ind_with_metadata_indFiltered_selected);
+genotypes_included, indInfo_included = limitIndsToPlot(plotGroups, numIndsToPlot, GW_GenoData_indFiltered.genotypes, GW_GenoData_indFiltered.indInfo)
+# put the info for limited individuals into new GenoData object
+GW_GenoData_indFiltered_included = GenoData(indInfo_included, genotypes_included, GW_GenoData_indFiltered.positions);
 
 # choose the scaffold and region to show
 chr = "gw28"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+regionInfo = chooseChrRegion(GW_GenoData_indFiltered_included.positions, chr; positionMin=1, positionMax=scaffold_lengths[chr])
 
 # need to remove two plumbeitarsus individuals that have introgression from viridanus, as that would otherwise be misleading in this figure since viridanus are not shown
-selection = Not(ind_with_metadata_included.ind .∈ Ref(["GW_Armando_plate1_JF09G01", "GW_Armando_plate1_JF24G02"]))
-ind_with_metadata_included = ind_with_metadata_included[selection,:]
-genosOnly_included = genosOnly_included[selection,:]
+GW_GenoData_indFiltered_included_minus2 = GenomicDiversity.filterNamedInds(GW_GenoData_indFiltered_included, 
+            ["GW_Armando_plate1_JF09G01", "GW_Armando_plate1_JF24G02"]);
 
 #### Now actually make the plot
-plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
-    regionInfo, pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors; plotTitle = "");
+plotInfo = GenomicDiversity.plotGenotypeByIndividualWithFst(GW_GenoData_indFiltered_included_minus2, 
+    groupsToCompare, Fst_cutoff, missingFractionAllowed, 
+    regionInfo, Fst, pairwiseNamesFst, 
+    freqs, plotGroups, plotGroupColors);
 ```
 
 
@@ -915,20 +918,20 @@ Fst_cutoff = 0.8
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
 # Calculate allele freqs and sample sizes (use column Fst_group)
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+freqs, sampleSizes = GenomicDiversity.getFreqsAndSampleSizes(GW_GenoData_indFiltered, groups)
 println("Calculated population allele frequencies and sample sizes")
 
-Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = GenomicDiversity.getFst(freqs, 
+                                    sampleSizes, groups)
 println("Calculated Fst values")
 
 chr = "gw28"
-regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+regionInfo = chooseChrRegion(GW_GenoData_indFiltered.positions, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
 
-plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
-    missingFractionAllowed, regionInfo,
-    pos_SNP_filtered, Fst, pairwiseNamesFst, 
-    genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-    plotGroups, plotGroupColors;
+plotInfo = GenomicDiversity.plotGenotypeByIndividualWithFst(GW_GenoData_indFiltered, 
+    groupsToCompare, Fst_cutoff, missingFractionAllowed, 
+    regionInfo, Fst, pairwiseNamesFst, 
+    freqs, groups_to_plot_all, group_colors_all;
     indFontSize=4, figureSize=(1200,1600),
     plotTitle = "");
 ```
@@ -945,12 +948,11 @@ Loop through each scaffold and produce GBI plot. (Making inactive because alread
 ```julia
 for i in 1:length(scaffolds_to_plot)
     chr = scaffolds_to_plot[i]
-    regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-    plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
-        missingFractionAllowed, regionInfo,
-        pos_SNP_filtered, Fst, pairwiseNamesFst, 
-        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-        plotGroups, plotGroupColors;
+    regionInfo = chooseChrRegion(GW_GenoData_indFiltered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+    plotInfo = GenomicDiversity.plotGenotypeByIndividualWithFst(GW_GenoData_indFiltered, 
+        groupsToCompare, Fst_cutoff, missingFractionAllowed, 
+        regionInfo, Fst, pairwiseNamesFst, 
+        freqs, plotGroups, plotGroupColors;
         indFontSize=4, figureSize=(1200,1600), plotTitle = "");
     println("Completed the figure for ", chr, ".")
     if false  # set to true to save plot
@@ -975,6 +977,19 @@ Imputation can take several minutes per scaffold, so I ran this imputation step 
 for i in eachindex(chromosomes_to_process)
     chrom = chromosomes_to_process[i]
     regionText = string("chr", chrom)
+    ind_with_metadata_indFiltered = GW_GenoData_indFiltered.indInfo
+    loci_selection = (GW_GenoData_indFiltered.positions.chrom .== chrom)
+    pos_SNP_filtered_region = GW_GenoData_indFiltered.positions[loci_selection,:]
+    genosOnly_region_for_imputing = Matrix{Union{Missing, Float32}}(GW_GenoData_indFiltered.genotypes[:,loci_selection])
+    @time imputed_genos = Impute.svd(genosOnly_region_for_imputing)
+    filename = string(baseName, tagName, regionText, ".SVDimputedMissing.jld2")
+    jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_region)
+    println(string("Chromosome ", chrom, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_region, 1)," SNPs and ", size(genosOnly_region_for_imputing, 1)," individuals."))
+end
+
+#= for i in eachindex(chromosomes_to_process)
+    chrom = chromosomes_to_process[i]
+    regionText = string("chr", chrom)
     loci_selection = (pos_SNP_filtered.chrom .== chrom)
     pos_SNP_filtered_region = pos_SNP_filtered[loci_selection,:]
     genosOnly_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing[:,loci_selection])
@@ -982,7 +997,7 @@ for i in eachindex(chromosomes_to_process)
     filename = string(baseName, tagName, regionText, ".SVDimputedMissing.jld2")
     jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_region)
     println(string("Chromosome ", chrom, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_region, 1)," SNPs and ", size(genosOnly_region_for_imputing, 1)," filtered individuals."))
-end
+end =#
 ```
 
 #### Imputation using KNN
@@ -993,13 +1008,14 @@ Troyanskaya _et al._ (2001) recommend imputation using K-nearest neighbors appro
 for i in eachindex(chromosomes_to_process)
     chrom = chromosomes_to_process[i]
     regionText = string("chr", chrom)
-    loci_selection = (pos_SNP_filtered.chrom .== chrom)
-    pos_SNP_filtered_region = pos_SNP_filtered[loci_selection,:]
-    genosOnly_region_for_imputing = Matrix{Union{Missing, Float32}}(genosOnly_with_missing[:,loci_selection])
+    ind_with_metadata_indFiltered = GW_GenoData_indFiltered.indInfo
+    loci_selection = (GW_GenoData_indFiltered.positions.chrom .== chrom)
+    pos_SNP_filtered_region = GW_GenoData_indFiltered.positions[loci_selection,:]
+    genosOnly_region_for_imputing = Matrix{Union{Missing, Float32}}(GW_GenoData_indFiltered.genotypes[:,loci_selection])
     @time imputed_genos = Impute.knn(genosOnly_region_for_imputing; dims = :rows) # much faster with the "dims = :rows" there
     filename = string(baseName, tagName, regionText, ".KNNimputedMissing.jld2")
     jldsave(filename; imputed_genos, ind_with_metadata_indFiltered, pos_SNP_filtered_region)
-    println(string("Chromosome ", chrom, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_region, 1)," SNPs and ", size(genosOnly_region_for_imputing, 1)," filtered individuals."))
+    println(string("Chromosome ", chrom, ": Saved real and imputed genotypes for ", size(pos_SNP_filtered_region, 1)," SNPs and ", size(genosOnly_region_for_imputing, 1)," individuals."))
 end
 ```
 
@@ -1062,23 +1078,24 @@ Fst_cutoff = 0.8
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
 # Calculate allele freqs and sample sizes (use column Fst_group)
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+freqs, sampleSizes = GenomicDiversity.getFreqsAndSampleSizes(GW_GenoData_indFiltered, groups)
 println("Calculated population allele frequencies and sample sizes")
 
-Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = GenomicDiversity.getFst(freqs, 
+                                    sampleSizes, groups; 
+                                    among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
 println("Calculated Fst values")
 
 scaffolds_to_plot = ["gw1"]
 
 for i in 1:length(scaffolds_to_plot)
     chr = scaffolds_to_plot[i]
-    regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-    plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
-        missingFractionAllowed, regionInfo,
-        pos_SNP_filtered, Fst, pairwiseNamesFst, 
-        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-        plotGroups, plotGroupColors;
-        indFontSize=4, figureSize=(1200,1600))
+    regionInfo = chooseChrRegion(GW_GenoData_indFiltered.positions, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+    plotInfo = GenomicDiversity.plotGenotypeByIndividualWithFst(GW_GenoData_indFiltered, 
+                groupsToCompare, Fst_cutoff, missingFractionAllowed, 
+                regionInfo, Fst, pairwiseNamesFst, 
+                freqs, plotGroups, plotGroupColors;
+                indFontSize=4, figureSize=(1200,1600));
     println("Completed the figure for ", chr, ".")
 end
 ```
@@ -1096,22 +1113,22 @@ Fst_cutoff = 0.8
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
 # Calculate allele freqs and sample sizes (use column Fst_group)
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+freqs, sampleSizes = GenomicDiversity.getFreqsAndSampleSizes(GW_GenoData_indFiltered, groups)
 println("Calculated population allele frequencies and sample sizes")
 
-Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
+Fst, FstNumerator, FstDenominator, pairwiseNamesFst = GenomicDiversity.getFst(freqs, 
+                                    sampleSizes, groups; 
+                                    among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
 println("Calculated Fst values")
 
 for i in 1:length(scaffolds_to_plot)
     chr = scaffolds_to_plot[i]
-    regionInfo = chooseChrRegion(pos_SNP_filtered, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
-    plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
-        missingFractionAllowed, regionInfo,
-        pos_SNP_filtered, Fst, pairwiseNamesFst, 
-        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
-        plotGroups, plotGroupColors;
-        indFontSize=4, figureSize=(1200,1600))
+    regionInfo = chooseChrRegion(GW_GenoData_indFiltered.positions, chr; positionMin=1, positionMax=scaffold_lengths[chr])
+    plotInfo = GenomicDiversity.plotGenotypeByIndividualWithFst(GW_GenoData_indFiltered, 
+                groupsToCompare, Fst_cutoff, missingFractionAllowed, 
+                regionInfo, Fst, pairwiseNamesFst, 
+                freqs, plotGroups, plotGroupColors;
+                indFontSize=4, figureSize=(1200,1600));
     println("Completed the figure for ", chr, ".")
 end
-# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 ```

@@ -13,7 +13,7 @@ format:
 jupyter: julia-1.11
 ---
 
-This page shows the code used to generate PCA plots for the whole genome (and also for each chromosome, although those aren't shown in the paper).
+This page shows the code used to conduct the analysis of haploblocks in the Greenish Warbler ring species, using the ViSHet (Variance in Standardized Heterozygosity) statistic.
 
 Prior to examining the code on this page, readers should look at `GreenishWarblerGenomics2025.qmd` (or `.html`) and `GW_Zchromosome_analysis.qmd` (or `.html`), as this current page depends on the code on those pages being run first.
 
@@ -21,7 +21,7 @@ Prior to examining the code on this page, readers should look at `GreenishWarble
 
 The scripts, data, and figures shown in this website were used as the basis for the paper listed below, which should be cited as the source of information from this website:
 
-Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_, minor revision requested.
+Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_, in press.
 
 #### A note about plots in this document
 
@@ -59,7 +59,7 @@ cd(dataDirectory)
 
 ## Load the filtered dataset
 
-This dataset was produced through filtering in GreenishWarblerGenomics2025.qmd
+This dataset was produced through filtering in `GreenishWarblerGenomics2025.qmd`:
 
 ```{julia}
 baseName = "GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"
@@ -73,9 +73,10 @@ end
 if tagName != d["tagName"]
     println("WARNING: tagNames don't match don't match between that defined above and in the saved file")
 end
-genosOnly = d["genosOnly_ind_SNP_ind_filtered"]
-ind_with_metadata_indFiltered = d["ind_with_metadata_indFiltered"]
-pos_SNP_filtered = d["pos_SNP_filtered"]
+GW_GenoData_indFiltered = d["GW_GenoData_indFiltered"]
+# genosOnly = d["genosOnly_ind_SNP_ind_filtered"]
+# ind_with_metadata_indFiltered = d["ind_with_metadata_indFiltered"]
+# pos_SNP_filtered = d["pos_SNP_filtered"]
 repoDirectory = d["repoDirectory"]
 dataDirectory = d["dataDirectory"]
 scaffold_info = d["scaffold_info"]
@@ -117,9 +118,13 @@ end
 
 ```{julia}
 # remove the Z SNPs from the big dataset loaded above:
-selection = (pos_SNP_filtered.chrom .!= "gwZ")
-pos_SNP_filtered = pos_SNP_filtered[selection, :]
-genosOnly = genosOnly[:,selection]
+selection = (GW_GenoData_indFiltered.positions.chrom .!= "gwZ")
+GW_GenoData_indFiltered.positions = GW_GenoData_indFiltered.positions[selection, :]
+GW_GenoData_indFiltered.genotypes = GW_GenoData_indFiltered.genotypes[: , selection]
+
+# selection = (pos_SNP_filtered.chrom .!= "gwZ")
+# pos_SNP_filtered = pos_SNP_filtered[selection, :]
+# genosOnly = genosOnly[:,selection]
 
 # load and add the Z filtered SNPs:
 filename = string(baseName, tagName, "chrgwZ_cleaned.notImputed.jld2")
@@ -127,17 +132,21 @@ genosOnly_chrgwZ_cleaned = load(filename, "genotypes_gwZ_SNPfiltered")
 ind_with_metadata_indFiltered_chrgwZ_cleaned = load(filename, "ind_with_metadata_indFiltered")
 pos_SNP_filtered_chrgwZ_cleaned = load(filename, "pos_SNP_filtered_region")
 
-if ind_with_metadata_indFiltered.ind != ind_with_metadata_indFiltered_chrgwZ_cleaned.ind
+if GW_GenoData_indFiltered.indInfo.ind != ind_with_metadata_indFiltered_chrgwZ_cleaned.ind
     println("Warning: the list of individuals in the big file and Z file are not completely identical.")
 end
 
-pos_SNP_filtered = vcat(pos_SNP_filtered, pos_SNP_filtered_chrgwZ_cleaned)
-genosOnly = hcat(genosOnly, genosOnly_chrgwZ_cleaned)
+GW_GenoData_indFiltered.positions = vcat(GW_GenoData_indFiltered.positions, pos_SNP_filtered_chrgwZ_cleaned)
+GW_GenoData_indFiltered.genotypes = hcat(GW_GenoData_indFiltered.genotypes, genosOnly_chrgwZ_cleaned)
+
+#genosOnly = hcat(genosOnly, genosOnly_chrgwZ_cleaned)
 
 println("Replaced the Z chromosome data with the filtered Z data.")
 
 # copy the sex column so we can use later:
-ind_with_metadata_indFiltered.sex = ind_with_metadata_indFiltered_chrgwZ_cleaned.sex
+GW_GenoData_indFiltered.indInfo.sex = ind_with_metadata_indFiltered_chrgwZ_cleaned.sex
+
+# ind_with_metadata_indFiltered.sex = ind_with_metadata_indFiltered_chrgwZ_cleaned.sex
 
 ```
 
@@ -146,10 +155,16 @@ ind_with_metadata_indFiltered.sex = ind_with_metadata_indFiltered_chrgwZ_cleaned
 This sets the genotype-by-individual plots to arrange sample sites according to `ring_km`, and sets the _nitidus_ samples to -2500 km and the Siberian hybrid to 5000 km (just for plotting):
 
 ```{julia}
-ind_with_metadata_indFiltered.original_plot_order = ind_with_metadata_indFiltered.plot_order
-ind_with_metadata_indFiltered.plot_order = ind_with_metadata_indFiltered.ring_km
-ind_with_metadata_indFiltered.plot_order[ind_with_metadata_indFiltered.Fst_group .== "nit"] .= -2500
-ind_with_metadata_indFiltered.plot_order[ind_with_metadata_indFiltered.Fst_group .== "plumb_vir"] .= 5000
+GW_GenoData_indFiltered.indInfo.original_plot_order = GW_GenoData_indFiltered.indInfo.plot_order
+GW_GenoData_indFiltered.indInfo.plot_order = GW_GenoData_indFiltered.indInfo.ring_km
+GW_GenoData_indFiltered.indInfo.plot_order[GW_GenoData_indFiltered.indInfo.Fst_group .== "nit"] .= -2500
+GW_GenoData_indFiltered.indInfo.plot_order[GW_GenoData_indFiltered.indInfo.Fst_group .== "plumb_vir"] .= 5000
+
+
+# ind_with_metadata_indFiltered.original_plot_order = ind_with_metadata_indFiltered.plot_order
+# ind_with_metadata_indFiltered.plot_order = ind_with_metadata_indFiltered.ring_km
+# ind_with_metadata_indFiltered.plot_order[ind_with_metadata_indFiltered.Fst_group .== "nit"] .= -2500
+# ind_with_metadata_indFiltered.plot_order[ind_with_metadata_indFiltered.Fst_group .== "plumb_vir"] .= 5000
 ```
 
 ## Prepare data for Genotype-by-individual plots and PCA
@@ -157,8 +172,11 @@ ind_with_metadata_indFiltered.plot_order[ind_with_metadata_indFiltered.Fst_group
 For missing genotypes, change our code of `-1` to `missing`:
 
 ```{julia}
-genosOnly_with_missing = Matrix{Union{Missing, Int16}}(genosOnly)
-genosOnly_with_missing = replace(genosOnly_with_missing, -1 => missing)
+GW_GenoData_indFiltered.genotypes = Matrix{Union{Missing, Int16}}(GW_GenoData_indFiltered.genotypes)
+GW_GenoData_indFiltered.genotypes = replace(GW_GenoData_indFiltered.genotypes, -1 => missing)
+
+# genosOnly_with_missing = Matrix{Union{Missing, Int16}}(genosOnly)
+# genosOnly_with_missing = replace(genosOnly_with_missing, -1 => missing)
 ```
 
 #### Make list of scaffolds to plot:
@@ -170,7 +188,7 @@ scaffolds_to_plot = "gw" .* string.(vcat(1, "1A", 2:4, "4A", 5:15, 17:28, "Z"))
 #### Determine number of SNPs in the chromosomes above
 
 ```{julia}
-sum(map(in(scaffolds_to_plot), pos_SNP_filtered.chrom))
+sum(map(in(scaffolds_to_plot), GW_GenoData_indFiltered.positions.chrom))
 ```
 
 This reports that 1003924 SNPs are within the listed chromosomes.
@@ -195,16 +213,16 @@ groupsToInclude = ["lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troc
 numIndsToPlot = [1000, 1000, 1000, 1000, 1000, 1000]
 
 if filterGroups
-    genosOnly_included, ind_with_metadata_included = limitIndsToPlot(groupsToInclude, numIndsToPlot, genosOnly_with_missing, ind_with_metadata_indFiltered)
+    genosOnly_included, ind_with_metadata_included = limitIndsToPlot(groupsToInclude, numIndsToPlot, GW_GenoData_indFiltered.genotypes, GW_GenoData_indFiltered.indInfo)
 else
-    genosOnly_included = genosOnly_with_missing
-    ind_with_metadata_included = ind_with_metadata_indFiltered
+    genosOnly_included = GW_GenoData_indFiltered.genotypes
+    ind_with_metadata_included = GW_GenoData_indFiltered.indInfo
 end
 
 chr = "gw15"
 windowSize = 500
-loci_selection = (pos_SNP_filtered.chrom .== chr)
-pos_region = pos_SNP_filtered[loci_selection, :]
+loci_selection = (GW_GenoData_indFiltered.positions.chrom .== chr)
+pos_region = GW_GenoData_indFiltered.positions[loci_selection, :]
 genotypes_region = genosOnly_included[:, loci_selection]
 
 windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
@@ -278,10 +296,10 @@ groupsToInclude = ["vir"]
 numIndsToPlot = [1000]
 
 if filterGroups
-    genosOnly_included, ind_with_metadata_included = limitIndsToPlot(groupsToInclude, numIndsToPlot, genosOnly_with_missing, ind_with_metadata_indFiltered)
+    genosOnly_included, ind_with_metadata_included = limitIndsToPlot(groupsToInclude, numIndsToPlot, GW_GenoData_indFiltered.genotypes, GW_GenoData_indFiltered.indInfo)
 else
-    genosOnly_included = genosOnly_with_missing
-    ind_with_metadata_included = ind_with_metadata_indFiltered
+    genosOnly_included = GW_GenoData_indFiltered.genotypes
+    ind_with_metadata_included = GW_GenoData_indFiltered.indInfo
 end
 
 scaffolds_for_ViSHet = scaffolds_to_plot
@@ -290,11 +308,14 @@ windowed_pos_all = DataFrame(chrom = String[], mean_position = Float64[], first_
 windowed_ViSHet_all = Vector{Float32}(undef, 0)
 for chrom in scaffolds_for_ViSHet
     regionText = string("chr", chrom)
-    loci_selection = (pos_SNP_filtered.chrom .== chrom)
-    pos_region = pos_SNP_filtered[loci_selection, :]
-    genotypes_region = genosOnly_included[:, loci_selection]
+    loci_selection = (GW_GenoData_indFiltered.positions.chrom .== chrom)
+    # loci_selection = (pos_SNP_filtered.chrom .== chrom)
+    pos_region = GW_GenoData_indFiltered.positions[loci_selection, :]
+    genotypes_region = GW_GenoData_indFiltered.genotypes[:, loci_selection]
+    # pos_region = pos_SNP_filtered[loci_selection, :]
+    # genotypes_region = genosOnly_included[:, loci_selection]
     if chrom == "gwZ" #include only males (because females have only one Z)
-        genotypes_region_males = genotypes_region[ind_with_metadata_included.sex .== "M", :]
+        genotypes_region_males = genotypes_region[GW_GenoData_indFiltered.indInfo.sex .== "M", :]
         windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region_males, pos_region, windowSize)
     else # for all other chromosomes, include all individuals
         windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
@@ -307,7 +328,7 @@ for chrom in scaffolds_for_ViSHet
     windowed_ViSHet_all = [windowed_ViSHet_all; windowed_ViSHet_scaffold]
 end
 
-# Quick test plot (overlapping all chromosomes, so not good)
+# Quick test plot (overlapping all chromosomes, so not good):
 # plot(windowed_pos_all.mean_position, windowed_ViSHet_all)
 ```
 
@@ -370,8 +391,139 @@ println("The percent of the genome in high ViSHet regions is $percentGenomeHighV
 
 ### Plot LHBRs (Large Haploblock Regions) for whole genome
 
+First define function:
+
 ```{julia}
-fig2 = plotGenomeViSHet(scaffolds_to_plot, 
+"""
+    plotGenomeViSHet(scaffolds_to_plot, 
+                    windowed_ViSHet_all,
+                    windowed_pos_all;
+                    fillColor = "purple",
+                    lineTransparency = 0.8,
+                    fillTransparency = 0.2,
+                    figureSize = (1200, 1200),
+                    plotRegions = false,
+                    regionsToPlot = [],
+                    regionColor = "red")
+
+Plot windowed Variance in Standardized Heterozygosity (ViSHet) along multiple scaffolds.
+
+​# Arguments
+- `scaffolds_to_plot`: a vector of the scaffold names to include in the plot.
+- `windowed_ViSHet_all`: a vector of ViSHet values for windows of the genome.
+- `windowed_pos_all`: dataframe containing genomic locations of windows (must have columns `chrom` and `mean_position`).
+- `fillColor` (optional): the color for the lines and fill (default `"purple"`).
+- `lineTransparency` (optional): transparency of the lines.
+- `fillTransparency` (optional): transparency of the fill color.
+- `figureSize` (optional): size of the figure (height, width).
+- `plotRegions` (optional): choose `true` to highlight regions.
+- `regionsToPlot` (optional): a DataFrame with three columns: `regionChrom` containing names of scaffolds, `regionStart` and `regionEnd` giving start and end of regions to highlight.
+- `regionColor` (optional): the color for the highlighted regions.
+
+# Notes
+- Returns the figure.
+"""
+function plotGenomeViSHetTEST(scaffolds_to_plot, 
+                            windowed_ViSHet_all,
+                            windowed_pos_all;
+                            fillColor = "purple",
+                            lineTransparency = 0.8,
+                            fillTransparency = 0.2,
+                            figureSize = (1200, 1200),
+                            plotRegions = false,
+                            regionsToPlot = [],
+                            regionColor = "red")
+    
+    # get sizes of chromosomes (note this actually isn't the true length, just the mean position of the rightmost window):
+    scaffoldLengths = repeat([-1], length(scaffolds_to_plot))	# vector of Int64
+    for i in eachindex(scaffolds_to_plot)
+        selection = windowed_pos_all.chrom .== scaffolds_to_plot[i]
+        if sum(selection) == 0
+            scaffoldLengths[i] = 0
+        else
+            scaffoldLengths[i] = round(Int, maximum(windowed_pos_all.mean_position[selection]))
+        end
+    end
+
+    # my plan is to use the layout feature of Makie to make one axis per row, and then plot
+    # multiple scaffolds to each row
+
+    scaffoldPlottedAlready = falses(length(scaffolds_to_plot))
+    bpPerRow = 200_000_000
+    bpGapBetweenScaffolds = 10_000_000
+    scaffoldInRow = Vector{Vector{String}}() # declare a vector of vectors to store the chromosome names per row
+    scaffoldBpStartInRow = Vector{Vector{Int}}()
+    row = 1
+
+    while sum(scaffoldPlottedAlready .== false) > 0  # repeat until all chr have a row to be plotted in
+        bpStart = 0
+        remainingRowLength = bpPerRow
+        push!(scaffoldInRow, []) # initialize an empty vector for the next row
+        push!(scaffoldBpStartInRow, []) # initialize an empty vector for the next row
+        placeInRow = 1
+        # look through chromosomes and find some to go in this row
+        for i in eachindex(scaffolds_to_plot)
+            # if not plotted and short enough, add to row:
+            if scaffoldPlottedAlready[i] .== false .&& scaffoldLengths[i] .<= remainingRowLength
+                push!(scaffoldInRow[row], scaffolds_to_plot[i])
+                push!(scaffoldBpStartInRow[row], bpStart)
+                remainingRowLength = remainingRowLength - scaffoldLengths[i] - bpGapBetweenScaffolds
+                scaffoldPlottedAlready[i] = true
+                placeInRow += 1
+                bpStart = bpStart + scaffoldLengths[i] + bpGapBetweenScaffolds
+            end	
+        end
+        row += 1
+    end
+    println(scaffoldInRow)
+
+    # Plot in the order defined above
+    f = CairoMakie.Figure(size=figureSize)
+    numRows = length(scaffoldInRow)
+    # make one axis object per row:
+    axs = [Axis(f[i, 1], limits=(0, bpPerRow,
+            -0.45, 2.0), ylabel = "ViSHet") for i in 1:numRows]
+    for i in 1:numRows
+        hidexdecorations!(axs[i]) #hide background lattice and axis labels
+        hidespines!(axs[i], :t, :r, :b) # hide box around plot
+    end
+
+    for rowNum in 1:numRows
+        numScaffoldsInRow = length(scaffoldInRow[rowNum])
+        nextPlotShiftBP = 0
+        for orderNum in 1:numScaffoldsInRow 
+            scaffoldName = scaffoldInRow[rowNum][orderNum]
+            plotBpLength = scaffoldLengths[findfirst(scaffolds_to_plot .== scaffoldName)]
+            # select one scaffold from the whole genome:
+            selection = windowed_pos_all.chrom .== scaffoldName 
+            windowed_pos_selected = view(windowed_pos_all.mean_position, selection)
+            windowed_ViSHet_selected = view(windowed_ViSHet_all, selection)
+            if length(windowed_pos_selected) > 0  # only plot if there is data for that scaffold        
+                text!(axs[rowNum], scaffoldBpStartInRow[rowNum][orderNum] + 0.005bpPerRow, -0.2; text=scaffoldName, align=(:left, :center), fontsize=20)
+                xx = vcat(first(windowed_pos_selected), windowed_pos_selected, last(windowed_pos_selected)) .+ scaffoldBpStartInRow[rowNum][orderNum]
+                yy = vcat(0, windowed_ViSHet_selected, 0)
+                poly!(axs[rowNum], Point2f.(xx, yy), color = (fillColor, fillTransparency), strokecolor = (fillColor, lineTransparency), strokewidth = 1)
+                # if indicating regions (e.g. that have high ViSHet)
+                if plotRegions
+                    regionsToPlot_thisScaffold = regionsToPlot[regionsToPlot.regionChrom .== scaffoldName, :]
+                    for i in eachindex(regionsToPlot_thisScaffold.regionStart)
+                        xValues = [regionsToPlot_thisScaffold.regionStart[i], regionsToPlot_thisScaffold.regionEnd[i]] .+ scaffoldBpStartInRow[rowNum][orderNum]
+                        yValues = [0.05, 0.05]
+                        lines!(axs[rowNum], xValues, yValues, color=regionColor, linewidth=10)
+                    end
+                end
+            end
+        end
+    end
+    display(f)
+    return f
+end
+```
+
+Now call the function:
+
+```{julia}
+fig2 = plotGenomeViSHetTEST(scaffolds_to_plot, 
                         windowed_ViSHet_all,
                         windowed_pos_all;
                         fillColor = "purple",
@@ -386,6 +538,16 @@ if false  # set to true to save plot
     save(filename, fig2, px_per_unit = 2.0)
     println("Saved ", filename)
 end 
+```
+
+### Note: from this point on will not use `GenoData` objects (although would be more concise code)
+
+The paper was accepted and I need to get this final version posted. The code below uses the metadata, genotype matrix, and loci positions as separate data objects. This works fine, as the funtions are built to use either forms of data input.
+
+```{julia}
+pos_SNP_filtered = GW_GenoData_indFiltered.positions
+genosOnly_included = GW_GenoData_indFiltered.genotypes
+ind_with_metadata_indFiltered = GW_GenoData_indFiltered.indInfo
 ```
 
 
@@ -7896,7 +8058,7 @@ figHandle_GenomeFst3 = plotGenomeFst(scaffolds_to_plot,
                                     groupColorsFst;
                                     lineTransparency = 0.8,
                                     fillTransparency = 0.2,
-                                    figureSize=(1200, 1200))
+                                    figureSize=(1200, 1200));
 ```
 
 Now do one with just the vir_plumb connection
@@ -8468,7 +8630,7 @@ groupsToCompare = ["vir_plumb", "vir_troch_LN", "troch_LN_plumb"]     # "Fst_amo
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
 # Calculate allele freqs and sample sizes (use column Fst_group)
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_included, ind_with_metadata_indFiltered.Fst_group, groups)
 println("Calculated population allele frequencies and sample sizes")
 
 Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
@@ -8491,7 +8653,7 @@ for i in 1:length(scaffolds_to_plot)
     plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
         missingFractionAllowed, regionInfo,
         pos_SNP_filtered, Fst, pairwiseNamesFst, 
-        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+        genosOnly_included, ind_with_metadata_indFiltered, freqs, 
         plotGroups, plotGroupColors;
         indFontSize=4, figureSize=(1200,1600), plotTitle = "",
         highlightRegionStarts = highViSHetRegions_thisScaffold.regionStart,
@@ -8499,7 +8661,7 @@ for i in 1:length(scaffolds_to_plot)
         highlightRegionColor = "magenta")
 
     println("Completed the figure for ", chr, ".")
-    if true  # set to true to save plot
+    if false  # set to true to save plot
         filename = string("Figure_", chr, "_Fst3groupsGBIallInds_Fst",Fst_cutoff,"_fromJulia.png")
         save(filename, plotInfo[1], px_per_unit = 2.0)
         println("Saved ", filename)
@@ -8517,25 +8679,10 @@ for i in 1:length(scaffolds_to_plot)
     # get info for lines for LHBRs
     highViSHetRegions_thisScaffold = highViSHetRegions[highViSHetRegions.regionChrom .== chr, :]
 
-    #= ##### for testing function
-    pos=pos_SNP_filtered
-    genoData=genosOnly_with_missing
-    indMetadata= ind_with_metadata_indFiltered
-    colorAllelesByGroup = true
-    group1 = plotGroups[1]
-    indFontSize=4
-    figureSize=(1200,1600)
-    show_SNP_density = true 
-    densityPlotColor = :steelblue1
-    plotTitle = ""
-    highlightRegionStarts = highViSHetRegions_thisScaffold.regionStart
-    highlightRegionEnds = highViSHetRegions_thisScaffold.regionEnd
-    ############ =#
-
     plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
         missingFractionAllowed, regionInfo,
         pos_SNP_filtered, Fst, pairwiseNamesFst, 
-        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+        genosOnly_included, ind_with_metadata_indFiltered, freqs, 
         plotGroups, plotGroupColors;
         indFontSize=4, figureSize=(1200,1600), plotTitle = "",
         highlightRegionStarts = highViSHetRegions_thisScaffold.regionStart,

@@ -287,7 +287,6 @@ end
 savefig = false  #set to true to save the figures from cells below
 ```
 
-
 ```{julia}
 scaffold = "gw1"    
 PCAmodel = plotOneScaffoldPCA(groups_to_plot_PCA, group_colors_PCA,    

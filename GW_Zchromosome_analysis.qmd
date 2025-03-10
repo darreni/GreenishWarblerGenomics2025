@@ -83,30 +83,6 @@ filenameTextEnd = d["filenameTextEnd"]
 chromosomes_to_process =d["chromosomes_to_process"]
 println("Loaded the filtered data.")
 
-
-#= baseName = "GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"
-tagName = ".Jan2025."
-filename = string(baseName, tagName, "ind_SNP_ind_filtered.jld2")
-# load info into a dictionary:
-d = load(filename)
-if baseName != d["baseName"]
-    println("WARNING: baseNames don't match between that defined above and in the saved file")
-end
-if tagName != d["tagName"]
-    println("WARNING: tagNames don't match don't match between that defined above and in the saved file")
-end
-genosOnly = d["genosOnly_ind_SNP_ind_filtered"]
-ind_with_metadata_indFiltered = d["ind_with_metadata_indFiltered"]
-pos_SNP_filtered = d["pos_SNP_filtered"]
-repoDirectory = d["repoDirectory"]
-dataDirectory = d["dataDirectory"]
-scaffold_info = d["scaffold_info"]
-scaffold_lengths = d["scaffold_lengths"]
-filenameTextMiddle = d["filenameTextMiddle"]
-missingGenotypeThreshold = d["missingGenotypeThreshold"]
-filenameTextEnd = d["filenameTextEnd"]
-chromosomes_to_process =d["chromosomes_to_process"]
-println("Loaded the filtered data.") =#
 ```
 
 Also define `correctNames()` function as in main script, to correct some names:
@@ -167,8 +143,6 @@ display(f);
 That doesn't provide super clear separation.
 
 Let's try looking at number of missing genotypes:
-
----------- Start revising here ----------
 
 ```{julia}
 missingGenotypeCount = sum(GW_GenoData_indFiltered_Zonly.genotypes .== -1, dims=2)
@@ -242,8 +216,6 @@ readDepthRatioZto2[!, :depthRatio] = readDepthRatioZto2.MEAN_DEPTH_gwZ ./ readDe
 
 GW_GenoData_indFiltered_Zonly.indInfo = leftjoin(GW_GenoData_indFiltered_Zonly.indInfo, readDepthRatioZto2, on = :ind => :INDV)
 
-# ind_with_metadata_indFiltered_sex = leftjoin(GW_GenoData_indFiltered.indInfo, readDepthRatioZto2, on = :ind => :INDV)
-
 f = CairoMakie.Figure()
 ax = Axis(f[1, 1],
     title = "Average heterozygosity at SNPs on the Z chromosome",
@@ -253,8 +225,6 @@ ax = Axis(f[1, 1],
 x_plot_values = eachindex(GW_GenoData_indFiltered_Zonly.indInfo.depthRatio)
 y_plot_values = GW_GenoData_indFiltered_Zonly.indInfo.depthRatio
 
-# x_plot_values = eachindex(ind_with_metadata_indFiltered_sex.depthRatio)
-# y_plot_values = ind_with_metadata_indFiltered_sex.depthRatio
 CairoMakie.scatter!(ax, x_plot_values, y_plot_values, marker = :diamond, color="black", markersize=10, strokewidth=0.5)
 
 display(f)
@@ -269,12 +239,8 @@ GW_GenoData_indFiltered_Zonly.indInfo.sex .= "na"
 females = GW_GenoData_indFiltered_Zonly.indInfo.depthRatio .< 0.8
 GW_GenoData_indFiltered_Zonly.indInfo.sex[females] .= "F"
 
-# ind_with_metadata_indFiltered_sex.sex .= "na" 
-# females = ind_with_metadata_indFiltered_sex.depthRatio .< 0.8
-# ind_with_metadata_indFiltered_sex.sex[females] .= "F"
 num_females = sum(females)
 females_genotypes_gwZ = view(GW_GenoData_indFiltered_Zonly.genotypes, females, :)
-# females_genotypes_gwZ = view(genotypes_gwZ, females, :)
 numHetsPerSNP_females = vec(sum(females_genotypes_gwZ .== 1, dims=1))
 female_heterozygosity = numHetsPerSNP_females ./ num_females
 
@@ -283,7 +249,6 @@ males = GW_GenoData_indFiltered_Zonly.indInfo.depthRatio .> 0.9
 GW_GenoData_indFiltered_Zonly.indInfo.sex[males] .= "M"
 num_males = sum(males)
 males_genotypes_gwZ = view(GW_GenoData_indFiltered_Zonly.genotypes, males, :)
-# males_genotypes_gwZ = view(genotypes_gwZ, males, :)
 numHetsPerSNP_males = vec(sum(males_genotypes_gwZ .== 1, dims=1))
 male_heterozygosity = numHetsPerSNP_males ./ num_males
 
@@ -354,7 +319,6 @@ jldsave(filename;
     ind_with_metadata_indFiltered,
     pos_SNP_filtered_region)
 
-# jldsave(filename; genotypes_gwZ_SNPfiltered, ind_with_metadata_indFiltered = ind_with_metadata_indFiltered_sex, pos_SNP_filtered_region = pos_SNP_filtered_gwZ_SNPfiltered)
 println("Saved matrix of real Z chromosome genotypes (without imputation).")
 ```
 
@@ -511,7 +475,6 @@ regionInfo = chooseChrRegion(pos_SNP_filtered_chZcleaned, chr; positionMin=1, po
 plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
-# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 
 # Now plot without title:
 plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
@@ -572,7 +535,6 @@ regionInfo = chooseChrRegion(pos_SNP_filtered_chZcleaned, chr; positionMin=1, po
 plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,
     regionInfo, pos_SNP_filtered_chZcleaned, Fst, pairwiseNamesFst, 
     genosOnly_included, ind_with_metadata_included, freqs, plotGroups, plotGroupColors);
-# plotInfo contains a tuple with: (f, plottedGenotype, locations, plottedMetadata)
 
 # Now plot without title:
 plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, missingFractionAllowed,

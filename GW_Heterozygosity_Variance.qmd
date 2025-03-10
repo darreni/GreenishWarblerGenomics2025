@@ -74,9 +74,6 @@ if tagName != d["tagName"]
     println("WARNING: tagNames don't match don't match between that defined above and in the saved file")
 end
 GW_GenoData_indFiltered = d["GW_GenoData_indFiltered"]
-# genosOnly = d["genosOnly_ind_SNP_ind_filtered"]
-# ind_with_metadata_indFiltered = d["ind_with_metadata_indFiltered"]
-# pos_SNP_filtered = d["pos_SNP_filtered"]
 repoDirectory = d["repoDirectory"]
 dataDirectory = d["dataDirectory"]
 scaffold_info = d["scaffold_info"]
@@ -122,10 +119,6 @@ selection = (GW_GenoData_indFiltered.positions.chrom .!= "gwZ")
 GW_GenoData_indFiltered.positions = GW_GenoData_indFiltered.positions[selection, :]
 GW_GenoData_indFiltered.genotypes = GW_GenoData_indFiltered.genotypes[: , selection]
 
-# selection = (pos_SNP_filtered.chrom .!= "gwZ")
-# pos_SNP_filtered = pos_SNP_filtered[selection, :]
-# genosOnly = genosOnly[:,selection]
-
 # load and add the Z filtered SNPs:
 filename = string(baseName, tagName, "chrgwZ_cleaned.notImputed.jld2")
 genosOnly_chrgwZ_cleaned = load(filename, "genotypes_gwZ_SNPfiltered")
@@ -138,16 +131,10 @@ end
 
 GW_GenoData_indFiltered.positions = vcat(GW_GenoData_indFiltered.positions, pos_SNP_filtered_chrgwZ_cleaned)
 GW_GenoData_indFiltered.genotypes = hcat(GW_GenoData_indFiltered.genotypes, genosOnly_chrgwZ_cleaned)
-
-#genosOnly = hcat(genosOnly, genosOnly_chrgwZ_cleaned)
-
 println("Replaced the Z chromosome data with the filtered Z data.")
 
 # copy the sex column so we can use later:
 GW_GenoData_indFiltered.indInfo.sex = ind_with_metadata_indFiltered_chrgwZ_cleaned.sex
-
-# ind_with_metadata_indFiltered.sex = ind_with_metadata_indFiltered_chrgwZ_cleaned.sex
-
 ```
 
 #### Adjust sample plotting order
@@ -159,12 +146,6 @@ GW_GenoData_indFiltered.indInfo.original_plot_order = GW_GenoData_indFiltered.in
 GW_GenoData_indFiltered.indInfo.plot_order = GW_GenoData_indFiltered.indInfo.ring_km
 GW_GenoData_indFiltered.indInfo.plot_order[GW_GenoData_indFiltered.indInfo.Fst_group .== "nit"] .= -2500
 GW_GenoData_indFiltered.indInfo.plot_order[GW_GenoData_indFiltered.indInfo.Fst_group .== "plumb_vir"] .= 5000
-
-
-# ind_with_metadata_indFiltered.original_plot_order = ind_with_metadata_indFiltered.plot_order
-# ind_with_metadata_indFiltered.plot_order = ind_with_metadata_indFiltered.ring_km
-# ind_with_metadata_indFiltered.plot_order[ind_with_metadata_indFiltered.Fst_group .== "nit"] .= -2500
-# ind_with_metadata_indFiltered.plot_order[ind_with_metadata_indFiltered.Fst_group .== "plumb_vir"] .= 5000
 ```
 
 ## Prepare data for Genotype-by-individual plots and PCA
@@ -174,9 +155,6 @@ For missing genotypes, change our code of `-1` to `missing`:
 ```{julia}
 GW_GenoData_indFiltered.genotypes = Matrix{Union{Missing, Int16}}(GW_GenoData_indFiltered.genotypes)
 GW_GenoData_indFiltered.genotypes = replace(GW_GenoData_indFiltered.genotypes, -1 => missing)
-
-# genosOnly_with_missing = Matrix{Union{Missing, Int16}}(genosOnly)
-# genosOnly_with_missing = replace(genosOnly_with_missing, -1 => missing)
 ```
 
 #### Make list of scaffolds to plot:
@@ -260,7 +238,6 @@ ax = Axis(g[1, 1],
 for i in 1:size(windowedIndHet_standardized, 1)
     lines!(windowedPos, windowedIndHet_standardized[i, :])
 end
-#lines!(windowedPos, windowedIndHet[21,:], linewidth = 10, color = :red)
 display(g)
 
 # Now graph the variance in standardized heterozygosity
@@ -279,7 +256,6 @@ ax = Axis(h[1, 1],
     ylabel=yLabelText, ylabelsize=labelSize)
 lines!(windowedPos, windowedViSHet)
 display(h)
-
 ```
 
 
@@ -309,11 +285,8 @@ windowed_ViSHet_all = Vector{Float32}(undef, 0)
 for chrom in scaffolds_for_ViSHet
     regionText = string("chr", chrom)
     loci_selection = (GW_GenoData_indFiltered.positions.chrom .== chrom)
-    # loci_selection = (pos_SNP_filtered.chrom .== chrom)
     pos_region = GW_GenoData_indFiltered.positions[loci_selection, :]
     genotypes_region = GW_GenoData_indFiltered.genotypes[:, loci_selection]
-    # pos_region = pos_SNP_filtered[loci_selection, :]
-    # genotypes_region = genosOnly_included[:, loci_selection]
     if chrom == "gwZ" #include only males (because females have only one Z)
         genotypes_region_males = genotypes_region[GW_GenoData_indFiltered.indInfo.sex .== "M", :]
         windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region_males, pos_region, windowSize)
@@ -327,9 +300,6 @@ for chrom in scaffolds_for_ViSHet
     windowed_pos_all = vcat(windowed_pos_all, windowed_pos_chrom)
     windowed_ViSHet_all = [windowed_ViSHet_all; windowed_ViSHet_scaffold]
 end
-
-# Quick test plot (overlapping all chromosomes, so not good):
-# plot(windowed_pos_all.mean_position, windowed_ViSHet_all)
 ```
 
 ### Identify "haploblock regions" as those that have high ViSHet
@@ -391,139 +361,8 @@ println("The percent of the genome in high ViSHet regions is $percentGenomeHighV
 
 ### Plot LHBRs (Large Haploblock Regions) for whole genome
 
-First define function:
-
 ```{julia}
-"""
-    plotGenomeViSHet(scaffolds_to_plot, 
-                    windowed_ViSHet_all,
-                    windowed_pos_all;
-                    fillColor = "purple",
-                    lineTransparency = 0.8,
-                    fillTransparency = 0.2,
-                    figureSize = (1200, 1200),
-                    plotRegions = false,
-                    regionsToPlot = [],
-                    regionColor = "red")
-
-Plot windowed Variance in Standardized Heterozygosity (ViSHet) along multiple scaffolds.
-
-​# Arguments
-- `scaffolds_to_plot`: a vector of the scaffold names to include in the plot.
-- `windowed_ViSHet_all`: a vector of ViSHet values for windows of the genome.
-- `windowed_pos_all`: dataframe containing genomic locations of windows (must have columns `chrom` and `mean_position`).
-- `fillColor` (optional): the color for the lines and fill (default `"purple"`).
-- `lineTransparency` (optional): transparency of the lines.
-- `fillTransparency` (optional): transparency of the fill color.
-- `figureSize` (optional): size of the figure (height, width).
-- `plotRegions` (optional): choose `true` to highlight regions.
-- `regionsToPlot` (optional): a DataFrame with three columns: `regionChrom` containing names of scaffolds, `regionStart` and `regionEnd` giving start and end of regions to highlight.
-- `regionColor` (optional): the color for the highlighted regions.
-
-# Notes
-- Returns the figure.
-"""
-function plotGenomeViSHetTEST(scaffolds_to_plot, 
-                            windowed_ViSHet_all,
-                            windowed_pos_all;
-                            fillColor = "purple",
-                            lineTransparency = 0.8,
-                            fillTransparency = 0.2,
-                            figureSize = (1200, 1200),
-                            plotRegions = false,
-                            regionsToPlot = [],
-                            regionColor = "red")
-    
-    # get sizes of chromosomes (note this actually isn't the true length, just the mean position of the rightmost window):
-    scaffoldLengths = repeat([-1], length(scaffolds_to_plot))	# vector of Int64
-    for i in eachindex(scaffolds_to_plot)
-        selection = windowed_pos_all.chrom .== scaffolds_to_plot[i]
-        if sum(selection) == 0
-            scaffoldLengths[i] = 0
-        else
-            scaffoldLengths[i] = round(Int, maximum(windowed_pos_all.mean_position[selection]))
-        end
-    end
-
-    # my plan is to use the layout feature of Makie to make one axis per row, and then plot
-    # multiple scaffolds to each row
-
-    scaffoldPlottedAlready = falses(length(scaffolds_to_plot))
-    bpPerRow = 200_000_000
-    bpGapBetweenScaffolds = 10_000_000
-    scaffoldInRow = Vector{Vector{String}}() # declare a vector of vectors to store the chromosome names per row
-    scaffoldBpStartInRow = Vector{Vector{Int}}()
-    row = 1
-
-    while sum(scaffoldPlottedAlready .== false) > 0  # repeat until all chr have a row to be plotted in
-        bpStart = 0
-        remainingRowLength = bpPerRow
-        push!(scaffoldInRow, []) # initialize an empty vector for the next row
-        push!(scaffoldBpStartInRow, []) # initialize an empty vector for the next row
-        placeInRow = 1
-        # look through chromosomes and find some to go in this row
-        for i in eachindex(scaffolds_to_plot)
-            # if not plotted and short enough, add to row:
-            if scaffoldPlottedAlready[i] .== false .&& scaffoldLengths[i] .<= remainingRowLength
-                push!(scaffoldInRow[row], scaffolds_to_plot[i])
-                push!(scaffoldBpStartInRow[row], bpStart)
-                remainingRowLength = remainingRowLength - scaffoldLengths[i] - bpGapBetweenScaffolds
-                scaffoldPlottedAlready[i] = true
-                placeInRow += 1
-                bpStart = bpStart + scaffoldLengths[i] + bpGapBetweenScaffolds
-            end	
-        end
-        row += 1
-    end
-    println(scaffoldInRow)
-
-    # Plot in the order defined above
-    f = CairoMakie.Figure(size=figureSize)
-    numRows = length(scaffoldInRow)
-    # make one axis object per row:
-    axs = [Axis(f[i, 1], limits=(0, bpPerRow,
-            -0.45, 2.0), ylabel = "ViSHet") for i in 1:numRows]
-    for i in 1:numRows
-        hidexdecorations!(axs[i]) #hide background lattice and axis labels
-        hidespines!(axs[i], :t, :r, :b) # hide box around plot
-    end
-
-    for rowNum in 1:numRows
-        numScaffoldsInRow = length(scaffoldInRow[rowNum])
-        nextPlotShiftBP = 0
-        for orderNum in 1:numScaffoldsInRow 
-            scaffoldName = scaffoldInRow[rowNum][orderNum]
-            plotBpLength = scaffoldLengths[findfirst(scaffolds_to_plot .== scaffoldName)]
-            # select one scaffold from the whole genome:
-            selection = windowed_pos_all.chrom .== scaffoldName 
-            windowed_pos_selected = view(windowed_pos_all.mean_position, selection)
-            windowed_ViSHet_selected = view(windowed_ViSHet_all, selection)
-            if length(windowed_pos_selected) > 0  # only plot if there is data for that scaffold        
-                text!(axs[rowNum], scaffoldBpStartInRow[rowNum][orderNum] + 0.005bpPerRow, -0.2; text=scaffoldName, align=(:left, :center), fontsize=20)
-                xx = vcat(first(windowed_pos_selected), windowed_pos_selected, last(windowed_pos_selected)) .+ scaffoldBpStartInRow[rowNum][orderNum]
-                yy = vcat(0, windowed_ViSHet_selected, 0)
-                poly!(axs[rowNum], Point2f.(xx, yy), color = (fillColor, fillTransparency), strokecolor = (fillColor, lineTransparency), strokewidth = 1)
-                # if indicating regions (e.g. that have high ViSHet)
-                if plotRegions
-                    regionsToPlot_thisScaffold = regionsToPlot[regionsToPlot.regionChrom .== scaffoldName, :]
-                    for i in eachindex(regionsToPlot_thisScaffold.regionStart)
-                        xValues = [regionsToPlot_thisScaffold.regionStart[i], regionsToPlot_thisScaffold.regionEnd[i]] .+ scaffoldBpStartInRow[rowNum][orderNum]
-                        yValues = [0.05, 0.05]
-                        lines!(axs[rowNum], xValues, yValues, color=regionColor, linewidth=10)
-                    end
-                end
-            end
-        end
-    end
-    display(f)
-    return f
-end
-```
-
-Now call the function:
-
-```{julia}
-fig2 = plotGenomeViSHetTEST(scaffolds_to_plot, 
+fig2 = plotGenomeViSHet(scaffolds_to_plot, 
                         windowed_ViSHet_all,
                         windowed_pos_all;
                         fillColor = "purple",
@@ -559,8 +398,6 @@ ind_with_metadata_indFiltered = GW_GenoData_indFiltered.indInfo
 # cycle through the LHBRs, determining the SNPs within each to remove from the dataset:
 lociToRemove = fill(false, nrow(pos_SNP_filtered))
 for i in eachrow(highViSHetRegions) 
-    # display(i.regionChrom)
-    # display(i.regionStart)
     lociWithinThisLHBR = (pos_SNP_filtered.chrom .== i.regionChrom) .&& 
                     (pos_SNP_filtered.position .>= i.regionStart) .&&
                     (pos_SNP_filtered.position .<= i.regionEnd)

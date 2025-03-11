@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Darren Irwin">
-<meta name="dcterms.date" content="2025-01-19">
+<meta name="dcterms.date" content="2025-03-10">
 
 <title>Greenish Warbler Genomics 2025</title>
 <style>
@@ -186,7 +186,7 @@ ul.task-list li input[type="checkbox"] {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">January 19, 2025</p>
+      <p class="date">March 10, 2025</p>
     </div>
   </div>
   
@@ -199,12 +199,24 @@ ul.task-list li input[type="checkbox"] {
 
 
 <p>This website contains notes and code describing the data analysis for a manuscript on Greenish Warbler genomics. I’ve been working with the data for several years, and the R and then Julia code has been in development for a while. This website is a Quarto project and each page is a Quarto notebook, which can run and display the results of Julia (or other) code blocks, along with text narration, and output in html, pdf, Word, etc.</p>
-<p>The Julia code here is loosely based on R code written for Greenish Warbler analysis (Irwin et al.&nbsp;2016, <em>Molecular Ecology</em>), and then the North American warbler analyses (Irwin et al.&nbsp;2018, <em>Molecular Ecology</em>). Since then, I’ve rewritten the code in Julia, where it is orders of magnitude faster. I’ve packaged many of the functions into a Julia package, <code>GenomicDiversity.jl</code>, that is now officially registered and easily installed (via this command entered into the Julia REPL: <code>import Pkg; Pkg.add("GenomicDiversity")</code>)</p>
+<p>If you’ve never used Julia, you can learn more and easily install for free <a href="https://julialang.org">here</a>.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="https://julialang.org"><img src="Julia_logo.jpg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:15.0%"></a></p>
+</figure>
+</div>
+<p>The Julia code here is loosely based on R code written for an earlier Greenish Warbler analysis (Irwin et al.&nbsp;2016, <em>Molecular Ecology</em>), and then the North American warbler analyses (Irwin et al.&nbsp;2018, <em>Molecular Ecology</em>). Since then, I’ve rewritten the code in Julia, where it is orders of magnitude faster. I’ve packaged many of the functions into a Julia package, <code>GenomicDiversity.jl</code>, that is now officially registered and easily installed (via this command entered into the Julia REPL: <code>import Pkg; Pkg.add("GenomicDiversity")</code>). Click on the logo if you want to learn more about this package:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><a href="https://github.com/darreni/GenomicDiversity.jl"><img src="GenomicDiversity_logo.jpg" class="img-fluid quarto-figure quarto-figure-center figure-img" style="width:25.0%"></a></p>
+</figure>
+</div>
+<p>In this version of these pages (GreenishWarblerGenomics2025 v1.1.1), the scripts use the newer version of <code>GenomicDiversity</code>, v0.2.2, which makes use of a <code>GenoData</code> data type and additional functions that make the scripts more concise.</p>
 <p>The SNP data used in this analysis are a result of GBS reads mapped to our new Biozeron genome assembly for a greenish warbler from southern China (<code>GW2022ref.fa</code>).</p>
 <section id="citation" class="level4">
 <h4 class="anchored" data-anchor-id="citation">Citation</h4>
 <p>The scripts, data, and figures shown in this website were used as the basis for the paper listed below, which should be cited as the source of information from this website:</p>
-<p>Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. <em>Molecular Ecology</em>, minor revision requested.</p>
+<p><strong>Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. <em>Molecular Ecology</em>, in press.</strong></p>
 </section>
 <section id="pages-in-this-website" class="level4">
 <h4 class="anchored" data-anchor-id="pages-in-this-website">Pages in this website</h4>

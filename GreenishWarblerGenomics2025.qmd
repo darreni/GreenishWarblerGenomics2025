@@ -60,7 +60,7 @@ using PrettyTables # for printing nice tables to REPL
 CairoMakie.activate!()  # this makes CairoMakie the main package for figures (in case another already loaded)
 ```
 
-#### Load my custom package `GenomicDiversity` (v.0.2.1; above will likely also work)
+#### Load my custom package `GenomicDiversity` (v.0.2.2; higher will likely also work)
 This is used for calculating Fst, ViSHet, etc., and making graphs such as PCA and genome-by-individual plots.
 
 ```{julia}
@@ -165,7 +165,8 @@ chromosomes_to_process = vec(["gw2",
                             "gws112"]);
 ```
 
-### Set up function to correct the names of GBS runs:
+### Set up function to correct the names of GBS runs
+(This will be used later.)
 
 ```{julia}
 function correctNames(metadataColumn)
@@ -201,9 +202,9 @@ GW_GenoData.genotypes
 ```
 
 The `GenoData` object (named `GW_GenoData`) produced by the above contains three sub-objects:
-- The genotype matrix `.genotypes` (shown above)
-- The metadata `.indInfo` (corresponding to rows of the matrix)
-- The positions `.positions` of SNPs in the reference genome (corresponding to columns of the matrix)
+* The genotype matrix `.genotypes` (shown above)
+* The metadata `.indInfo` (corresponding to rows of the matrix)
+* The positions `.positions` of SNPs in the reference genome (corresponding to columns of the matrix)
 
 The function above checks that the rownames in the `ind` column of the `individualsFile` matches those in the `ID` column of the `metadataFile`,
 and presents a warning if they don't.
@@ -229,8 +230,7 @@ Some samples were run multiple times, in which case at least one is indicated wi
 
 ```{julia}
 selection = occursin.("_rep", GW_GenoData.indInfo.Fst_group)
-GW_GenoData_indFiltered_1 = GenomicDiversity.filterInds(GW_GenoData, 
-            selection)
+GW_GenoData_indFiltered_1 = GenomicDiversity.filterInds(GW_GenoData, selection);
 ```
 
 #### Filter specific individuals
@@ -241,7 +241,7 @@ If there are certain individuals that we want to filter out prior to any additio
 filter_out_inds = ["GW_Liz_GBS_P_fusc", "GW_Liz_GBS_P_h_man", "GW_Liz_GBS_P_humei", "GW_Liz_GBS_P_inor", "GW_Liz_GBS_S_burk"]
 
 GW_GenoData_indFiltered_2 = GenomicDiversity.filterNamedInds(GW_GenoData_indFiltered_1, 
-                        filter_out_inds)
+                        filter_out_inds);
 ```
 
 #### Filter individuals based on missing genotypes 
@@ -330,6 +330,8 @@ scatter!(latlongs.long_E, latlongs.lat_N)
 text!(latlongs.long_E, latlongs.lat_N; text = latlongs.location_short)
 f
 ```
+
+(_Ignore the warning that likely appears above. It is caused by an interaction between Quarto and the Makie graphing package, but has no consequence._)
 
 #### remove "Green warbler" _nitidus_
 
@@ -514,7 +516,7 @@ group1 = "vir"   # these groups will determine the color used in the graph
 group2 = "plumb"
 groupsToCompare = "vir_plumb"
 Fst_cutoff =  0.8
-missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
+missingFractionAllowed = 0.2;  # only show SNPs with less than this fraction of missing data among individuals
 ```
 
 #### Calculate allele freqs and sample sizes 
@@ -548,7 +550,9 @@ GW_GenoData_indFiltered_included = GenoData(indInfo_included, genotypes_included
 
 ```{julia}
 chr = "gw23"
-regionInfo = chooseChrRegion(GW_GenoData_indFiltered_included.positions, chr; positionMin=1, positionMax=scaffold_lengths[chr]) # this gets the maximum position for the chromosome
+# get the maximum position for the chromosome, for use later: 
+regionInfo = GenomicDiversity.chooseChrRegion(GW_GenoData_indFiltered_included.positions, chr;
+        positionMin=1, positionMax=scaffold_lengths[chr]) 
 ```
 
 #### Now actually make the plot

@@ -506,7 +506,7 @@ PC2 explains ", 100*PC2_prop_variance, "%.")
 
 ## Just east side:
 
-One of obscuratus is female, so also showing both males and females here:
+One of _obscuratus_ is female, so also showing both males and females here:
 
 ```{julia}
 groups = ["troch_LN","obs","plumb"] # for purpose of calculating pairwise Fst and Fst_group (to determine SNPs)

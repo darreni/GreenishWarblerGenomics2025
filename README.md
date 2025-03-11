@@ -8,7 +8,7 @@ To see webpages that will walk you through the analysis, click [here](https://da
 
 Much of the analysis shown in this repo was done in the Julia programming language. If you've never used Julia, you can learn more and easily install for free [here](https://julialang.org).
 
-[![](<img src="Julia_logo.jpg" alt="Julia logo" style="width:50%; height:auto;">)](https://julialang.org)
+[<img src="Julia_logo.jpg" style="width:20%; height:auto;">](https://julialang.org)
 
 The Julia code here is loosely based on R code written for an earlier Greenish Warbler analysis (Irwin et al. 2016, _Molecular Ecology_), and then the North American warbler analyses (Irwin et al. 2018, _Molecular Ecology_). Since then, I've rewritten the code in Julia, where it is orders of magnitude faster. I've packaged many of the functions into a Julia package, `GenomicDiversity.jl`, that is now officially registered and easily installed (via this command entered into the Julia REPL: `import Pkg; Pkg.add("GenomicDiversity")`). Click on the logo if you want to learn more about this package:
 

@@ -13,7 +13,7 @@ format:
 jupyter: julia-1.11
 ---
 
-This page shows the code used to generate PCA plots for the whole genome (and also for each chromosome, although those aren't shown in the paper).
+This page shows the code used to conduct the analysis of haploblocks in the Greenish Warbler ring species, using the **ViSHet** (**V**ariance **i**n **S**tandardized **Het**erozygosity) statistic.
 
 Prior to examining the code on this page, readers should look at `GreenishWarblerGenomics2025.qmd` (or `.html`) and `GW_Zchromosome_analysis.qmd` (or `.html`), as this current page depends on the code on those pages being run first.
 
@@ -21,7 +21,7 @@ Prior to examining the code on this page, readers should look at `GreenishWarble
 
 The scripts, data, and figures shown in this website were used as the basis for the paper listed below, which should be cited as the source of information from this website:
 
-Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_, minor revision requested.
+Irwin, D., S. Bensch, C. Charlebois, G. David, A. Geraldes, S.K. Gupta, B. Harr, P. Holt, J.H. Irwin, V.V. Ivanitskii, I.M. Marova, Y. Niu, S. Seneviratne, A. Singh, Y. Wu, S. Zhang, T.D. Price. 2025. The distribution and dispersal of large haploblocks in a superspecies. _Molecular Ecology_, in press.
 
 #### A note about plots in this document
 
@@ -59,7 +59,7 @@ cd(dataDirectory)
 
 ## Load the filtered dataset
 
-This dataset was produced through filtering in GreenishWarblerGenomics2025.qmd
+This dataset was produced through filtering in `GreenishWarblerGenomics2025.qmd`:
 
 ```{julia}
 baseName = "GW_genomics_2022_with_new_genome/GW2022_GBS_012NA_files/GW2022_all4plates.genotypes.SNPs_only.whole_genome"
@@ -73,9 +73,7 @@ end
 if tagName != d["tagName"]
     println("WARNING: tagNames don't match don't match between that defined above and in the saved file")
 end
-genosOnly = d["genosOnly_ind_SNP_ind_filtered"]
-ind_with_metadata_indFiltered = d["ind_with_metadata_indFiltered"]
-pos_SNP_filtered = d["pos_SNP_filtered"]
+GW_GenoData_indFiltered = d["GW_GenoData_indFiltered"]
 repoDirectory = d["repoDirectory"]
 dataDirectory = d["dataDirectory"]
 scaffold_info = d["scaffold_info"]
@@ -117,9 +115,9 @@ end
 
 ```{julia}
 # remove the Z SNPs from the big dataset loaded above:
-selection = (pos_SNP_filtered.chrom .!= "gwZ")
-pos_SNP_filtered = pos_SNP_filtered[selection, :]
-genosOnly = genosOnly[:,selection]
+selection = (GW_GenoData_indFiltered.positions.chrom .!= "gwZ")
+GW_GenoData_indFiltered.positions = GW_GenoData_indFiltered.positions[selection, :]
+GW_GenoData_indFiltered.genotypes = GW_GenoData_indFiltered.genotypes[: , selection]
 
 # load and add the Z filtered SNPs:
 filename = string(baseName, tagName, "chrgwZ_cleaned.notImputed.jld2")
@@ -127,18 +125,16 @@ genosOnly_chrgwZ_cleaned = load(filename, "genotypes_gwZ_SNPfiltered")
 ind_with_metadata_indFiltered_chrgwZ_cleaned = load(filename, "ind_with_metadata_indFiltered")
 pos_SNP_filtered_chrgwZ_cleaned = load(filename, "pos_SNP_filtered_region")
 
-if ind_with_metadata_indFiltered.ind != ind_with_metadata_indFiltered_chrgwZ_cleaned.ind
+if GW_GenoData_indFiltered.indInfo.ind != ind_with_metadata_indFiltered_chrgwZ_cleaned.ind
     println("Warning: the list of individuals in the big file and Z file are not completely identical.")
 end
 
-pos_SNP_filtered = vcat(pos_SNP_filtered, pos_SNP_filtered_chrgwZ_cleaned)
-genosOnly = hcat(genosOnly, genosOnly_chrgwZ_cleaned)
-
+GW_GenoData_indFiltered.positions = vcat(GW_GenoData_indFiltered.positions, pos_SNP_filtered_chrgwZ_cleaned)
+GW_GenoData_indFiltered.genotypes = hcat(GW_GenoData_indFiltered.genotypes, genosOnly_chrgwZ_cleaned)
 println("Replaced the Z chromosome data with the filtered Z data.")
 
 # copy the sex column so we can use later:
-ind_with_metadata_indFiltered.sex = ind_with_metadata_indFiltered_chrgwZ_cleaned.sex
-
+GW_GenoData_indFiltered.indInfo.sex = ind_with_metadata_indFiltered_chrgwZ_cleaned.sex;
 ```
 
 #### Adjust sample plotting order
@@ -146,19 +142,19 @@ ind_with_metadata_indFiltered.sex = ind_with_metadata_indFiltered_chrgwZ_cleaned
 This sets the genotype-by-individual plots to arrange sample sites according to `ring_km`, and sets the _nitidus_ samples to -2500 km and the Siberian hybrid to 5000 km (just for plotting):
 
 ```{julia}
-ind_with_metadata_indFiltered.original_plot_order = ind_with_metadata_indFiltered.plot_order
-ind_with_metadata_indFiltered.plot_order = ind_with_metadata_indFiltered.ring_km
-ind_with_metadata_indFiltered.plot_order[ind_with_metadata_indFiltered.Fst_group .== "nit"] .= -2500
-ind_with_metadata_indFiltered.plot_order[ind_with_metadata_indFiltered.Fst_group .== "plumb_vir"] .= 5000
+GW_GenoData_indFiltered.indInfo.original_plot_order = GW_GenoData_indFiltered.indInfo.plot_order
+GW_GenoData_indFiltered.indInfo.plot_order = GW_GenoData_indFiltered.indInfo.ring_km
+GW_GenoData_indFiltered.indInfo.plot_order[GW_GenoData_indFiltered.indInfo.Fst_group .== "nit"] .= -2500
+GW_GenoData_indFiltered.indInfo.plot_order[GW_GenoData_indFiltered.indInfo.Fst_group .== "plumb_vir"] .= 5000;
 ```
 
 ## Prepare data for Genotype-by-individual plots and PCA
 
-For missing genotypes, change our code of `-1` to `missing`:
+For missing genotypes, change our code of `-1` to `missing` (a special data type meaning missing data, for the later imputation step):
 
 ```{julia}
-genosOnly_with_missing = Matrix{Union{Missing, Int16}}(genosOnly)
-genosOnly_with_missing = replace(genosOnly_with_missing, -1 => missing)
+GW_GenoData_indFiltered.genotypes = Matrix{Union{Missing, Int16}}(GW_GenoData_indFiltered.genotypes)
+GW_GenoData_indFiltered.genotypes = replace(GW_GenoData_indFiltered.genotypes, -1 => missing)
 ```
 
 #### Make list of scaffolds to plot:
@@ -170,7 +166,7 @@ scaffolds_to_plot = "gw" .* string.(vcat(1, "1A", 2:4, "4A", 5:15, 17:28, "Z"))
 #### Determine number of SNPs in the chromosomes above
 
 ```{julia}
-sum(map(in(scaffolds_to_plot), pos_SNP_filtered.chrom))
+sum(map(in(scaffolds_to_plot), GW_GenoData_indFiltered.positions.chrom))
 ```
 
 This reports that 1003924 SNPs are within the listed chromosomes.
@@ -195,16 +191,16 @@ groupsToInclude = ["lud_PK", "lud_KS", "lud_central", "lud_Sath", "lud_ML","troc
 numIndsToPlot = [1000, 1000, 1000, 1000, 1000, 1000]
 
 if filterGroups
-    genosOnly_included, ind_with_metadata_included = limitIndsToPlot(groupsToInclude, numIndsToPlot, genosOnly_with_missing, ind_with_metadata_indFiltered)
+    genosOnly_included, ind_with_metadata_included = limitIndsToPlot(groupsToInclude, numIndsToPlot, GW_GenoData_indFiltered.genotypes, GW_GenoData_indFiltered.indInfo)
 else
-    genosOnly_included = genosOnly_with_missing
-    ind_with_metadata_included = ind_with_metadata_indFiltered
+    genosOnly_included = GW_GenoData_indFiltered.genotypes
+    ind_with_metadata_included = GW_GenoData_indFiltered.indInfo
 end
 
 chr = "gw15"
 windowSize = 500
-loci_selection = (pos_SNP_filtered.chrom .== chr)
-pos_region = pos_SNP_filtered[loci_selection, :]
+loci_selection = (GW_GenoData_indFiltered.positions.chrom .== chr)
+pos_region = GW_GenoData_indFiltered.positions[loci_selection, :]
 genotypes_region = genosOnly_included[:, loci_selection]
 
 windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
@@ -242,7 +238,6 @@ ax = Axis(g[1, 1],
 for i in 1:size(windowedIndHet_standardized, 1)
     lines!(windowedPos, windowedIndHet_standardized[i, :])
 end
-#lines!(windowedPos, windowedIndHet[21,:], linewidth = 10, color = :red)
 display(g)
 
 # Now graph the variance in standardized heterozygosity
@@ -261,7 +256,6 @@ ax = Axis(h[1, 1],
     ylabel=yLabelText, ylabelsize=labelSize)
 lines!(windowedPos, windowedViSHet)
 display(h)
-
 ```
 
 
@@ -278,10 +272,10 @@ groupsToInclude = ["vir"]
 numIndsToPlot = [1000]
 
 if filterGroups
-    genosOnly_included, ind_with_metadata_included = limitIndsToPlot(groupsToInclude, numIndsToPlot, genosOnly_with_missing, ind_with_metadata_indFiltered)
+    genosOnly_included, ind_with_metadata_included = limitIndsToPlot(groupsToInclude, numIndsToPlot, GW_GenoData_indFiltered.genotypes, GW_GenoData_indFiltered.indInfo)
 else
-    genosOnly_included = genosOnly_with_missing
-    ind_with_metadata_included = ind_with_metadata_indFiltered
+    genosOnly_included = GW_GenoData_indFiltered.genotypes
+    ind_with_metadata_included = GW_GenoData_indFiltered.indInfo
 end
 
 scaffolds_for_ViSHet = scaffolds_to_plot
@@ -290,11 +284,11 @@ windowed_pos_all = DataFrame(chrom = String[], mean_position = Float64[], first_
 windowed_ViSHet_all = Vector{Float32}(undef, 0)
 for chrom in scaffolds_for_ViSHet
     regionText = string("chr", chrom)
-    loci_selection = (pos_SNP_filtered.chrom .== chrom)
-    pos_region = pos_SNP_filtered[loci_selection, :]
-    genotypes_region = genosOnly_included[:, loci_selection]
+    loci_selection = (GW_GenoData_indFiltered.positions.chrom .== chrom)
+    pos_region = GW_GenoData_indFiltered.positions[loci_selection, :]
+    genotypes_region = GW_GenoData_indFiltered.genotypes[:, loci_selection]
     if chrom == "gwZ" #include only males (because females have only one Z)
-        genotypes_region_males = genotypes_region[ind_with_metadata_included.sex .== "M", :]
+        genotypes_region_males = genotypes_region[GW_GenoData_indFiltered.indInfo.sex .== "M", :]
         windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region_males, pos_region, windowSize)
     else # for all other chromosomes, include all individuals
         windowedPos, windowedIndHet = getWindowedIndHet(genotypes_region, pos_region, windowSize)
@@ -306,9 +300,6 @@ for chrom in scaffolds_for_ViSHet
     windowed_pos_all = vcat(windowed_pos_all, windowed_pos_chrom)
     windowed_ViSHet_all = [windowed_ViSHet_all; windowed_ViSHet_scaffold]
 end
-
-# Quick test plot (overlapping all chromosomes, so not good)
-# plot(windowed_pos_all.mean_position, windowed_ViSHet_all)
 ```
 
 ### Identify "haploblock regions" as those that have high ViSHet
@@ -388,6 +379,16 @@ if false  # set to true to save plot
 end 
 ```
 
+### Note: from this point on will not use `GenoData` objects (although would be more concise code)
+
+The paper was accepted and I need to get this final version posted. The code below uses the metadata, genotype matrix, and loci positions as separate data objects. This works fine, as the funtions are built to use either forms of data input.
+
+```{julia}
+pos_SNP_filtered = GW_GenoData_indFiltered.positions
+genosOnly_included = GW_GenoData_indFiltered.genotypes
+ind_with_metadata_indFiltered = GW_GenoData_indFiltered.indInfo;
+```
+
 
 ## Make a PCA based on all regions not in LHBRs
 
@@ -397,8 +398,6 @@ end
 # cycle through the LHBRs, determining the SNPs within each to remove from the dataset:
 lociToRemove = fill(false, nrow(pos_SNP_filtered))
 for i in eachrow(highViSHetRegions) 
-    # display(i.regionChrom)
-    # display(i.regionStart)
     lociWithinThisLHBR = (pos_SNP_filtered.chrom .== i.regionChrom) .&& 
                     (pos_SNP_filtered.position .>= i.regionStart) .&&
                     (pos_SNP_filtered.position .<= i.regionEnd)
@@ -407,6 +406,8 @@ end
 # now actually remove them:
 genosOnly_included_nonLHBR = genosOnly_included[:, .!lociToRemove]
 pos_SNP_filtered_nonLHBR = pos_SNP_filtered[.!lociToRemove, :]
+num_removed = size(pos_SNP_filtered, 1) - size(pos_SNP_filtered_nonLHBR, 1)
+println("Removed $num_removed loci for the non-LHBR PCA.")
 ```
 
 #### Make list of scaffolds to include in the whole-genome non-LHBR PCA:
@@ -475,7 +476,7 @@ println("PC1 explains ", 100*PC1_prop_variance, "% of the total variance.
 PC2 explains ", 100*PC2_prop_variance, "%.")
 ```
 
-The above looks quite similar to the whole-genome PCA including the LHBRs. There is a lot of signal outside of the LHBRs.
+The above looks quite similar to the whole-genome PCA including the LHBRs, but the two axes explain a little less of the overall variation. The overall conclusion: There is a lot of signal for geographic structure, both outside and inside of the LHBRs.
 
 #### Do non-LHBR PCA for a specific chromosome:
 
@@ -678,7 +679,7 @@ for i in axes(PCAmodelAll.metadata, 1)
     indColors[i] = group_colors_PCA[findfirst(groups_to_plot_PCA .== PCAmodelAll.metadata.Fst_group[i])]
 end
 PCAmodelAll.metadata.indColorLeft = indColors
-PCAmodelAll.metadata.indColorRight = indColors
+PCAmodelAll.metadata.indColorRight = indColors;
 ```
 
 #### Plot PC1 vs. PC2:
@@ -911,7 +912,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
                 missingFractionAllowed = missingFractionAllowed,
                 titleFontSize = 20,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Now show a GBI plot like above, but with heterozygotes included:
@@ -990,7 +991,7 @@ fig_4 = plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 missingFractionAllowed = missingFractionAllowed,
                 indFontSize=8, figureSize=(1200, 1200),
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 
 if false  # set to true to save plot
     save("Figure4_from_Julia.png", fig_4[1], px_per_unit = 2.0)
@@ -1010,7 +1011,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show same but with all individuals
@@ -1030,9 +1031,9 @@ plotInfo = plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 missingFractionAllowed = missingFractionAllowed,
                 indFontSize=6, figureSize=(1200, 1600),
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 
-if true  # set to true to save plot
+if false  # set to true to save plot
     save("FigureS1_from_Julia.png", plotInfo[1], px_per_unit = 2.0)
 end
 ```
@@ -1074,7 +1075,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 
 ```
 
@@ -1112,7 +1113,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsEast, clusterColorsWithHetsEast;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 ### Show just the northern area
@@ -1147,7 +1148,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsNorth, clusterColorsWithHetsNorth;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Do a PCA based on above info, on just the west side of the ring
@@ -1373,7 +1374,7 @@ for i in axes(PCAmodelAll.metadata, 1)
     indColors[i] = group_colors_PCA[findfirst(groups_to_plot_PCA .== PCAmodelAll.metadata.Fst_group[i])]
 end
 PCAmodelAll.metadata.indColorLeft = indColors
-PCAmodelAll.metadata.indColorRight = indColors
+PCAmodelAll.metadata.indColorRight = indColors;
 ```
 
 #### Plot PC1 vs. PC2:
@@ -1531,7 +1532,7 @@ genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot,
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
                 missingFractionAllowed = missingFractionAllowed,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Now show a GBI plot like above, but with heterozygotes:
@@ -1598,7 +1599,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the west area (without _nitidus_)
@@ -1630,7 +1631,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 
 ```
 
@@ -1663,7 +1664,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsEast, clusterColorsWithHetsEast;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 
 ```
 
@@ -1696,7 +1697,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsNorth, clusterColorsWithHetsNorth;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 
@@ -1789,7 +1790,7 @@ for i in axes(PCAmodelAll.metadata, 1)
     indColors[i] = group_colors_PCA[findfirst(groups_to_plot_PCA .== PCAmodelAll.metadata.Fst_group[i])]
 end
 PCAmodelAll.metadata.indColorLeft = indColors
-PCAmodelAll.metadata.indColorRight = indColors
+PCAmodelAll.metadata.indColorRight = indColors;
 ```
 
 
@@ -1946,7 +1947,7 @@ genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot,
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
                 missingFractionAllowed = missingFractionAllowed,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Now show a GBI plot like above, but with heterozygotes
@@ -2038,7 +2039,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show GBI plot according to original groups and plot order
@@ -2054,7 +2055,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show same but with all individuals
@@ -2073,7 +2074,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show same but with only vir and plumb pops
@@ -2098,7 +2099,7 @@ metadataForGBI.Fst_group = metadataForGBI.original_Fst_groups
 
 plotGenotypeByIndividual(regionInfo, posForGBI,
                 genosForGBI, metadataForGBI, freqsForGBI, plotGroups, plotGroupColors;
-                missingFractionAllowed = missingFractionAllowed)
+                missingFractionAllowed = missingFractionAllowed);
 ```
 
 #### Show same but with only vir lud troch pops
@@ -2133,7 +2134,7 @@ genosForGBI_limited, indMetadataforGBI_limited = limitIndsToPlot(plotGroups,
 
 plotGenotypeByIndividual(regionInfo, posForGBI,
                 genosForGBI_limited, indMetadataforGBI_limited, freqsForGBI, plotGroups, plotGroupColors;
-                missingFractionAllowed = missingFractionAllowed)
+                missingFractionAllowed = missingFractionAllowed);
 ```
 
 #### Show same but with only troch plumb pops
@@ -2179,7 +2180,7 @@ genosForGBI_limited, indMetadataforGBI_limited = limitIndsToPlot(plotGroups,
 
 plotGenotypeByIndividual(regionInfo, posForGBI,
                 genosForGBI_limited, indMetadataforGBI_limited, freqsForGBI, plotGroups, plotGroupColors;
-                missingFractionAllowed = missingFractionAllowed)
+                missingFractionAllowed = missingFractionAllowed);
 ```
 
 #### Show just the west area (without _nitidus_)
@@ -2211,8 +2212,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
-
+                indColorRightProvided = true);
 ```
 
 
@@ -2249,7 +2249,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the northern area
@@ -2281,7 +2281,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 
@@ -2371,7 +2371,7 @@ for i in axes(PCAmodelAll.metadata, 1)
     indColors[i] = group_colors_PCA[findfirst(groups_to_plot_PCA .== PCAmodelAll.metadata.Fst_group[i])]
 end
 PCAmodelAll.metadata.indColorLeft = indColors
-PCAmodelAll.metadata.indColorRight = indColors
+PCAmodelAll.metadata.indColorRight = indColors;
 ```
 
 #### Plot PC1 vs. PC2
@@ -2408,7 +2408,7 @@ end
 display(f)
 ```
 
-#### At chr 26 high ViSHet region, there are only 5 clear haplogroups (one green is somewhat away). Vir and lud vary along PC3 but cannot be clearly grouped. Divide samples into those groups, based on PCA scores, and then calculate pi and Dxy
+#### At chr 26 high ViSHet region, there are only 5 clear haplogroups (one green is somewhat away). Vir and lud vary along PC3 but cannot be clearly grouped. Divide samples into those groups, based on PCA scores, and then calculate pi and Dxy.
 
 ```{julia}
 # Inspect chromosome 26 PCA of low IndHet (< 1.5) individuals,
@@ -2523,7 +2523,7 @@ genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot,
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
                 missingFractionAllowed = missingFractionAllowed,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Now show a GBI plot like above, but with heterozygotes
@@ -2603,7 +2603,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show GBI plot according to original groups and plot order
@@ -2619,7 +2619,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show same but with all individuals
@@ -2638,7 +2638,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show same but with only vir and plumb pops
@@ -2696,7 +2696,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the east area
@@ -2730,7 +2730,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the northern area
@@ -2762,7 +2762,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 ### Do a PCA based on a same-size region elsewhere on gw26 (with low ViSHet):
@@ -2888,7 +2888,7 @@ for i in axes(PCAmodelAll.metadata, 1)
     indColors[i] = group_colors_PCA[findfirst(groups_to_plot_PCA .== PCAmodelAll.metadata.Fst_group[i])]
 end
 PCAmodelAll.metadata.indColorLeft = indColors
-PCAmodelAll.metadata.indColorRight = indColors
+PCAmodelAll.metadata.indColorRight = indColors;
 ```
 
 #### Plot PC1 vs. PC2
@@ -3046,7 +3046,7 @@ genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot,
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
                 missingFractionAllowed = missingFractionAllowed,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Now show a GBI plot like above, but with heterozygotes
@@ -3113,7 +3113,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the west area (without _nitidus_)
@@ -3145,7 +3145,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the east area
@@ -3177,7 +3177,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsEast, clusterColorsWithHetsEast;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the northern area
@@ -3209,7 +3209,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsNorth, clusterColorsWithHetsNorth;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 
@@ -3462,7 +3462,7 @@ genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot,
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
                 missingFractionAllowed = missingFractionAllowed,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Now show a GBI plot like above, but with heterozygotes
@@ -3563,7 +3563,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show GBI plot according to original groups and plot order
@@ -3580,7 +3580,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 ### show same but with all individuals
@@ -3600,7 +3600,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 Chr 2 is complicated, shows recomb and perhaps some haploblock sharing between east Siberia and the southwestern area. Hard to show in summary figure but should perhaps mention.
@@ -3848,7 +3848,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 indFontSize=6, figureSize=(800, 1800),
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = true,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Now show a GBI plot like above, but with heterozygotes
@@ -3935,7 +3935,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the west area (without _nitidus_)
@@ -3971,7 +3971,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the east area
@@ -4005,7 +4005,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsEast, clusterColorsWithHetsEast;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the northern area
@@ -4041,7 +4041,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsNorth, clusterColorsWithHetsNorth;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 
@@ -4131,7 +4131,7 @@ for i in axes(PCAmodelAll.metadata, 1)
     indColors[i] = group_colors_PCA[findfirst(groups_to_plot_PCA .== PCAmodelAll.metadata.Fst_group[i])]
 end
 PCAmodelAll.metadata.indColorLeft = indColors
-PCAmodelAll.metadata.indColorRight = indColors
+PCAmodelAll.metadata.indColorRight = indColors;
 ```
 
 #### Plot PC1 vs. PC2
@@ -4169,7 +4169,7 @@ display(f)
 ```
 
 
-#### At chr 18 high ViSHet region, there are 5 clear haplogroups (vir and lud separated though on PC3, though not clearly enough to indicate as different in summary plot). Divide samples into those groups, based on PCA scores, and calculate pi and Dxy
+#### At chr 18 high ViSHet region, there are 5 clear haplogroups (vir and lud separated though on PC3, though not clearly enough to indicate as different in summary plot). Divide samples into those groups, based on PCA scores, and calculate pi and Dxy.
 
 ```{julia}
 
@@ -4290,7 +4290,7 @@ genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot,
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
                 missingFractionAllowed = missingFractionAllowed,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Now show a GBI plot like above, but with heterozygotes
@@ -4371,7 +4371,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 
@@ -4388,7 +4388,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show same but with all individuals
@@ -4407,7 +4407,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show same but with only vir and plumb pops
@@ -4465,7 +4465,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the east area
@@ -4497,7 +4497,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsEast, clusterColorsWithHetsEast;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 ### Show just the northern area
@@ -4529,11 +4529,11 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsNorth, clusterColorsWithHetsNorth;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 
-#### Tried chr 12 but sort of a mess. The ludlowi samples fall in all clusters, even plumb! Would be good to look more at this one in the future.
+#### Tried chr 12 but sort of a mess. The _ludlowi_ samples fall in all clusters, even _plumb_! Would be good to look more at this one in the future.
 
 
 ## Same for chr 13
@@ -4661,7 +4661,7 @@ display(f)
 ```
 
 
-#### At chr 13 high ViSHet region, there are 6 clear haplogroups (vir and lud separated cleanly on PC3, with one hetero between them). Divide samples into those groups, based on PCA scores, and calculate pi and Dxy
+#### At chr 13 high ViSHet region, there are 6 clear haplogroups (_vir_ and _lud_ separated cleanly on PC3, with one hetero between them). Divide samples into those groups, based on PCA scores, and calculate pi and Dxy.
 
 ```{julia}
 
@@ -4794,7 +4794,7 @@ genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot,
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
                 missingFractionAllowed = missingFractionAllowed,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show a GBI plot like above, but with heterozygotes
@@ -4880,7 +4880,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show GBI plot according to original groups and plot order
@@ -4896,7 +4896,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show same but with all individuals
@@ -4915,10 +4915,10 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
-#### Show same but with only vir and plumb pops
+#### Show same but with only _vir_ and _plumb_ pops
 
 ```{julia}
 
@@ -4977,7 +4977,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the east area
@@ -5009,7 +5009,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsEast, clusterColorsWithHetsEast;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the northern area
@@ -5043,7 +5043,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsNorth, clusterColorsWithHetsNorth;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 ## Do a PCA based on a same-size region elsewhere on gw13 (with low ViSHet):
@@ -5081,12 +5081,12 @@ end
 ```
 
 
-#### Tried chr 14 but not very clear. Looks like recombination backcrosses in ludlowi.
+#### Tried chr 14 but not very clear. Looks like recombination backcrosses in _ludlowi_.
 
 
 ## Same for chr 17
 
-Shows a pattern seen in chr 2 (and others) where ludlowi samples have some plumb haplotypes.
+Shows a pattern seen in chr 2 (and others) where _ludlowi_ samples have some _plumb_ haplotypes.
 
 ```{julia}
 # choose scaffold
@@ -5328,7 +5328,7 @@ genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot,
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
                 missingFractionAllowed = missingFractionAllowed,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Now show a GBI plot like above, but with heterozygotes:
@@ -5413,10 +5413,10 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
-### Chr 17 above shows interesting pattern with plumb haplotype more widespread---found in ludlowi, and the obscuratus pattern is complex with recombination. I checked chr 17 carefully in the summary plot, and it looks good.
+### Chr 17 above shows interesting pattern with plumb haplotype more widespread---found in _ludlowi_, and the _obscuratus_ pattern is complex with recombination. I checked chr 17 carefully in the summary plot, and it looks good.
 
 
 ## Same for chr 19
@@ -5544,7 +5544,7 @@ display(f)
 ```
 
 
-#### At chr 19 high ViSHet region, there are 4 clear homozygous haplogroups (vir and lud separated though on PC3, but not clearly enough to show in summary plot). Divide samples into those groups, based on PCA scores, and calculate pi and Dxy
+#### At chr 19 high ViSHet region, there are 4 clear homozygous haplogroups (_vir_ and _lud_ separated though on PC3, but not clearly enough to show in summary plot). Divide samples into those groups, based on PCA scores, and calculate pi and Dxy.
 
 ```{julia}
 
@@ -5654,7 +5654,7 @@ genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot,
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
                 missingFractionAllowed = missingFractionAllowed,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Now show a GBI plot like above, but with heterozygotes
@@ -5741,7 +5741,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show GBI plot according to original groups and plot order
@@ -5757,7 +5757,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show same but with all individuals
@@ -5776,10 +5776,10 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
-#### Show same but with only vir and plumb pops
+#### Show same but with only _vir_ and _plumb_ pops
 
 ```{julia}
 
@@ -5807,7 +5807,7 @@ plotGenotypeByIndividual(regionInfo, posForGBI,
                 missingFractionAllowed = missingFractionAllowed)
 ```
 
-#### Show same but with only vir lud troch pops
+#### Show same but with only _vir lud troch_ pops
 
 ```{julia}
 
@@ -5842,7 +5842,7 @@ plotGenotypeByIndividual(regionInfo, posForGBI,
                 missingFractionAllowed = missingFractionAllowed)
 ```
 
-#### Show same but with only troch obs plumb pops
+#### Show same but with only _troch obs plumb_ pops
 
 ```{julia}
 
@@ -5926,7 +5926,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the east area
@@ -5962,7 +5962,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsEast, clusterColorsWithHetsEast;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the northern area
@@ -5998,7 +5998,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsNorth, clusterColorsWithHetsNorth;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 
@@ -6125,7 +6125,7 @@ end
 display(f)
 ```
 
-#### At chr 4A high ViSHet region, there are 4 clear haplogroups (no discernment of lud or obs on PC3, which is driven by nitidus). Divide samples into those groups, based on PCA scores, and calculate pi and Dxy
+#### At chr 4A high ViSHet region, there are 4 clear haplogroups (no discernment of _lud_ or _obs_ on PC3, which is driven by _nitidus_). Divide samples into those groups, based on PCA scores, and calculate pi and Dxy
 
 ```{julia}
 
@@ -6238,7 +6238,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 indFontSize=6, figureSize=(800, 1800),
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = true,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Now show a GBI plot like above, but with heterozygotes
@@ -6341,7 +6341,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show GBI plot according to original groups and plot order
@@ -6357,7 +6357,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show same but with all individuals
@@ -6376,10 +6376,10 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
-#### Show same but with only vir and plumb pops
+#### Show same but with only _vir_ and _plumb_ pops
 
 ```{julia}
 
@@ -6407,7 +6407,7 @@ plotGenotypeByIndividual(regionInfo, posForGBI,
                 missingFractionAllowed = missingFractionAllowed)
 ```
 
-#### Show same but whole ring (but not nit)
+#### Show same but whole ring (but not _nit_)
 
 ```{julia}
 
@@ -6479,7 +6479,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 ### Show just the east area
@@ -6517,7 +6517,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsEast, clusterColorsWithHetsEast;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the northern area
@@ -6555,7 +6555,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsNorth, clusterColorsWithHetsNorth;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 ## Do a PCA based on a same-size region elsewhere on gw4A (with low ViSHet):
@@ -6723,7 +6723,7 @@ end
 display(f)
 ```
 
-#### At chr 20 high ViSHet region, there are 6 clear haplogroups (with vir and lud clearly different on PC3). Divide samples into those groups, based on PCA scores, and calculate pi and Dxy
+#### At chr 20 high ViSHet region, there are 6 clear haplogroups (with _vir_ and _lud_ clearly different on PC3). Divide samples into those groups, based on PCA scores, and calculate pi and Dxy.
 
 ```{julia}
 
@@ -6856,7 +6856,7 @@ genosForGBI, indMetadataforGBI = limitIndsToPlot(clusterNames, numIndsToPlot,
 plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNames, clusterColors;
                 missingFractionAllowed = missingFractionAllowed,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Now show a GBI plot like above, but with heterozygotes
@@ -6943,7 +6943,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show GBI plot according to original groups and plot order
@@ -6959,7 +6959,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show same but with all individuals
@@ -6978,7 +6978,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs, clusterNamesWithHets, clusterColorsWithHets;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 
@@ -7018,7 +7018,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsWest, clusterColorsWithHetsWest;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the east area
@@ -7053,7 +7053,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsEast, clusterColorsWithHetsEast;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 #### Show just the northern area
@@ -7087,7 +7087,7 @@ plotGenotypeByIndividual(regionInfo, pos_selectedSNPs2,
                 genosForGBI, indMetadataforGBI, freqs_selectedSNPs2, clusterNamesWithHetsNorth, clusterColorsWithHetsNorth;
                 missingFractionAllowed = missingFractionAllowed,
                 indColorLeftProvided = false,
-                indColorRightProvided = true)
+                indColorRightProvided = true);
 ```
 
 
@@ -7170,27 +7170,27 @@ display(f)
 ```
 
 ## Summary of chromosome LHBR patterns
-##### Tried chr 1 but some unclean distinguishing of ludlowi clusters (no wide sharing of plumb)
+##### Tried chr 1 but some unclean distinguishing of _ludlowi_ clusters (no wide sharing of _plumb_)
 ##### Included chr 1A
-##### Tried chr 2 but some unclean distinguishing of ludlowi clusters (with some sharing of plumb)
+##### Tried chr 2 but some unclean distinguishing of _ludlowi_ clusters (with some sharing of _plumb_)
 ##### Included chr 3
 ##### Tried chr 4 but not clean separation of high vs. low IndHet
 ##### Included chr 4A
 ##### Tried chr 5 but not clean separation of high vs. low IndHet
 ##### Tried chr 6 but not clean separation of high vs. low IndHet
-##### Tried chr 7 but not clean separation of high vs. low IndHet, recomb in ludlowi
-##### Tried chr 8 but not clean separation of high vs. low IndHet, recomb in ludlowi
+##### Tried chr 7 but not clean separation of high vs. low IndHet, recomb in _ludlowi_
+##### Tried chr 8 but not clean separation of high vs. low IndHet, recomb in _ludlowi_
 ##### Tried chr 9 but not clean separation of high vs. low IndHet
 ##### Tried chr 10 but not clean separation of high vs. low IndHet
-##### Tried chr 11 and has potential, and shows an obs with two plumb types, but ludlowi not cleanly distinguished into types
-##### Tried chr 12 but not a very clear separation of high vs. low IndHet (shows a lot of sharing of plumb haps in ludlowi)
-##### Tried chr 14 but not clean separation of high vs. low IndHet, recomb in ludlowi
+##### Tried chr 11 and has potential, and shows an _obs_ with two _plumb_ types, but _ludlowi_ not cleanly distinguished into types
+##### Tried chr 12 but not a very clear separation of high vs. low IndHet (shows a lot of sharing of _plumb_ haps in _ludlowi_)
+##### Tried chr 14 but not clean separation of high vs. low IndHet, recomb in _ludlowi_
 ##### Included chr 15
 ##### No chr 16
 ##### Tried chr 23 but not a very clear separation of high vs. low IndHet 
 ##### Included chr 17, chr 18, chr 19, chr 20
 ##### Tried chr 21 but not a very clear separation of high vs. low IndHet
-##### Tried chr 22 but not a very clear separation of high vs. low IndHet. Lud is all over the place.
+##### Tried chr 22 but not a very clear separation of high vs. low IndHet. _lud_ is all over the place.
 ##### Tried chr 23 and almost included, but a few inds would be tough to categorize. Similar pattern as some others. Not a very clear separation of high vs. low IndHet.
 ##### Tried chr 24 but not a very clear separation of high vs. low IndHet.
 ##### Tried chr 25 but not a very clear separation of high vs. low IndHet, and hard to categorize a lot of inds.
@@ -7417,7 +7417,7 @@ plotHaploblockSummary(genosSummary, ind_with_metadata_included,
                             indFontSize = 8, figureSize = (1200, 1600),
                             plotTitle = nothing,
                             indColorLeftProvided = false,
-                            indColorRightProvided = false)
+                            indColorRightProvided = false);
 ```
 
 The one missing element (the white cell in the gw28 column) is a heterozygote with the _nitidus_ haplotype.
@@ -7463,7 +7463,7 @@ plotHaploblockSummary(genosSummary, ind_with_metadata_included,
                             indFontSize = 8, figureSize = (1200, 1600),
                             plotTitle = nothing,
                             indColorLeftProvided = false,
-                            indColorRightProvided = false)
+                            indColorRightProvided = false);
 ```
 
 The white cells in the figure are heterozygotes between the plumbeitarsus and viridanus haplotypes.
@@ -7896,7 +7896,7 @@ figHandle_GenomeFst3 = plotGenomeFst(scaffolds_to_plot,
                                     groupColorsFst;
                                     lineTransparency = 0.8,
                                     fillTransparency = 0.2,
-                                    figureSize=(1200, 1200))
+                                    figureSize=(1200, 1200));
 ```
 
 Now do one with just the vir_plumb connection
@@ -8468,7 +8468,7 @@ groupsToCompare = ["vir_plumb", "vir_troch_LN", "troch_LN_plumb"]     # "Fst_amo
 missingFractionAllowed = 0.2  # only show SNPs with less than this fraction of missing data among individuals
 
 # Calculate allele freqs and sample sizes (use column Fst_group)
-freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_with_missing, ind_with_metadata_indFiltered.Fst_group, groups)
+freqs, sampleSizes = getFreqsAndSampleSizes(genosOnly_included, ind_with_metadata_indFiltered.Fst_group, groups)
 println("Calculated population allele frequencies and sample sizes")
 
 Fst, FstNumerator, FstDenominator, pairwiseNamesFst = getFst(freqs, sampleSizes, groups; among=true)  # set among to FALSE if no among Fst wanted (some things won't work without it) 
@@ -8491,7 +8491,7 @@ for i in 1:length(scaffolds_to_plot)
     plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
         missingFractionAllowed, regionInfo,
         pos_SNP_filtered, Fst, pairwiseNamesFst, 
-        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+        genosOnly_included, ind_with_metadata_indFiltered, freqs, 
         plotGroups, plotGroupColors;
         indFontSize=4, figureSize=(1200,1600), plotTitle = "",
         highlightRegionStarts = highViSHetRegions_thisScaffold.regionStart,
@@ -8499,7 +8499,7 @@ for i in 1:length(scaffolds_to_plot)
         highlightRegionColor = "magenta")
 
     println("Completed the figure for ", chr, ".")
-    if true  # set to true to save plot
+    if false  # set to true to save plot
         filename = string("Figure_", chr, "_Fst3groupsGBIallInds_Fst",Fst_cutoff,"_fromJulia.png")
         save(filename, plotInfo[1], px_per_unit = 2.0)
         println("Saved ", filename)
@@ -8517,25 +8517,10 @@ for i in 1:length(scaffolds_to_plot)
     # get info for lines for LHBRs
     highViSHetRegions_thisScaffold = highViSHetRegions[highViSHetRegions.regionChrom .== chr, :]
 
-    #= ##### for testing function
-    pos=pos_SNP_filtered
-    genoData=genosOnly_with_missing
-    indMetadata= ind_with_metadata_indFiltered
-    colorAllelesByGroup = true
-    group1 = plotGroups[1]
-    indFontSize=4
-    figureSize=(1200,1600)
-    show_SNP_density = true 
-    densityPlotColor = :steelblue1
-    plotTitle = ""
-    highlightRegionStarts = highViSHetRegions_thisScaffold.regionStart
-    highlightRegionEnds = highViSHetRegions_thisScaffold.regionEnd
-    ############ =#
-
     plotInfo = plotGenotypeByIndividualWithFst(groupsToCompare, Fst_cutoff, 
         missingFractionAllowed, regionInfo,
         pos_SNP_filtered, Fst, pairwiseNamesFst, 
-        genosOnly_with_missing, ind_with_metadata_indFiltered, freqs, 
+        genosOnly_included, ind_with_metadata_indFiltered, freqs, 
         plotGroups, plotGroupColors;
         indFontSize=4, figureSize=(1200,1600), plotTitle = "",
         highlightRegionStarts = highViSHetRegions_thisScaffold.regionStart,

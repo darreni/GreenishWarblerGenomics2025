@@ -8,13 +8,12 @@ To see webpages that will walk you through the analysis, click [here](https://da
 
 Much of the analysis shown in this repo was done in the Julia programming language. If you've never used Julia, you can learn more and easily install for free [here](https://julialang.org).
 
-<p align="center">
-[<img src="Julia_logo.jpg" style="width:15%; height:auto;">](https://julialang.org)
-</p>
+![<p align="center"><img src="Julia_logo.jpg" style="width:15%; height:auto;"></p>](https://julialang.org)
 
 The Julia code here is loosely based on R code written for an earlier Greenish Warbler analysis (Irwin et al. 2016, _Molecular Ecology_), and then the North American warbler analyses (Irwin et al. 2018, _Molecular Ecology_). Since then, I've rewritten the code in Julia, where it is orders of magnitude faster. I've packaged many of the functions into a Julia package, `GenomicDiversity.jl`, that is now officially registered and easily installed (via this command entered into the Julia REPL: `import Pkg; Pkg.add("GenomicDiversity")`). Click on the logo if you want to learn more about this package:
 
-[<p align="center"><img src="GenomicDiversity_logo.jpg" style="width:25%; height:auto;"></p>](https://github.com/darreni/GenomicDiversity.jl)
+
+![<p align="center"><img src="GenomicDiversity_logo.jpg" style="width:25%; height:auto;"></p>](https://github.com/darreni/GenomicDiversity.jl)
 
 The analysis scripts provided in this repo are in Quarto Markdown (.qmd) format, which were then rendered to webpages (.html files) that present the scripts in an easily readable way, also showing notes and figures produced by the scripts. Quarto allows the rendering of sets of websites as a single Quarto project, consisting of Quarto notebooks, which can run and display the results of Julia (or other) code blocks, along with text narration, and output in html, pdf, Word, etc. To see the first one and work your way through the analysis, start [here](https://darreni.github.io/GreenishWarblerGenomics2025/).
 
